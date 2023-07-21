@@ -4,3 +4,8 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+fj-viewer = "0.47.0"
+futures = "0.3.28"
+notify = "6.0.1"
+thiserror = "1.0.43"
+winit = "0.28.6"
