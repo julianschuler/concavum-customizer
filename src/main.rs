@@ -44,6 +44,9 @@ fn main() -> Result<(), Error> {
     let window = Window::new()?;
     let event_loop_proxy = window.event_loop_proxy();
 
+    let model = Model::try_from_config(&config_path);
+    let _ = event_loop_proxy.send_event(model);
+
     let mut watcher = reload_model_on_config_change(config_path, event_loop_proxy)?;
 
     window.run_event_loop()?;
