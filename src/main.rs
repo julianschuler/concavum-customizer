@@ -1,3 +1,5 @@
+mod config;
+mod model;
 mod window;
 
 use std::path::Path;
@@ -8,12 +10,14 @@ use notify::{
     EventKind::Access,
     RecommendedWatcher, RecursiveMode, Watcher,
 };
-use window::Window;
 use winit::event_loop::EventLoopProxy;
+
+use model::Model;
+use window::Window;
 
 fn reload_model_on_config_change(
     config_path: &Path,
-    event_loop_proxy: EventLoopProxy<()>,
+    event_loop_proxy: EventLoopProxy<Result<Model, model::Error>>,
 ) -> notify::Result<RecommendedWatcher> {
     let config_path_parent = config_path.parent().unwrap().to_path_buf();
     let config_path = config_path.canonicalize().unwrap();
@@ -22,7 +26,8 @@ fn reload_model_on_config_change(
         if let Ok(event) = result {
             if matches!(event.kind, Access(Close(Write))) {
                 if event.paths.iter().any(|path| path == &config_path) {
-                    let _ = event_loop_proxy.send_event(());
+                    let model = Model::try_from_config(&config_path);
+                    let _ = event_loop_proxy.send_event(model);
                 }
             }
         }
