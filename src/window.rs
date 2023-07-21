@@ -8,18 +8,20 @@ use winit::{
         ElementState, Event, KeyboardInput, MouseButton, MouseScrollDelta, VirtualKeyCode,
         WindowEvent,
     },
-    event_loop::{ControlFlow, EventLoop, EventLoopProxy},
+    event_loop::{ControlFlow, EventLoop, EventLoopBuilder, EventLoopProxy},
     window::WindowBuilder,
 };
 
+use crate::model::{self, Model};
+
 pub struct Window {
     window: winit::window::Window,
-    event_loop: EventLoop<()>,
+    event_loop: EventLoop<Result<Model, model::Error>>,
 }
 
 impl Window {
     pub fn new() -> Result<Self, Error> {
-        let event_loop = EventLoop::new();
+        let event_loop = EventLoopBuilder::with_user_event().build();
         let window = WindowBuilder::new()
             .with_title("Concavum customizer")
             .with_decorations(false)
@@ -29,7 +31,7 @@ impl Window {
         Ok(Self { window, event_loop })
     }
 
-    pub fn event_loop_proxy(&self) -> EventLoopProxy<()> {
+    pub fn event_loop_proxy(&self) -> EventLoopProxy<Result<Model, model::Error>> {
         self.event_loop.create_proxy()
     }
 
@@ -125,9 +127,10 @@ impl Window {
                         viewer.draw();
                     }
                 }
-                Event::UserEvent(_) => {
-                    println!("File changed");
-                }
+                Event::UserEvent(model) => match model {
+                    Ok(model) => viewer.handle_model_update(model.into()),
+                    Err(err) => println!("{:#?}", err),
+                },
                 _ => {}
             }
         });
