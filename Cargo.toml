@@ -5,7 +5,6 @@ edition = "2021"
 
 [dependencies]
 cxx = "1.0.102"
-fj-core = "0.47.0"
 fj-interop = "0.47.0"
 fj-math = "0.47.0"
 fj-viewer = "0.47.0"
