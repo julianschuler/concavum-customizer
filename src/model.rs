@@ -1,86 +1,86 @@
-use std::{ops::Deref, path::Path};
+use std::path::Path;
 
-use fj_core::{
-    algorithms::{
-        approx::{InvalidTolerance, Tolerance},
-        bounding_volume::BoundingVolume,
-        sweep::Sweep,
-        triangulate::Triangulate,
-    },
-    objects::{Cycle, Region, Sketch, Solid},
-    operations::{
-        BuildCycle, BuildRegion, BuildSketch, Insert, Reverse, UpdateRegion, UpdateSketch,
-    },
-    services::Services,
-    storage::Handle,
+use cxx::UniquePtr;
+use fj_interop::mesh::{Color, Mesh};
+use fj_math::{Aabb, Point, Triangle, Vector};
+use opencascade_sys::ffi::{
+    new_point, BRepMesh_IncrementalMesh_ctor, BRepPrimAPI_MakeBox_ctor, BRep_Tool_Triangulation,
+    Handle_Poly_Triangulation_Get, Poly_Triangulation_Node, TopAbs_ShapeEnum, TopExp_Explorer_ctor,
+    TopLoc_Location_ctor, TopoDS_Shape, TopoDS_Shape_to_owned, TopoDS_cast_to_face,
 };
-use fj_interop::mesh::Mesh;
-use fj_math::{Aabb, Point, Scalar, Vector};
 
 use crate::config::{self, Config};
 
+type Shape = UniquePtr<TopoDS_Shape>;
+
 pub struct Model {
-    handle: Handle<Solid>,
-}
-
-fn triangulate_model<M>(
-    model: impl Deref<Target = M>,
-    aabb: &Aabb<3>,
-) -> Result<Mesh<Point<3>>, InvalidTolerance>
-where
-    for<'r> (&'r M, Tolerance): Triangulate,
-    M: BoundingVolume<3>,
-{
-    let min_extent = aabb
-        .size()
-        .components
-        .into_iter()
-        .filter(|extent| *extent != Scalar::ZERO)
-        .min()
-        .unwrap_or(Scalar::MAX);
-
-    let tolerance = Tolerance::from_scalar(min_extent / Scalar::from_f64(1000.))?;
-
-    Ok((model.deref(), tolerance).triangulate())
+    shape: Shape,
 }
 
 impl Into<fj_interop::model::Model> for Model {
     fn into(self) -> fj_interop::model::Model {
-        let model = self.handle;
+        let mut mesh = Mesh::new();
 
-        let aabb = model.aabb().unwrap_or(Aabb {
-            min: Point::origin(),
-            max: Point::origin(),
-        });
-        let mesh = triangulate_model(model, &aabb).expect("tolerance should be valid");
+        let mut triangulation = BRepMesh_IncrementalMesh_ctor(&self.shape, 0.01);
+        if !triangulation.IsDone() {
+            panic!("Call to BRepMesh_IncrementalMesh_ctor failed");
+        }
+
+        let mut face_explorer = TopExp_Explorer_ctor(
+            triangulation.pin_mut().Shape(),
+            TopAbs_ShapeEnum::TopAbs_FACE,
+        );
+        while face_explorer.More() {
+            let mut location = TopLoc_Location_ctor();
+            let face = TopoDS_cast_to_face(face_explorer.Current());
+
+            let triangulation_handle = BRep_Tool_Triangulation(face, location.pin_mut());
+            if let Ok(triangulation) = Handle_Poly_Triangulation_Get(&triangulation_handle) {
+                for index in 0..triangulation.NbTriangles() {
+                    let mut triangle_points = [Point::default(); 3];
+
+                    let triangle = triangulation.Triangle(index + 1);
+
+                    for corner_index in 0..3 {
+                        let mut point = Poly_Triangulation_Node(
+                            triangulation,
+                            triangle.Value(corner_index as i32 + 1),
+                        );
+                        let point = point.pin_mut();
+
+                        let coords = Vector {
+                            components: [point.X().into(), point.Y().into(), point.Z().into()],
+                        };
+                        triangle_points[corner_index] = Point { coords };
+                    }
+
+                    let triangle =
+                        Triangle::from_points(triangle_points).expect("triangle is collinear");
+                    mesh.push_triangle(triangle, Color::default())
+                }
+            }
+
+            face_explorer.pin_mut().Next();
+        }
+
+        let aabb = Aabb::<3>::from_points(mesh.vertices());
 
         fj_interop::model::Model { mesh, aabb }
     }
 }
 
-pub fn dummy_model(config: Config) -> Handle<Solid> {
-    let services = &mut Services::new();
-    let sketch = Sketch::empty()
-        .add_region(
-            Region::circle(Point::origin(), config.outer, services)
-                .add_interiors([Cycle::circle(Point::origin(), config.inner, services)
-                    .reverse(services)
-                    .insert(services)])
-                .insert(services),
-        )
-        .insert(services);
-
-    let surface = services.objects.surfaces.xy_plane();
-    let path = Vector::from([0., 0., config.height]);
-    (sketch, surface).sweep(path, services)
+pub fn dummy_model(config: Config) -> Shape {
+    let origin = new_point(0.0, 0.0, 0.0);
+    let mut cube = BRepPrimAPI_MakeBox_ctor(&origin, config.width, config.length, config.height);
+    TopoDS_Shape_to_owned(cube.pin_mut().Shape())
 }
 
 impl Model {
     pub fn try_from_config(config_path: &Path) -> Result<Self, Error> {
         let config = Config::try_from_path(config_path)?;
-        let handle = dummy_model(config);
+        let shape = dummy_model(config);
 
-        Ok(Self { handle })
+        Ok(Self { shape })
     }
 }
 

@@ -3,9 +3,9 @@ use std::{fs::read_to_string, io, path::Path};
 
 #[derive(Deserialize)]
 pub struct Config {
-    pub outer: f32,
-    pub inner: f32,
-    pub height: f32,
+    pub width: f64,
+    pub length: f64,
+    pub height: f64,
 }
 
 impl Config {
