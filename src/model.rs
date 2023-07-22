@@ -5,8 +5,9 @@ use fj_interop::mesh::{Color, Mesh};
 use fj_math::{Aabb, Point, Triangle, Vector};
 use opencascade_sys::ffi::{
     new_point, BRepMesh_IncrementalMesh_ctor, BRepPrimAPI_MakeBox_ctor, BRep_Tool_Triangulation,
-    Handle_Poly_Triangulation_Get, Poly_Triangulation_Node, TopAbs_ShapeEnum, TopExp_Explorer_ctor,
-    TopLoc_Location_ctor, TopoDS_Shape, TopoDS_Shape_to_owned, TopoDS_cast_to_face,
+    Handle_Poly_Triangulation_Get, Poly_Triangulation_Node, TopAbs_Orientation, TopAbs_ShapeEnum,
+    TopExp_Explorer_ctor, TopLoc_Location_ctor, TopoDS_Shape, TopoDS_Shape_to_owned,
+    TopoDS_cast_to_face,
 };
 
 use crate::config::{self, Config};
@@ -33,6 +34,7 @@ impl Into<fj_interop::model::Model> for Model {
         while face_explorer.More() {
             let mut location = TopLoc_Location_ctor();
             let face = TopoDS_cast_to_face(face_explorer.Current());
+            let face_orientation = face.Orientation();
 
             let triangulation_handle = BRep_Tool_Triangulation(face, location.pin_mut());
             if let Ok(triangulation) = Handle_Poly_Triangulation_Get(&triangulation_handle) {
@@ -54,9 +56,13 @@ impl Into<fj_interop::model::Model> for Model {
                         triangle_points[corner_index] = Point { coords };
                     }
 
-                    let triangle =
-                        Triangle::from_points(triangle_points).expect("triangle is collinear");
-                    mesh.push_triangle(triangle, Color::default())
+                    if face_orientation == TopAbs_Orientation::TopAbs_REVERSED {
+                        triangle_points.reverse();
+                    }
+
+                    if let Ok(triangle) = Triangle::from_points(triangle_points) {
+                        mesh.push_triangle(triangle, Color::default())
+                    }
                 }
             }
 
