@@ -10,7 +10,7 @@ use opencascade_sys::ffi::{
     TopoDS_cast_to_face,
 };
 
-use crate::config::{self, Config};
+use crate::model::config::{self, Config};
 
 type Shape = UniquePtr<TopoDS_Shape>;
 

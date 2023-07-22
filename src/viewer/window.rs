@@ -13,7 +13,7 @@ use winit::{
     window::WindowBuilder,
 };
 
-use crate::model;
+use crate::viewer::model;
 
 pub struct Window {
     window: winit::window::Window,

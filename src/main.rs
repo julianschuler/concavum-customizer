@@ -1,6 +1,5 @@
-mod config;
 mod model;
-mod window;
+mod viewer;
 
 use std::path::Path;
 
@@ -13,11 +12,11 @@ use notify::{
 };
 use winit::event_loop::EventLoopProxy;
 
-use window::Window;
+use viewer::window::{self, Window};
 
 fn reload_model_on_config_change(
     config_path: &Path,
-    event_loop_proxy: EventLoopProxy<Result<Model, model::Error>>,
+    event_loop_proxy: EventLoopProxy<Result<Model, viewer::model::Error>>,
 ) -> notify::Result<RecommendedWatcher> {
     let config_path_parent = config_path.parent().unwrap().to_path_buf();
     let config_path = config_path.canonicalize().unwrap();
@@ -26,8 +25,8 @@ fn reload_model_on_config_change(
         if let Ok(event) = result {
             if matches!(event.kind, Access(Close(Write))) {
                 if event.paths.iter().any(|path| path == &config_path) {
-                    let model =
-                        model::Model::try_from_config(&config_path).map(|model| model.into());
+                    let model = viewer::model::Model::try_from_config(&config_path)
+                        .map(|model| model.into());
                     let _ = event_loop_proxy.send_event(model);
                 }
             }
@@ -45,7 +44,7 @@ fn main() -> Result<(), Error> {
     let window = Window::new()?;
     let event_loop_proxy = window.event_loop_proxy();
 
-    let model = model::Model::try_from_config(&config_path).map(|model| model.into());
+    let model = viewer::model::Model::try_from_config(&config_path).map(|model| model.into());
     let _ = event_loop_proxy.send_event(model);
 
     let mut watcher = reload_model_on_config_change(config_path, event_loop_proxy)?;
