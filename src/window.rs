@@ -1,3 +1,4 @@
+use fj_interop::model::Model;
 use fj_viewer::{
     InputEvent, NormalizedScreenPosition, RendererInitError, Screen, ScreenSize, Viewer,
 };
@@ -12,7 +13,7 @@ use winit::{
     window::WindowBuilder,
 };
 
-use crate::model::{self, Model};
+use crate::model;
 
 pub struct Window {
     window: winit::window::Window,
@@ -128,7 +129,7 @@ impl Window {
                     }
                 }
                 Event::UserEvent(model) => match model {
-                    Ok(model) => viewer.handle_model_update(model.into()),
+                    Ok(model) => viewer.handle_model_update(model),
                     Err(err) => println!("{:#?}", err),
                 },
                 _ => {}

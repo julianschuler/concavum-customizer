@@ -4,6 +4,7 @@ mod window;
 
 use std::path::Path;
 
+use fj_interop::model::Model;
 use notify::{
     event::{AccessKind::Close, AccessMode::Write},
     recommended_watcher, Event,
@@ -12,7 +13,6 @@ use notify::{
 };
 use winit::event_loop::EventLoopProxy;
 
-use model::Model;
 use window::Window;
 
 fn reload_model_on_config_change(
@@ -26,7 +26,8 @@ fn reload_model_on_config_change(
         if let Ok(event) = result {
             if matches!(event.kind, Access(Close(Write))) {
                 if event.paths.iter().any(|path| path == &config_path) {
-                    let model = Model::try_from_config(&config_path);
+                    let model =
+                        model::Model::try_from_config(&config_path).map(|model| model.into());
                     let _ = event_loop_proxy.send_event(model);
                 }
             }
@@ -44,7 +45,7 @@ fn main() -> Result<(), Error> {
     let window = Window::new()?;
     let event_loop_proxy = window.event_loop_proxy();
 
-    let model = Model::try_from_config(&config_path);
+    let model = model::Model::try_from_config(&config_path).map(|model| model.into());
     let _ = event_loop_proxy.send_event(model);
 
     let mut watcher = reload_model_on_config_change(config_path, event_loop_proxy)?;
