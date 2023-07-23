@@ -13,7 +13,7 @@ use winit::{
     window::WindowBuilder,
 };
 
-use crate::viewer::model;
+use crate::model;
 
 pub struct Window {
     window: winit::window::Window,
@@ -21,7 +21,7 @@ pub struct Window {
 }
 
 impl Window {
-    pub fn new() -> Result<Self, Error> {
+    pub fn try_new() -> Result<Self, Error> {
         let event_loop = EventLoopBuilder::with_user_event().build();
         let window = WindowBuilder::new()
             .with_title("Concavum customizer")

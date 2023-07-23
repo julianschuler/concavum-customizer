@@ -1,30 +1,31 @@
-use std::path::Path;
-
 use cxx::UniquePtr;
-use fj_interop::mesh::{Color, Mesh};
+pub use fj_interop::mesh::Color;
+use fj_interop::mesh::Mesh;
 use fj_math::{Aabb, Point, Triangle, Vector};
 use opencascade_sys::ffi::{
-    new_point, BRepMesh_IncrementalMesh_ctor, BRepPrimAPI_MakeBox_ctor, BRep_Tool_Triangulation,
-    Handle_Poly_Triangulation_Get, Poly_Triangulation_Node, TopAbs_Orientation, TopAbs_ShapeEnum,
-    TopExp_Explorer_ctor, TopLoc_Location_ctor, TopoDS_Shape, TopoDS_Shape_to_owned,
-    TopoDS_cast_to_face,
+    BRepMesh_IncrementalMesh_ctor, BRep_Tool_Triangulation, Handle_Poly_Triangulation_Get,
+    Poly_Triangulation_Node, TopAbs_Orientation, TopAbs_ShapeEnum, TopExp_Explorer_ctor,
+    TopLoc_Location_ctor, TopoDS_Shape, TopoDS_cast_to_face,
 };
 
-use crate::model::config::{self, Config};
+pub type Shape = UniquePtr<TopoDS_Shape>;
 
-type Shape = UniquePtr<TopoDS_Shape>;
-
-pub struct Model {
+pub struct Component {
     shape: Shape,
+    color: Color,
 }
 
-impl Into<fj_interop::model::Model> for Model {
-    fn into(self) -> fj_interop::model::Model {
-        let mut mesh = Mesh::new();
+impl Component {
+    pub fn new(shape: Shape, color: Color) -> Self {
+        Self { shape, color }
+    }
+
+    fn try_into_triangles(self) -> Result<Vec<Triangle<3>>, Error> {
+        let mut triangles = Vec::new();
 
         let mut triangulation = BRepMesh_IncrementalMesh_ctor(&self.shape, 0.01);
         if !triangulation.IsDone() {
-            panic!("Call to BRepMesh_IncrementalMesh_ctor failed");
+            return Err(Error::FailedTriangulation);
         }
 
         let mut face_explorer = TopExp_Explorer_ctor(
@@ -61,12 +62,40 @@ impl Into<fj_interop::model::Model> for Model {
                     }
 
                     if let Ok(triangle) = Triangle::from_points(triangle_points) {
-                        mesh.push_triangle(triangle, Color::default())
+                        triangles.push(triangle);
                     }
                 }
             }
 
             face_explorer.pin_mut().Next();
+        }
+
+        Ok(triangles)
+    }
+}
+
+pub trait ViewableModel {
+    fn components(self) -> Vec<Component>;
+
+    fn into_mesh_model(self) -> fj_interop::model::Model
+    where
+        Self: Sized,
+    {
+        let mut mesh = Mesh::new();
+
+        for component in self.components() {
+            let color = component.color;
+
+            match component.try_into_triangles() {
+                Ok(triangles) => {
+                    for triangle in triangles {
+                        mesh.push_triangle(triangle, color);
+                    }
+                }
+                Err(_) => {
+                    println!("Warning: Could not triangulate component, ignoring it");
+                }
+            }
         }
 
         let aabb = Aabb::<3>::from_points(mesh.vertices());
@@ -75,24 +104,9 @@ impl Into<fj_interop::model::Model> for Model {
     }
 }
 
-pub fn dummy_model(config: Config) -> Shape {
-    let origin = new_point(0.0, 0.0, 0.0);
-    let mut cube = BRepPrimAPI_MakeBox_ctor(&origin, config.width, config.length, config.height);
-    TopoDS_Shape_to_owned(cube.pin_mut().Shape())
-}
-
-impl Model {
-    pub fn try_from_config(config_path: &Path) -> Result<Self, Error> {
-        let config = Config::try_from_path(config_path)?;
-        let shape = dummy_model(config);
-
-        Ok(Self { shape })
-    }
-}
-
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
-    /// Error parsing config
-    #[error("Error parsing config")]
-    ConfigParsing(#[from] config::Error),
+    /// Triangulation using BRepMesh_IncrementalMesh_ctor failed
+    #[error("Triangulation using BRepMesh_IncrementalMesh_ctor failed")]
+    FailedTriangulation,
 }
