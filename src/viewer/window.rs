@@ -1,3 +1,4 @@
+use color_eyre::eyre::Report;
 use fj_interop::model::Model;
 use fj_viewer::{
     InputEvent, NormalizedScreenPosition, RendererInitError, Screen, ScreenSize, Viewer,
@@ -130,7 +131,7 @@ impl Window {
                 }
                 Event::UserEvent(model) => match model {
                     Ok(model) => viewer.handle_model_update(model),
-                    Err(err) => println!("{:#?}", err),
+                    Err(err) => eprintln!("Error:{:?}", Report::from(err)),
                 },
                 _ => {}
             }
@@ -157,12 +158,12 @@ impl Screen for Window {
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
-    /// Error initializing window
-    #[error("Error initializing window")]
+    /// Failed to initialize window
+    #[error("Failed to initialize window")]
     WindowInit(#[from] winit::error::OsError),
 
-    /// Error initializing graphics
-    #[error("Error initializing graphics")]
+    /// Failed to initialize graphics
+    #[error("Failed to initialize graphics")]
     GraphicsInit(#[from] RendererInitError),
 }
 

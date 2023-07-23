@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+color-eyre = { version = "0.6.2", default-features = false }
 cxx = "1.0.102"
 fj-interop = "0.47.0"
 fj-math = "0.47.0"

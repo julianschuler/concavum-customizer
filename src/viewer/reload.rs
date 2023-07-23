@@ -61,11 +61,11 @@ impl ModelReloader {
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
-    /// Error canonicalizing file path
-    #[error("Error canonicalizing file path")]
+    /// Failed to canonicalize file path
+    #[error("Failed to canonicalize file path")]
     Canonilize(#[from] io::Error),
 
-    /// Error initializing file watcher
-    #[error("Error initializing file watcher")]
+    /// Failed to initialize file watcher
+    #[error("Failed to initialize file watcher")]
     Notify(#[from] notify::Error),
 }

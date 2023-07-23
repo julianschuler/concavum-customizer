@@ -16,11 +16,11 @@ impl Config {
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
-    /// Error opening file
-    #[error("Error opening file")]
-    Open(#[from] io::Error),
+    /// Failed to open file
+    #[error("Failed to open file")]
+    FileOpen(#[from] io::Error),
 
-    // Error parsing file
-    #[error("Error parsing file")]
-    Parsing(#[from] toml::de::Error),
+    /// Failed to parse TOML
+    #[error("Failed to parse TOML")]
+    TomlParse(#[from] toml::de::Error),
 }
