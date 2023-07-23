@@ -25,7 +25,7 @@ impl Component {
 
         let mut triangulation = BRepMesh_IncrementalMesh_ctor(&self.shape, 0.01);
         if !triangulation.IsDone() {
-            return Err(Error::FailedTriangulation);
+            return Err(Error::Triangulation);
         }
 
         let mut face_explorer = TopExp_Explorer_ctor(
@@ -93,7 +93,7 @@ pub trait ViewableModel {
                     }
                 }
                 Err(_) => {
-                    println!("Warning: Could not triangulate component, ignoring it");
+                    eprintln!("Warning: Could not triangulate component, ignoring it");
                 }
             }
         }
@@ -108,5 +108,5 @@ pub trait ViewableModel {
 pub enum Error {
     /// Triangulation using BRepMesh_IncrementalMesh_ctor failed
     #[error("Triangulation using BRepMesh_IncrementalMesh_ctor failed")]
-    FailedTriangulation,
+    Triangulation,
 }

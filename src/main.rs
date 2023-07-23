@@ -3,31 +3,22 @@ mod viewer;
 
 use std::path::Path;
 
-use viewer::{
-    reload::{self, ModelReloader},
-    window::{self, Window},
-};
+use color_eyre::{config::HookBuilder, eyre::WrapErr, Result};
 
-fn main() -> Result<(), Error> {
+use viewer::{reload::ModelReloader, window::Window};
+
+fn main() -> Result<()> {
+    HookBuilder::new().display_env_section(false).install()?;
+
     let config_path = Path::new("config.toml");
 
     let window = Window::try_new()?;
 
-    let reloader = ModelReloader::try_new(config_path, window.event_loop_proxy())?;
-    let _watcher = reloader.watch()?;
+    let reloader = ModelReloader::try_new(config_path, window.event_loop_proxy())
+        .wrap_err("Failed to initialize file watcher")?;
+    let _watcher = reloader.watch().wrap_err("Failed to watch file")?;
 
     window.run_event_loop()?;
 
     Ok(())
-}
-
-#[derive(Debug, thiserror::Error)]
-pub enum Error {
-    /// Error initializing window
-    #[error("Error initializing window")]
-    WindowInit(#[from] window::Error),
-
-    /// Error initializing model reloader
-    #[error("Error initializing model reloader")]
-    ReloadInit(#[from] reload::Error),
 }
