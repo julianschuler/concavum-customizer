@@ -3,9 +3,8 @@ use std::{fs::read_to_string, io, path::Path};
 
 #[derive(Deserialize)]
 pub struct Config {
-    pub width: f64,
-    pub length: f64,
-    pub height: f64,
+    pub points1: Vec<[f64; 3]>,
+    pub points2: Vec<[f64; 3]>,
     pub triangulation_tolerance: Option<f64>,
 }
 
