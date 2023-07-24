@@ -20,12 +20,10 @@ impl Component {
         Self { shape, color }
     }
 
-    fn try_into_triangles(self) -> Result<Vec<Triangle<3>>, Error> {
-        const DEFLECTION_TOLERANCE: f64 = 0.01;
-
+    fn try_into_triangles(self, deflection_tolerance: f64) -> Result<Vec<Triangle<3>>, Error> {
         let mut triangles = Vec::new();
 
-        let mut triangulation = BRepMesh_IncrementalMesh_ctor(&self.shape, DEFLECTION_TOLERANCE);
+        let mut triangulation = BRepMesh_IncrementalMesh_ctor(&self.shape, deflection_tolerance);
         if !triangulation.IsDone() {
             return Err(Error::Triangulation);
         }
@@ -77,18 +75,21 @@ impl Component {
 }
 
 pub trait ViewableModel {
+    fn triangulation_tolerance(&self) -> f64;
+
     fn components(self) -> Vec<Component>;
 
     fn into_mesh_model(self) -> fj_interop::model::Model
     where
         Self: Sized,
     {
+        let triangulation_tolerance = self.triangulation_tolerance();
         let mut mesh = Mesh::new();
 
         for component in self.components() {
             let color = component.color;
 
-            match component.try_into_triangles() {
+            match component.try_into_triangles(triangulation_tolerance) {
                 Ok(triangles) => {
                     for triangle in triangles {
                         mesh.push_triangle(triangle, color);

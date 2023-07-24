@@ -6,6 +6,7 @@ pub struct Config {
     pub width: f64,
     pub length: f64,
     pub height: f64,
+    pub triangulation_tolerance: Option<f64>,
 }
 
 impl Config {
