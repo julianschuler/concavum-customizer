@@ -1,29 +1,31 @@
-use cxx::UniquePtr;
-pub use fj_interop::mesh::Color;
-use fj_interop::mesh::Mesh;
+use fj_interop::{
+    mesh::{Color, Mesh},
+    model::Model,
+};
 use fj_math::{Aabb, Point, Triangle, Vector};
+use hex_color::HexColor;
+use opencascade::primitives::Shape;
 use opencascade_sys::ffi::{
     BRepMesh_IncrementalMesh_ctor, BRep_Tool_Triangulation, Handle_Poly_Triangulation_Get,
     Poly_Triangulation_Node, TopAbs_Orientation, TopAbs_ShapeEnum, TopExp_Explorer_ctor,
-    TopLoc_Location_ctor, TopoDS_Shape, TopoDS_cast_to_face,
+    TopLoc_Location_ctor, TopoDS_cast_to_face,
 };
-
-pub type Shape = UniquePtr<TopoDS_Shape>;
 
 pub struct Component {
     shape: Shape,
-    color: Color,
+    color: HexColor,
 }
 
 impl Component {
-    pub fn new(shape: Shape, color: Color) -> Self {
+    pub fn new(shape: Shape, color: HexColor) -> Self {
         Self { shape, color }
     }
 
     fn try_into_triangles(self, deflection_tolerance: f64) -> Result<Vec<Triangle<3>>, Error> {
         let mut triangles = Vec::new();
 
-        let mut triangulation = BRepMesh_IncrementalMesh_ctor(&self.shape, deflection_tolerance);
+        let mut triangulation =
+            BRepMesh_IncrementalMesh_ctor(&self.shape.inner, deflection_tolerance);
         if !triangulation.IsDone() {
             return Err(Error::Triangulation);
         }
@@ -87,7 +89,7 @@ pub trait ViewableModel {
         let mut mesh = Mesh::new();
 
         for component in self.components() {
-            let color = component.color;
+            let color = Color(component.color.to_be_bytes());
 
             match component.try_into_triangles(triangulation_tolerance) {
                 Ok(triangles) => {
@@ -103,7 +105,7 @@ pub trait ViewableModel {
 
         let aabb = Aabb::<3>::from_points(mesh.vertices());
 
-        fj_interop::model::Model { mesh, aabb }
+        Model { mesh, aabb }
     }
 }
 

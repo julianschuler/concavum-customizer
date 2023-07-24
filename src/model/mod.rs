@@ -1,13 +1,12 @@
-pub mod config;
+mod config;
 
 use std::path::Path;
 
-use glam::DVec3;
-use opencascade::primitives::{Face, Surface};
+use hex_color::HexColor;
+use opencascade::primitives::{Face, Shape, Surface};
 use opencascade_sys::ffi;
 
-pub use crate::viewer::model::ViewableModel;
-use crate::viewer::model::{Color, Component};
+pub use crate::viewer::model::{Component, ViewableModel};
 use config::Config;
 
 pub struct Model {
@@ -22,25 +21,15 @@ impl Model {
 
         let mut components = Vec::new();
 
-        let points1: Vec<_> = config
-            .points1
-            .into_iter()
-            .map(|point| DVec3::from_array(point))
-            .collect();
-
-        let points2: Vec<_> = config
-            .points2
-            .into_iter()
-            .map(|point| DVec3::from_array(point))
-            .collect();
-
-        let surface = Surface::bezier(&[&points1, &points2]);
+        let surface = Surface::bezier(&[&config.points1, &config.points2]);
         let face = Face::from_surface(&surface);
 
         let shape = ffi::cast_face_to_shape(&face.inner);
-        let shape = ffi::TopoDS_Shape_to_owned(shape);
+        let shape = Shape {
+            inner: ffi::TopoDS_Shape_to_owned(shape),
+        };
 
-        components.push(Component::new(shape, Color([0, 255, 0, 255])));
+        components.push(Component::new(shape, HexColor::GREEN));
 
         Ok(Self {
             components,
