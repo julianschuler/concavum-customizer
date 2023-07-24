@@ -2,7 +2,9 @@ pub mod config;
 
 use std::path::Path;
 
-use opencascade_sys::ffi::{new_point, BRepPrimAPI_MakeBox_ctor, TopoDS_Shape_to_owned};
+use glam::DVec3;
+use opencascade::primitives::{Face, Surface};
+use opencascade_sys::ffi;
 
 pub use crate::viewer::model::ViewableModel;
 use crate::viewer::model::{Color, Component};
@@ -20,10 +22,23 @@ impl Model {
 
         let mut components = Vec::new();
 
-        let origin = new_point(0.0, 0.0, 0.0);
-        let mut cube =
-            BRepPrimAPI_MakeBox_ctor(&origin, config.width, config.length, config.height);
-        let shape = TopoDS_Shape_to_owned(cube.pin_mut().Shape());
+        let points1: Vec<_> = config
+            .points1
+            .into_iter()
+            .map(|point| DVec3::from_array(point))
+            .collect();
+
+        let points2: Vec<_> = config
+            .points2
+            .into_iter()
+            .map(|point| DVec3::from_array(point))
+            .collect();
+
+        let surface = Surface::bezier(&[&points1, &points2]);
+        let face = Face::from_surface(&surface);
+
+        let shape = ffi::cast_face_to_shape(&face.inner);
+        let shape = ffi::TopoDS_Shape_to_owned(shape);
 
         components.push(Component::new(shape, Color([0, 255, 0, 255])));
 

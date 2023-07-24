@@ -10,8 +10,10 @@ fj-interop = "0.47.0"
 fj-math = "0.47.0"
 fj-viewer = "0.47.0"
 futures = "0.3.28"
+glam = "0.23"
 notify = "6.0.1"
-opencascade-sys = { git = "https://github.com/bschwind/opencascade-rs", version = "0.1.0" }
+opencascade = { git = "https://github.com/julianschuler/opencascade-rs", branch = "surface", version = "0.1.0" }
+opencascade-sys = { git = "https://github.com/julianschuler/opencascade-rs", branch = "surface", version = "0.1.0" }
 serde = { version = "1.0.174", features = ["derive"] }
 thiserror = "1.0.43"
 toml = "0.7.6"

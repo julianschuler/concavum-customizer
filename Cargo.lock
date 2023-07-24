@@ -322,7 +322,9 @@ dependencies = [
  "fj-math",
  "fj-viewer",
  "futures",
+ "glam",
  "notify",
+ "opencascade",
  "opencascade-sys",
  "serde",
  "thiserror",
@@ -713,6 +715,15 @@ name = "gimli"
 version = "0.27.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b6c80984affa11d98d1b88b66ac8853f143217b399d3c74116778ff8fdb4ed2e"
+
+[[package]]
+name = "glam"
+version = "0.23.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8e4afd9ad95555081e109fe1d21f2a30c691b5f0919c67dfa690a2e1eb6bd51c"
+dependencies = [
+ "bytemuck",
+]
 
 [[package]]
 name = "glow"
@@ -1375,7 +1386,7 @@ dependencies = [
 [[package]]
 name = "occt-sys"
 version = "0.1.0"
-source = "git+https://github.com/bschwind/opencascade-rs#f82feb36adecfa9ad42dbd10af0b5c10c37622d7"
+source = "git+https://github.com/julianschuler/opencascade-rs?branch=surface#cd14115ac5c67eee737e2eff1b02cfba88ccf493"
 dependencies = [
  "cmake",
 ]
@@ -1387,9 +1398,20 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "dd8b5dd2ae5ed71462c540258bedcb51965123ad7e7ccf4b9a8cafaa4a63576d"
 
 [[package]]
+name = "opencascade"
+version = "0.1.0"
+source = "git+https://github.com/julianschuler/opencascade-rs?branch=surface#cd14115ac5c67eee737e2eff1b02cfba88ccf493"
+dependencies = [
+ "cxx",
+ "glam",
+ "opencascade-sys",
+ "thiserror",
+]
+
+[[package]]
 name = "opencascade-sys"
 version = "0.1.0"
-source = "git+https://github.com/bschwind/opencascade-rs#f82feb36adecfa9ad42dbd10af0b5c10c37622d7"
+source = "git+https://github.com/julianschuler/opencascade-rs?branch=surface#cd14115ac5c67eee737e2eff1b02cfba88ccf493"
 dependencies = [
  "cmake",
  "cxx",
