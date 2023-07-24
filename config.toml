@@ -4,3 +4,10 @@ points1 = [
 points2 = [
   [0.0, 0.0, 0.0], [0.5, 0.0, 0.0], [0.5, 0.0, 1.0], [1.0, 0.0, 0.5]
 ]
+
+[colors]
+keycap = "#333333"
+switch = "#E6E6E6"
+matrix_pcb = "#008C4A"
+interface_pcb = "#6C0D5D"
+fpc_connector = "#8F8F8F"
