@@ -21,9 +21,11 @@ impl Component {
     }
 
     fn try_into_triangles(self) -> Result<Vec<Triangle<3>>, Error> {
+        const DEFLECTION_TOLERANCE: f64 = 0.01;
+
         let mut triangles = Vec::new();
 
-        let mut triangulation = BRepMesh_IncrementalMesh_ctor(&self.shape, 0.01);
+        let mut triangulation = BRepMesh_IncrementalMesh_ctor(&self.shape, DEFLECTION_TOLERANCE);
         if !triangulation.IsDone() {
             return Err(Error::Triangulation);
         }
@@ -52,12 +54,12 @@ impl Component {
                         let point = point.pin_mut();
 
                         let coords = Vector {
-                            components: [point.X().into(), point.Y().into(), point.Z().into()],
+                            components: [point.X().into(), point.Z().into(), point.Y().into()],
                         };
                         triangle_points[corner_index] = Point { coords };
                     }
 
-                    if face_orientation == TopAbs_Orientation::TopAbs_REVERSED {
+                    if face_orientation == TopAbs_Orientation::TopAbs_FORWARD {
                         triangle_points.reverse();
                     }
 
