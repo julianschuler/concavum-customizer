@@ -17,7 +17,7 @@ pub struct Model {
 impl Model {
     pub fn try_from_config(config_path: &Path) -> Result<Self, Error> {
         let config = Config::try_from_path(config_path)?;
-        let triangulation_tolerance = config.triangulation_tolerance.unwrap_or(0.001);
+        let triangulation_tolerance = config.preview.triangulation_tolerance.unwrap_or(0.001);
 
         let mut components = Vec::new();
 
