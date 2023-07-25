@@ -1,15 +1,15 @@
 mod config;
+mod helper;
+mod key;
 
 use std::path::Path;
 
 use glam::{dvec3, DQuat};
-use hex_color::HexColor;
-use opencascade::primitives::{Face, Shape, Surface};
-use opencascade_sys::ffi;
 
 use crate::viewer::model::Isometry;
 pub use crate::viewer::model::{Component, ViewableModel};
 use config::Config;
+use key::Key;
 
 pub struct Model {
     components: Vec<Component>,
@@ -19,25 +19,23 @@ pub struct Model {
 impl Model {
     pub fn try_from_config(config_path: &Path) -> Result<Self, Error> {
         let config = Config::try_from_path(config_path)?;
-        let triangulation_tolerance = config.preview.triangulation_tolerance.unwrap_or(0.001);
+        let triangulation_tolerance = config.preview.triangulation_tolerance;
 
         let mut components = Vec::new();
 
-        let surface = Surface::bezier(&[&config.points1, &config.points2]);
-        let face = Face::from_surface(&surface);
-
-        let shape = ffi::cast_face_to_shape(&face.inner);
-        let shape = Shape {
-            inner: ffi::TopoDS_Shape_to_owned(shape),
-        };
-
-        let mut component = Component::new(shape, HexColor::GREEN);
-        component.with_positions(vec![
+        let key_positions = vec![
             Isometry::IDENTITY,
-            Isometry::from_rotation_translation(DQuat::default(), dvec3(0.0, 1.5, 0.0)),
-        ]);
+            Isometry::from_rotation_translation(DQuat::default(), dvec3(19.05, 0.0, 0.0)),
+        ];
 
-        components.push(component);
+        let key = Key::new(&config, 1.0);
+        let (mut keycap, mut switch) = key.into();
+
+        keycap.with_positions(key_positions.clone());
+        switch.with_positions(key_positions);
+
+        components.push(keycap);
+        components.push(switch);
 
         Ok(Self {
             components,

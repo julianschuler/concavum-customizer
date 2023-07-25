@@ -13,6 +13,8 @@ show_keys = true
 show_interface_pcb = true
 # Show the bottom plate during preview
 show_bottom_plate = true
+# Triangulation tolerance, lower values result in higher preview fidelity
+triangulation_tolerance = 0.05
 
 
 [finger_cluster]
