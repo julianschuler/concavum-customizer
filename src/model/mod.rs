@@ -2,10 +2,12 @@ mod config;
 
 use std::path::Path;
 
+use glam::{dvec3, DQuat};
 use hex_color::HexColor;
 use opencascade::primitives::{Face, Shape, Surface};
 use opencascade_sys::ffi;
 
+use crate::viewer::model::Isometry;
 pub use crate::viewer::model::{Component, ViewableModel};
 use config::Config;
 
@@ -29,7 +31,13 @@ impl Model {
             inner: ffi::TopoDS_Shape_to_owned(shape),
         };
 
-        components.push(Component::new(shape, HexColor::GREEN));
+        let mut component = Component::new(shape, HexColor::GREEN);
+        component.with_positions(vec![
+            Isometry::IDENTITY,
+            Isometry::from_rotation_translation(DQuat::default(), dvec3(0.0, 1.5, 0.0)),
+        ]);
+
+        components.push(component);
 
         Ok(Self {
             components,
