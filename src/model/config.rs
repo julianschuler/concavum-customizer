@@ -4,6 +4,8 @@ use glam::{DVec2, DVec3};
 use hex_color::HexColor;
 use serde::Deserialize;
 
+pub const EPSILON: f64 = 0.001;
+
 #[derive(Deserialize)]
 pub struct Config {
     pub points1: Vec<DVec3>,
@@ -21,7 +23,7 @@ pub struct Preview {
     pub show_keys: bool,
     pub show_interface_pcb: bool,
     pub show_bottom_plate: bool,
-    pub triangulation_tolerance: Option<f64>,
+    pub triangulation_tolerance: f64,
 }
 
 #[derive(Deserialize)]
