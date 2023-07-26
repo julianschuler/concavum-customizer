@@ -5,7 +5,7 @@ use fj_interop::{
     model::Model,
 };
 use fj_math::{Aabb, Point, Triangle as FjTriangle};
-use glam::{DQuat, DVec3};
+use glam::{DAffine3, DVec3};
 use hex_color::HexColor;
 use opencascade::primitives::Shape;
 use opencascade_sys::ffi::{
@@ -32,51 +32,23 @@ impl Triangle {
     }
 }
 
-#[derive(Clone)]
-pub struct Isometry {
-    rotation: DQuat,
-    translation: DVec3,
-}
-
-impl Isometry {
-    pub fn from_rotation_translation(rotation: DQuat, translation: DVec3) -> Self {
-        Self {
-            rotation,
-            translation,
-        }
-    }
-
-    pub const IDENTITY: Isometry = Isometry {
-        rotation: DQuat::IDENTITY,
-        translation: DVec3::ZERO,
-    };
-}
-
-impl Mul<DVec3> for &Isometry {
-    type Output = DVec3;
-
-    fn mul(self, vec: DVec3) -> Self::Output {
-        self.rotation * vec + self.translation
-    }
-}
-
-impl Mul<&Triangle> for &Isometry {
+impl Mul<&Triangle> for &DAffine3 {
     type Output = Triangle;
 
     fn mul(self, triangle: &Triangle) -> Self::Output {
-        Triangle::new(triangle.points.map(|point| self * point))
+        Triangle::new(triangle.points.map(|point| self.transform_point3(point)))
     }
 }
 
 pub struct Mesh {
     triangles: Vec<Triangle>,
-    positions: Option<Vec<Isometry>>,
+    positions: Option<Vec<DAffine3>>,
 }
 
 pub struct Component {
     shape: Shape,
     color: HexColor,
-    positions: Option<Vec<Isometry>>,
+    positions: Option<Vec<DAffine3>>,
 }
 
 impl Component {
@@ -88,7 +60,7 @@ impl Component {
         }
     }
 
-    pub fn with_positions(&mut self, positions: Vec<Isometry>) {
+    pub fn with_positions(&mut self, positions: Vec<DAffine3>) {
         self.positions = Some(positions);
     }
 
@@ -168,7 +140,7 @@ pub trait ViewableModel {
                         positions,
                     } = component_mesh;
 
-                    let positions = positions.unwrap_or_else(|| vec![Isometry::IDENTITY]);
+                    let positions = positions.unwrap_or_else(|| vec![DAffine3::IDENTITY]);
 
                     for triangle in &triangles {
                         for position in &positions {
