@@ -4,9 +4,8 @@ mod key;
 
 use std::path::Path;
 
-use glam::{dvec3, DQuat};
+use glam::{dvec3, DAffine3, DQuat};
 
-use crate::viewer::model::Isometry;
 pub use crate::viewer::model::{Component, ViewableModel};
 use config::Config;
 use key::Key;
@@ -24,8 +23,8 @@ impl Model {
         let mut components = Vec::new();
 
         let key_positions = vec![
-            Isometry::IDENTITY,
-            Isometry::from_rotation_translation(DQuat::default(), dvec3(19.05, 0.0, 0.0)),
+            DAffine3::IDENTITY,
+            DAffine3::from_rotation_translation(DQuat::default(), dvec3(19.05, 0.0, 0.0)),
         ];
 
         let key = Key::new(&config, 1.0);
