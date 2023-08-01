@@ -1398,7 +1398,6 @@ dependencies = [
 [[package]]
 name = "occt-sys"
 version = "0.1.0"
-source = "git+https://github.com/julianschuler/opencascade-rs?branch=surface#cd14115ac5c67eee737e2eff1b02cfba88ccf493"
 dependencies = [
  "cmake",
 ]
@@ -1412,7 +1411,6 @@ checksum = "dd8b5dd2ae5ed71462c540258bedcb51965123ad7e7ccf4b9a8cafaa4a63576d"
 [[package]]
 name = "opencascade"
 version = "0.1.0"
-source = "git+https://github.com/julianschuler/opencascade-rs?branch=surface#cd14115ac5c67eee737e2eff1b02cfba88ccf493"
 dependencies = [
  "cxx",
  "glam",
@@ -1423,7 +1421,6 @@ dependencies = [
 [[package]]
 name = "opencascade-sys"
 version = "0.1.0"
-source = "git+https://github.com/julianschuler/opencascade-rs?branch=surface#cd14115ac5c67eee737e2eff1b02cfba88ccf493"
 dependencies = [
  "cmake",
  "cxx",
