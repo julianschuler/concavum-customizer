@@ -48,7 +48,7 @@ impl Window {
             self.window.viewport(),
             vec3(60.00, 50.0, 60.0), // camera position
             vec3(0.0, 0.0, 0.0),     // camera target
-            vec3(0.0, 0.0, 0.1),     // camera up
+            vec3(0.0, 0.0, 1.0),     // camera up
             degrees(45.0),
             0.1,
             1000.0,
@@ -60,6 +60,7 @@ impl Window {
         let light2 = DirectionalLight::new(&context, 1.0, Color::WHITE, &vec3(0.0, 0.5, 0.5));
 
         self.window.render_loop(move |mut frame_input| {
+            camera.set_viewport(frame_input.viewport);
             control.handle_events(&mut camera, &mut frame_input.events);
 
             for event in frame_input.events.iter() {
