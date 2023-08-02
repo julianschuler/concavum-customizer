@@ -14,8 +14,9 @@ show_interface_pcb = true
 # Show the bottom plate during preview
 show_bottom_plate = true
 # Triangulation tolerance, lower values result in higher preview fidelity
-triangulation_tolerance = 0.05
-
+triangulation_tolerance = 0.1
+# Light directions, will be hardcoded at a later stage
+light_directions = [[0.0, 0.6, 0.1]]
 
 [finger_cluster]
 # Amount of rows, automatic PCB generation is supported for 1 to 5 rows

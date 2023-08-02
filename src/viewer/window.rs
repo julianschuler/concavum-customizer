@@ -2,9 +2,9 @@ use std::sync::Arc;
 
 use color_eyre::Report;
 use three_d::{
-    degrees, vec3, Camera, ClearState, Color, Context, CpuMaterial, DirectionalLight, Event,
-    FrameOutput, Gm, InnerSpace, InstancedMesh, Instances, Light, Mesh, MetricSpace, MouseButton,
-    OrbitControl, PhysicalMaterial, RenderTarget, WindowError, WindowSettings,
+    degrees, vec3, AmbientLight, Camera, ClearState, Color, Context, CpuMaterial, Degrees,
+    DirectionalLight, Event, FrameOutput, Gm, InnerSpace, InstancedMesh, Instances, Light, Mesh,
+    MouseButton, OrbitControl, PhysicalMaterial, RenderTarget, Vec3, WindowError, WindowSettings,
 };
 use winit::event_loop::{EventLoopBuilder, EventLoopProxy};
 
@@ -42,22 +42,23 @@ impl Window {
     }
 
     pub fn run_render_loop(self) {
+        const DEFAULT_DISTANCE: f32 = 300.0;
+        const DEFAULT_FOV: Degrees = degrees(22.5);
+        const DEFAULT_TARGET: Vec3 = vec3(0.0, 0.0, 0.0);
+
         let context = self.window.gl();
 
         let mut camera = Camera::new_perspective(
             self.window.viewport(),
-            vec3(60.00, 50.0, 60.0), // camera position
-            vec3(0.0, 0.0, 0.0),     // camera target
-            vec3(0.0, 0.0, 1.0),     // camera up
-            degrees(45.0),
-            0.1,
+            vec3(-0.3, 1.0, 1.0).normalize_to(DEFAULT_DISTANCE),
+            DEFAULT_TARGET, // camera target
+            Vec3::unit_z(), // camera up
+            DEFAULT_FOV,
+            1.0,
             1000.0,
         );
-        let mut control = OrbitControl::new(vec3(0.0, 0.0, 0.0), 1.0, 1000.0);
+        let mut control = OrbitControl::new(DEFAULT_TARGET, 1.0, 1000.0);
         let mut scene = Scene::default();
-
-        let light1 = DirectionalLight::new(&context, 1.0, Color::WHITE, &vec3(0.0, -0.5, -0.5));
-        let light2 = DirectionalLight::new(&context, 1.0, Color::WHITE, &vec3(0.0, 0.5, 0.5));
 
         self.window.render_loop(move |mut frame_input| {
             camera.set_viewport(frame_input.viewport);
@@ -65,7 +66,7 @@ impl Window {
             scene.handle_events(&mut camera, &mut frame_input.events, &context);
 
             let screen = frame_input.screen();
-            scene.render(&camera, &[&light1, &light2], &screen);
+            scene.render(&camera, &screen);
 
             FrameOutput::default()
         })
@@ -76,6 +77,8 @@ impl Window {
 struct Scene {
     objects: Vec<Gm<Mesh, PhysicalMaterial>>,
     instanced_objects: Vec<Gm<InstancedMesh, PhysicalMaterial>>,
+    lights: Vec<DirectionalLight>,
+    ambient: AmbientLight,
     background_color: Color,
 }
 
@@ -107,9 +110,18 @@ impl Scene {
             }
         }
 
+        let ambient = AmbientLight::new(&context, 0.05, Color::WHITE);
+        let lights = model
+            .light_directions
+            .iter()
+            .map(|direction| DirectionalLight::new(&context, 1.0, Color::WHITE, &direction))
+            .collect();
+
         Scene {
             objects,
             instanced_objects,
+            lights,
+            ambient,
             background_color: model.background_color,
         }
     }
@@ -127,7 +139,7 @@ impl Scene {
                         let right = camera.right_direction().normalize();
                         let up = right.cross(camera.view_direction());
                         let translation = -delta.0 as f32 * right + delta.1 as f32 * up;
-                        let speed = 0.001 * camera.position().distance(vec3(0.0, 0.0, 0.0));
+                        let speed = 0.001 * camera.position().magnitude();
 
                         camera.translate(&(speed * translation));
                     }
@@ -141,11 +153,18 @@ impl Scene {
         }
     }
 
-    fn render(&self, camera: &Camera, lights: &[&dyn Light], screen: &RenderTarget) {
+    fn render(&self, camera: &Camera, screen: &RenderTarget) {
         let [r, g, b, a] = self.background_color.to_rgba_slice();
 
+        let mut lights: Vec<_> = self
+            .lights
+            .iter()
+            .map(|light| light as &dyn Light)
+            .collect();
+        lights.push(&self.ambient as &dyn Light);
+
         screen.clear(ClearState::color_and_depth(r, g, b, a, 1.0));
-        screen.render(&camera, &self.objects, lights);
-        screen.render(&camera, &self.instanced_objects, lights);
+        screen.render(&camera, &self.objects, &lights);
+        screen.render(&camera, &self.instanced_objects, &lights);
     }
 }

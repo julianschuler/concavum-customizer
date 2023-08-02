@@ -24,6 +24,7 @@ pub struct Preview {
     pub show_interface_pcb: bool,
     pub show_bottom_plate: bool,
     pub triangulation_tolerance: f64,
+    pub light_directions: Vec<DVec3>,
 }
 
 #[derive(Deserialize)]

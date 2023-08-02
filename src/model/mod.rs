@@ -4,7 +4,7 @@ mod key;
 
 use std::path::Path;
 
-use glam::{dvec3, DAffine3, DQuat};
+use glam::{dvec3, DAffine3, DQuat, DVec3};
 use hex_color::HexColor;
 
 pub use crate::viewer::model::{Component, ViewableModel};
@@ -13,6 +13,7 @@ use key::Key;
 
 pub struct Model {
     components: Vec<Component>,
+    light_directions: Vec<DVec3>,
     background_color: HexColor,
     triangulation_tolerance: f64,
 }
@@ -39,6 +40,7 @@ impl Model {
 
         Ok(Self {
             components,
+            light_directions: config.preview.light_directions,
             background_color: config.colors.background,
             triangulation_tolerance: config.preview.triangulation_tolerance,
         })
@@ -48,6 +50,10 @@ impl Model {
 impl ViewableModel for Model {
     fn components(self) -> Vec<Component> {
         self.components
+    }
+
+    fn light_directions(&self) -> Vec<DVec3> {
+        self.light_directions.clone()
     }
 
     fn background_color(&self) -> HexColor {
