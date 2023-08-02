@@ -269,7 +269,6 @@ dependencies = [
  "hex_color",
  "notify",
  "opencascade",
- "opencascade-sys",
  "serde",
  "thiserror",
  "three-d",
@@ -1159,7 +1158,9 @@ dependencies = [
 
 [[package]]
 name = "occt-sys"
-version = "0.1.0"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7acaa7d857f483c1d7c5c9391e470b990f6e52fa5f2d4353eeee6be208390899"
 dependencies = [
  "cmake",
 ]

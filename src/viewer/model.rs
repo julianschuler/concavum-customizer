@@ -1,12 +1,7 @@
 use glam::{DAffine3, DMat4};
 use hex_color::HexColor;
-use opencascade::primitives::Shape;
-use opencascade_sys::ffi::{
-    BRepMesh_IncrementalMesh_ctor, BRep_Tool_Triangulation, Handle_Poly_Triangulation_Get,
-    Poly_Triangulation_Node, TopAbs_Orientation, TopAbs_ShapeEnum, TopExp_Explorer_ctor,
-    TopLoc_Location_ctor, TopoDS_cast_to_face,
-};
-use three_d::{Color, CpuMesh, Mat4, Positions, Vector3};
+use opencascade::primitives::{Mesh, Shape};
+use three_d::{Color, CpuMesh, Indices, Mat4, Positions};
 
 pub struct Component {
     shape: Shape,
@@ -27,56 +22,31 @@ impl Component {
         self.positions = Some(positions);
     }
 
-    fn mesh(&self, deflection_tolerance: f64) -> Result<CpuMesh, Error> {
-        let mut vertices = Vec::new();
+    fn mesh(&self, _triangulation_tolerance: f64) -> Result<CpuMesh, Error> {
+        let Mesh {
+            vertices,
+            normals,
+            indices,
+            ..
+        } = self.shape.mesh();
 
-        let mut triangulation =
-            BRepMesh_IncrementalMesh_ctor(&self.shape.inner, deflection_tolerance);
-        if !triangulation.IsDone() {
-            return Err(Error::Triangulation);
-        }
-
-        let mut face_explorer = TopExp_Explorer_ctor(
-            triangulation.pin_mut().Shape(),
-            TopAbs_ShapeEnum::TopAbs_FACE,
-        );
-        while face_explorer.More() {
-            let mut location = TopLoc_Location_ctor();
-            let face = TopoDS_cast_to_face(face_explorer.Current());
-            let face_orientation = face.Orientation();
-
-            let triangulation_handle = BRep_Tool_Triangulation(face, location.pin_mut());
-            if let Ok(triangulation) = Handle_Poly_Triangulation_Get(&triangulation_handle) {
-                for index in 0..triangulation.NbTriangles() {
-                    let mut triangle_points = [Vector3::new(0.0, 0.0, 0.0); 3];
-
-                    let triangle = triangulation.Triangle(index + 1);
-
-                    for corner_index in 0..3 {
-                        let mut point = Poly_Triangulation_Node(
-                            triangulation,
-                            triangle.Value(corner_index as i32 + 1),
-                        );
-                        let point = point.pin_mut();
-                        let point =
-                            Vector3::new(point.X() as f32, point.Y() as f32, point.Z() as f32);
-
-                        triangle_points[corner_index] = point;
-                    }
-
-                    if face_orientation == TopAbs_Orientation::TopAbs_FORWARD {
-                        triangle_points.reverse();
-                    }
-
-                    vertices.extend(triangle_points);
-                }
-            }
-
-            face_explorer.pin_mut().Next();
-        }
+        let vertices = vertices
+            .iter()
+            .map(|vertex| vertex.as_vec3().to_array().into())
+            .collect();
+        let indices = indices
+            .iter()
+            .map(|index| (*index).try_into().expect("index does not fit in u32"))
+            .collect();
+        let normals = normals
+            .iter()
+            .map(|vertex| vertex.as_vec3().to_array().into())
+            .collect();
 
         Ok(CpuMesh {
             positions: Positions::F32(vertices),
+            indices: Indices::U32(indices),
+            normals: Some(normals),
             ..Default::default()
         })
     }
@@ -142,5 +112,6 @@ pub struct MeshModel {
 pub enum Error {
     /// Triangulation using BRepMesh_IncrementalMesh_ctor failed
     #[error("Triangulation using BRepMesh_IncrementalMesh_ctor failed")]
+    #[allow(unused)]
     Triangulation,
 }
