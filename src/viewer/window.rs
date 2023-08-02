@@ -2,8 +2,9 @@ use std::sync::Arc;
 
 use color_eyre::Report;
 use three_d::{
-    degrees, vec3, Camera, Color, CpuMaterial, DirectionalLight, Event::UserEvent, FrameOutput, Gm,
-    InstancedMesh, Instances, Mesh, OrbitControl, PhysicalMaterial, WindowError, WindowSettings,
+    degrees, vec3, Camera, ClearState, Color, CpuMaterial, DirectionalLight, Event::UserEvent,
+    FrameOutput, Gm, InstancedMesh, Instances, Mesh, OrbitControl, PhysicalMaterial, WindowError,
+    WindowSettings,
 };
 use winit::event_loop::{EventLoopBuilder, EventLoopProxy};
 
@@ -100,6 +101,8 @@ impl Window {
                     }
                 }
             }
+
+            screen.clear(ClearState::color_and_depth(0.8, 0.8, 0.8, 1.0, 1.0));
 
             screen.render(&camera, &self.objects, &[&light1, &light2]);
             screen.render(&camera, &self.instanced_objects, &[&light1, &light2]);

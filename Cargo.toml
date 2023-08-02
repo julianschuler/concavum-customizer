@@ -10,7 +10,6 @@ glam = { version = "0.23", features = ["serde"] }
 hex_color = { version = "2.0.0", features = ["serde"] }
 notify = "6.0.1"
 opencascade = { path = "../opencascade-rs/crates/opencascade" }
-opencascade-sys = { path = "../opencascade-rs/crates/opencascade-sys" }
 serde = { version = "1.0.174", features = ["derive"] }
 thiserror = "1.0.43"
 three-d = { version = "0.15.0", features = ["egui-gui"] }
