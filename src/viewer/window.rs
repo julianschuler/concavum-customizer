@@ -2,9 +2,9 @@ use std::sync::Arc;
 
 use color_eyre::Report;
 use three_d::{
-    degrees, vec3, Camera, ClearState, Color, CpuMaterial, DirectionalLight, Event::UserEvent,
-    FrameOutput, Gm, InstancedMesh, Instances, Mesh, OrbitControl, PhysicalMaterial, WindowError,
-    WindowSettings,
+    degrees, vec3, Camera, ClearState, Color, Context, CpuMaterial, DirectionalLight,
+    Event::UserEvent, FrameOutput, Gm, InstancedMesh, Instances, Light, Mesh, OrbitControl,
+    PhysicalMaterial, RenderTarget, WindowError, WindowSettings,
 };
 use winit::event_loop::{EventLoopBuilder, EventLoopProxy};
 
@@ -17,8 +17,6 @@ pub type ModelUpdate = Result<MeshModel, Arc<Error>>;
 pub struct Window {
     window: three_d::Window<ModelUpdate>,
     event_loop_proxy: EventLoopProxy<ModelUpdate>,
-    objects: Vec<Gm<Mesh, PhysicalMaterial>>,
-    instanced_objects: Vec<Gm<InstancedMesh, PhysicalMaterial>>,
 }
 
 impl Window {
@@ -36,8 +34,6 @@ impl Window {
         Ok(Self {
             window,
             event_loop_proxy,
-            objects: Vec::new(),
-            instanced_objects: Vec::new(),
         })
     }
 
@@ -45,7 +41,7 @@ impl Window {
         self.event_loop_proxy.clone()
     }
 
-    pub fn run_render_loop(mut self) {
+    pub fn run_render_loop(self) {
         let context = self.window.gl();
 
         let mut camera = Camera::new_perspective(
@@ -58,6 +54,7 @@ impl Window {
             1000.0,
         );
         let mut control = OrbitControl::new(vec3(0.0, 0.0, 0.0), 1.0, 1000.0);
+        let mut scene = Scene::default();
 
         let light1 = DirectionalLight::new(&context, 1.0, Color::WHITE, &vec3(0.0, -0.5, -0.5));
         let light2 = DirectionalLight::new(&context, 1.0, Color::WHITE, &vec3(0.0, 0.5, 0.5));
@@ -65,49 +62,70 @@ impl Window {
         self.window.render_loop(move |mut frame_input| {
             control.handle_events(&mut camera, &mut frame_input.events);
 
-            let screen = frame_input.screen();
-
             for event in frame_input.events.iter() {
                 if let UserEvent(model_update) = event {
                     match model_update {
-                        Ok(model) => {
-                            self.objects.clear();
-                            self.instanced_objects.clear();
-
-                            for object in model.objects.iter() {
-                                let material = &CpuMaterial {
-                                    albedo: object.color,
-                                    ..Default::default()
-                                };
-                                let material = PhysicalMaterial::new(&context, &material);
-
-                                if let Some(transformations) = &object.transformations {
-                                    let mesh = InstancedMesh::new(
-                                        &context,
-                                        &Instances {
-                                            transformations: transformations.to_owned(),
-                                            ..Default::default()
-                                        },
-                                        &object.mesh,
-                                    );
-                                    self.instanced_objects.push(Gm::new(mesh, material));
-                                } else {
-                                    let mesh = Mesh::new(&context, &object.mesh);
-                                    self.objects.push(Gm::new(mesh, material));
-                                }
-                            }
-                        }
+                        Ok(model) => scene = Scene::from_mesh_model(&context, model),
                         Err(err) => eprintln!("Error:{:?}", Report::from(err.to_owned())),
                     }
                 }
             }
 
-            screen.clear(ClearState::color_and_depth(0.8, 0.8, 0.8, 1.0, 1.0));
-
-            screen.render(&camera, &self.objects, &[&light1, &light2]);
-            screen.render(&camera, &self.instanced_objects, &[&light1, &light2]);
+            let screen = frame_input.screen();
+            scene.render(&camera, &[&light1, &light2], &screen);
 
             FrameOutput::default()
         })
+    }
+}
+
+#[derive(Default)]
+struct Scene {
+    objects: Vec<Gm<Mesh, PhysicalMaterial>>,
+    instanced_objects: Vec<Gm<InstancedMesh, PhysicalMaterial>>,
+    background_color: Color,
+}
+
+impl Scene {
+    fn from_mesh_model(context: &Context, model: &MeshModel) -> Scene {
+        let mut objects = Vec::new();
+        let mut instanced_objects = Vec::new();
+
+        for object in model.objects.iter() {
+            let material = &CpuMaterial {
+                albedo: object.color,
+                ..Default::default()
+            };
+            let material = PhysicalMaterial::new(context, &material);
+
+            if let Some(transformations) = &object.transformations {
+                let mesh = InstancedMesh::new(
+                    context,
+                    &Instances {
+                        transformations: transformations.to_owned(),
+                        ..Default::default()
+                    },
+                    &object.mesh,
+                );
+                instanced_objects.push(Gm::new(mesh, material));
+            } else {
+                let mesh = Mesh::new(context, &object.mesh);
+                objects.push(Gm::new(mesh, material));
+            }
+        }
+
+        Scene {
+            objects,
+            instanced_objects,
+            background_color: Color::default(),
+        }
+    }
+
+    fn render(&self, camera: &Camera, lights: &[&dyn Light], screen: &RenderTarget) {
+        let [r, g, b, a] = self.background_color.to_rgba_slice();
+
+        screen.clear(ClearState::color_and_depth(r, g, b, a, 1.0));
+        screen.render(&camera, &self.objects, lights);
+        screen.render(&camera, &self.instanced_objects, lights);
     }
 }
