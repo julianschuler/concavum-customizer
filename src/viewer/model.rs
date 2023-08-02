@@ -22,13 +22,13 @@ impl Component {
         self.positions = Some(positions);
     }
 
-    fn mesh(&self, _triangulation_tolerance: f64) -> Result<CpuMesh, Error> {
+    fn mesh(&self, triangulation_tolerance: f64) -> Result<CpuMesh, Error> {
         let Mesh {
             vertices,
             normals,
             indices,
             ..
-        } = self.shape.mesh();
+        } = self.shape.mesh_with_tolerance(triangulation_tolerance);
 
         let vertices = vertices
             .iter()
@@ -53,15 +53,17 @@ impl Component {
 }
 
 pub trait ViewableModel {
-    fn triangulation_tolerance(&self) -> f64;
-
     fn components(self) -> Vec<Component>;
+    fn background_color(&self) -> HexColor;
+    fn triangulation_tolerance(&self) -> f64;
 
     fn into_mesh_model(self) -> MeshModel
     where
         Self: Sized,
     {
         let triangulation_tolerance = self.triangulation_tolerance();
+        let HexColor { r, g, b, a } = self.background_color();
+        let background_color = Color::new(r, g, b, a);
 
         let mut objects = Vec::new();
 
@@ -92,7 +94,10 @@ pub trait ViewableModel {
             }
         }
 
-        MeshModel { objects }
+        MeshModel {
+            objects,
+            background_color,
+        }
     }
 }
 
@@ -106,6 +111,7 @@ pub struct CpuObject {
 #[derive(Clone)]
 pub struct MeshModel {
     pub objects: Vec<CpuObject>,
+    pub background_color: Color,
 }
 
 #[derive(Debug, thiserror::Error)]

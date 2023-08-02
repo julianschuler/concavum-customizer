@@ -61,6 +61,7 @@ pub struct Colors {
     pub matrix_pcb: HexColor,
     pub interface_pcb: HexColor,
     pub fpc_connector: HexColor,
+    pub background: HexColor,
 }
 
 impl Config {

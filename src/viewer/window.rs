@@ -117,7 +117,7 @@ impl Scene {
         Scene {
             objects,
             instanced_objects,
-            background_color: Color::default(),
+            background_color: model.background_color,
         }
     }
 
