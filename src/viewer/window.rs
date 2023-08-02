@@ -2,9 +2,9 @@ use std::sync::Arc;
 
 use color_eyre::Report;
 use three_d::{
-    degrees, vec3, Camera, ClearState, Color, Context, CpuMaterial, DirectionalLight,
-    Event::UserEvent, FrameOutput, Gm, InstancedMesh, Instances, Light, Mesh, OrbitControl,
-    PhysicalMaterial, RenderTarget, WindowError, WindowSettings,
+    degrees, vec3, Camera, ClearState, Color, Context, CpuMaterial, DirectionalLight, Event,
+    FrameOutput, Gm, InnerSpace, InstancedMesh, Instances, Light, Mesh, MetricSpace, MouseButton,
+    OrbitControl, PhysicalMaterial, RenderTarget, WindowError, WindowSettings,
 };
 use winit::event_loop::{EventLoopBuilder, EventLoopProxy};
 
@@ -62,15 +62,7 @@ impl Window {
         self.window.render_loop(move |mut frame_input| {
             camera.set_viewport(frame_input.viewport);
             control.handle_events(&mut camera, &mut frame_input.events);
-
-            for event in frame_input.events.iter() {
-                if let UserEvent(model_update) = event {
-                    match model_update {
-                        Ok(model) => scene = Scene::from_mesh_model(&context, model),
-                        Err(err) => eprintln!("Error:{:?}", Report::from(err.to_owned())),
-                    }
-                }
-            }
+            scene.handle_events(&mut camera, &mut frame_input.events, &context);
 
             let screen = frame_input.screen();
             scene.render(&camera, &[&light1, &light2], &screen);
@@ -119,6 +111,33 @@ impl Scene {
             objects,
             instanced_objects,
             background_color: model.background_color,
+        }
+    }
+
+    fn handle_events(
+        &mut self,
+        camera: &mut Camera,
+        events: &mut [Event<ModelUpdate>],
+        context: &Context,
+    ) {
+        for event in events {
+            match event {
+                Event::MouseMotion { button, delta, .. } => {
+                    if *button == Some(MouseButton::Right) {
+                        let right = camera.right_direction().normalize();
+                        let up = right.cross(camera.view_direction());
+                        let translation = -delta.0 as f32 * right + delta.1 as f32 * up;
+                        let speed = 0.001 * camera.position().distance(vec3(0.0, 0.0, 0.0));
+
+                        camera.translate(&(speed * translation));
+                    }
+                }
+                Event::UserEvent(model_update) => match model_update {
+                    Ok(model) => *self = Scene::from_mesh_model(&context, model),
+                    Err(err) => eprintln!("Error:{:?}", Report::from(err.to_owned())),
+                },
+                _ => (),
+            }
         }
     }
 
