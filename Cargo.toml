@@ -5,9 +5,6 @@ edition = "2021"
 
 [dependencies]
 color-eyre = { version = "0.6.2", default-features = false }
-fj-interop = "0.47.0"
-fj-math = "0.47.0"
-fj-viewer = "0.47.0"
 futures = "0.3.28"
 glam = { version = "0.23", features = ["serde"] }
 hex_color = { version = "2.0.0", features = ["serde"] }
@@ -16,5 +13,6 @@ opencascade = { path = "../opencascade-rs/crates/opencascade" }
 opencascade-sys = { path = "../opencascade-rs/crates/opencascade-sys" }
 serde = { version = "1.0.174", features = ["derive"] }
 thiserror = "1.0.43"
+three-d = { version = "0.15.0", features = ["egui-gui"] }
 toml = "0.7.6"
 winit = "0.28.6"

@@ -18,7 +18,7 @@ fn main() -> Result<()> {
         .wrap_err("Failed to initialize file watcher")?;
     let _watcher = reloader.watch().wrap_err("Failed to watch file")?;
 
-    window.run_event_loop()?;
+    window.run_render_loop();
 
     Ok(())
 }
