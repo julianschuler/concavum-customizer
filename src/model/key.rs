@@ -43,24 +43,21 @@ impl KeyCap {
         const TOP_WIDTH: f64 = 12.0;
         const TOP_FILLET: f64 = 2.0;
         const HEIGHT: f64 = 7.0;
-        const Z_OFFEST: f64 = Switch::TOP_HEIGHT;
 
         let bottom_length = KEYCAP_PITCH * size_u - (KEYCAP_PITCH - BOTTOM_WIDTH);
         let mid_length = KEYCAP_PITCH * size_u - (KEYCAP_PITCH - MIDDLE_WIDTH);
         let top_length = KEYCAP_PITCH * size_u - (KEYCAP_PITCH - TOP_WIDTH);
 
-        let mut bottom = Workplane::xy()
-            .translated(zvec(Z_OFFEST))
-            .rect(bottom_length, BOTTOM_WIDTH);
+        let mut bottom = Workplane::xy().rect(bottom_length, BOTTOM_WIDTH);
         bottom.fillet(BOTTOM_FILLET);
 
         let mut middle = Workplane::xy()
-            .translated(zvec(Z_OFFEST + HEIGHT / 2.0))
+            .translated(zvec(HEIGHT / 2.0))
             .rect(MIDDLE_WIDTH, mid_length);
         middle.fillet((TOP_FILLET + BOTTOM_FILLET) / 2.0);
 
         let mut top = Workplane::xy()
-            .translated(zvec(Z_OFFEST + HEIGHT))
+            .translated(zvec(HEIGHT))
             .rect(TOP_WIDTH, top_length);
         top.fillet(TOP_FILLET);
 
