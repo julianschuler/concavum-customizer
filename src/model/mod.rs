@@ -5,6 +5,7 @@ mod key;
 use std::path::Path;
 
 use glam::{dvec3, DAffine3, DQuat};
+use hex_color::HexColor;
 
 pub use crate::viewer::model::{Component, ViewableModel};
 use config::Config;
@@ -12,13 +13,13 @@ use key::Key;
 
 pub struct Model {
     components: Vec<Component>,
+    background_color: HexColor,
     triangulation_tolerance: f64,
 }
 
 impl Model {
     pub fn try_from_config(config_path: &Path) -> Result<Self, Error> {
         let config = Config::try_from_path(config_path)?;
-        let triangulation_tolerance = config.preview.triangulation_tolerance;
 
         let mut components = Vec::new();
 
@@ -38,18 +39,23 @@ impl Model {
 
         Ok(Self {
             components,
-            triangulation_tolerance,
+            background_color: config.colors.background,
+            triangulation_tolerance: config.preview.triangulation_tolerance,
         })
     }
 }
 
 impl ViewableModel for Model {
-    fn triangulation_tolerance(&self) -> f64 {
-        self.triangulation_tolerance
-    }
-
     fn components(self) -> Vec<Component> {
         self.components
+    }
+
+    fn background_color(&self) -> HexColor {
+        self.background_color
+    }
+
+    fn triangulation_tolerance(&self) -> f64 {
+        self.triangulation_tolerance
     }
 }
 
