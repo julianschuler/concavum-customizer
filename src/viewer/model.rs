@@ -1,11 +1,4 @@
-use std::ops::Mul;
-
-use fj_interop::{
-    mesh::{Color, Mesh as FjMesh},
-    model::Model,
-};
-use fj_math::{Aabb, Point, Triangle as FjTriangle};
-use glam::{DAffine3, DVec3};
+use glam::{DAffine3, DMat4};
 use hex_color::HexColor;
 use opencascade::primitives::Shape;
 use opencascade_sys::ffi::{
@@ -13,37 +6,7 @@ use opencascade_sys::ffi::{
     Poly_Triangulation_Node, TopAbs_Orientation, TopAbs_ShapeEnum, TopExp_Explorer_ctor,
     TopLoc_Location_ctor, TopoDS_cast_to_face,
 };
-
-pub struct Triangle {
-    points: [DVec3; 3],
-}
-
-impl Triangle {
-    pub fn new(points: [DVec3; 3]) -> Self {
-        Self { points }
-    }
-
-    pub fn try_into_triangle(self) -> Option<FjTriangle<3>> {
-        let points = self
-            .points
-            .map(|point| Point::from_array([point.x, point.z, point.y]));
-
-        FjTriangle::from_points(points).ok()
-    }
-}
-
-impl Mul<&Triangle> for &DAffine3 {
-    type Output = Triangle;
-
-    fn mul(self, triangle: &Triangle) -> Self::Output {
-        Triangle::new(triangle.points.map(|point| self.transform_point3(point)))
-    }
-}
-
-pub struct Mesh {
-    triangles: Vec<Triangle>,
-    positions: Option<Vec<DAffine3>>,
-}
+use three_d::{Color, CpuMesh, Mat4, Positions, Vector3};
 
 pub struct Component {
     shape: Shape,
@@ -64,8 +27,8 @@ impl Component {
         self.positions = Some(positions);
     }
 
-    fn try_into_mesh(self, deflection_tolerance: f64) -> Result<Mesh, Error> {
-        let mut triangles = Vec::new();
+    fn mesh(&self, deflection_tolerance: f64) -> Result<CpuMesh, Error> {
+        let mut vertices = Vec::new();
 
         let mut triangulation =
             BRepMesh_IncrementalMesh_ctor(&self.shape.inner, deflection_tolerance);
@@ -85,7 +48,7 @@ impl Component {
             let triangulation_handle = BRep_Tool_Triangulation(face, location.pin_mut());
             if let Ok(triangulation) = Handle_Poly_Triangulation_Get(&triangulation_handle) {
                 for index in 0..triangulation.NbTriangles() {
-                    let mut triangle_points = [DVec3::default(); 3];
+                    let mut triangle_points = [Vector3::new(0.0, 0.0, 0.0); 3];
 
                     let triangle = triangulation.Triangle(index + 1);
 
@@ -95,7 +58,8 @@ impl Component {
                             triangle.Value(corner_index as i32 + 1),
                         );
                         let point = point.pin_mut();
-                        let point = DVec3::from_array([point.X(), point.Y(), point.Z()]);
+                        let point =
+                            Vector3::new(point.X() as f32, point.Y() as f32, point.Z() as f32);
 
                         triangle_points[corner_index] = point;
                     }
@@ -104,16 +68,16 @@ impl Component {
                         triangle_points.reverse();
                     }
 
-                    triangles.push(Triangle::new(triangle_points));
+                    vertices.extend(triangle_points);
                 }
             }
 
             face_explorer.pin_mut().Next();
         }
 
-        Ok(Mesh {
-            triangles,
-            positions: self.positions,
+        Ok(CpuMesh {
+            positions: Positions::F32(vertices),
+            ..Default::default()
         })
     }
 }
@@ -123,32 +87,34 @@ pub trait ViewableModel {
 
     fn components(self) -> Vec<Component>;
 
-    fn into_mesh_model(self) -> Model
+    fn into_mesh_model(self) -> MeshModel
     where
         Self: Sized,
     {
         let triangulation_tolerance = self.triangulation_tolerance();
-        let mut mesh = FjMesh::new();
+
+        let mut objects = Vec::new();
 
         for component in self.components() {
-            let color = Color(component.color.to_be_bytes());
+            match component.mesh(triangulation_tolerance) {
+                Ok(mesh) => {
+                    let HexColor { r, g, b, a } = component.color;
+                    let color = Color::new(r, g, b, a);
+                    let transformations = component.positions.map(|positions| {
+                        positions
+                            .into_iter()
+                            .map(|position| {
+                                let matrix: DMat4 = position.into();
+                                matrix.as_mat4().to_cols_array_2d().into()
+                            })
+                            .collect()
+                    });
 
-            match component.try_into_mesh(triangulation_tolerance) {
-                Ok(component_mesh) => {
-                    let Mesh {
-                        triangles,
-                        positions,
-                    } = component_mesh;
-
-                    let positions = positions.unwrap_or_else(|| vec![DAffine3::IDENTITY]);
-
-                    for triangle in &triangles {
-                        for position in &positions {
-                            if let Some(triangle) = (position * triangle).try_into_triangle() {
-                                mesh.push_triangle(triangle, color);
-                            }
-                        }
-                    }
+                    objects.push(CpuObject {
+                        mesh,
+                        color,
+                        transformations,
+                    });
                 }
                 Err(_) => {
                     eprintln!("Warning: Could not triangulate component, ignoring it");
@@ -156,10 +122,20 @@ pub trait ViewableModel {
             }
         }
 
-        let aabb = Aabb::<3>::from_points(mesh.vertices());
-
-        Model { mesh, aabb }
+        MeshModel { objects }
     }
+}
+
+#[derive(Clone)]
+pub struct CpuObject {
+    pub mesh: CpuMesh,
+    pub color: Color,
+    pub transformations: Option<Vec<Mat4>>,
+}
+
+#[derive(Clone)]
+pub struct MeshModel {
+    pub objects: Vec<CpuObject>,
 }
 
 #[derive(Debug, thiserror::Error)]

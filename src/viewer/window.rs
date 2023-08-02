@@ -1,240 +1,110 @@
-use color_eyre::eyre::Report;
-use fj_interop::model::Model;
-use fj_viewer::{
-    InputEvent, NormalizedScreenPosition, RendererInitError, Screen, ScreenSize, Viewer,
-};
-use futures::executor::block_on;
-use winit::{
-    dpi::{PhysicalPosition, PhysicalSize},
-    event::{
-        ElementState, Event, KeyboardInput, MouseButton, MouseScrollDelta, VirtualKeyCode,
-        WindowEvent,
-    },
-    event_loop::{ControlFlow, EventLoop, EventLoopBuilder, EventLoopProxy},
-    window::WindowBuilder,
-};
+use std::sync::Arc;
 
-use crate::model;
+use color_eyre::Report;
+use three_d::{
+    degrees, vec3, Camera, Color, CpuMaterial, DirectionalLight, Event::UserEvent, FrameOutput, Gm,
+    InstancedMesh, Instances, Mesh, OrbitControl, PhysicalMaterial, WindowError, WindowSettings,
+};
+use winit::event_loop::{EventLoopBuilder, EventLoopProxy};
+
+use crate::model::Error;
+
+use super::model::MeshModel;
+
+pub type ModelUpdate = Result<MeshModel, Arc<Error>>;
 
 pub struct Window {
-    window: winit::window::Window,
-    event_loop: EventLoop<Result<Model, model::Error>>,
+    window: three_d::Window<ModelUpdate>,
+    event_loop_proxy: EventLoopProxy<ModelUpdate>,
+    objects: Vec<Gm<Mesh, PhysicalMaterial>>,
+    instanced_objects: Vec<Gm<InstancedMesh, PhysicalMaterial>>,
 }
 
 impl Window {
-    pub fn try_new() -> Result<Self, Error> {
+    pub fn try_new() -> Result<Self, WindowError> {
         let event_loop = EventLoopBuilder::with_user_event().build();
-        let window = WindowBuilder::new()
-            .with_title("Concavum customizer")
-            .with_decorations(false)
-            .with_transparent(false)
-            .build(&event_loop)?;
+        let event_loop_proxy = event_loop.create_proxy();
+        let window = three_d::Window::from_event_loop(
+            WindowSettings {
+                title: "Concavum customizer".to_owned(),
+                ..Default::default()
+            },
+            event_loop,
+        )?;
 
-        Ok(Self { window, event_loop })
+        Ok(Self {
+            window,
+            event_loop_proxy,
+            objects: Vec::new(),
+            instanced_objects: Vec::new(),
+        })
     }
 
-    pub fn event_loop_proxy(&self) -> EventLoopProxy<Result<Model, model::Error>> {
-        self.event_loop.create_proxy()
+    pub fn event_loop_proxy(&self) -> EventLoopProxy<ModelUpdate> {
+        self.event_loop_proxy.clone()
     }
 
-    pub fn run_event_loop(self) -> Result<(), Error> {
-        let mut viewer = block_on(Viewer::new(&self))?;
+    pub fn run_render_loop(mut self) {
+        let context = self.window.gl();
 
-        let mut held_mouse_button = None;
-        let mut new_size = None;
-        let mut stop_drawing = false;
+        let mut camera = Camera::new_perspective(
+            self.window.viewport(),
+            vec3(60.00, 50.0, 60.0), // camera position
+            vec3(0.0, 0.0, 0.0),     // camera target
+            vec3(0.0, 0.0, 0.1),     // camera up
+            degrees(45.0),
+            0.1,
+            1000.0,
+        );
+        let mut control = OrbitControl::new(vec3(0.0, 0.0, 0.0), 1.0, 1000.0);
 
-        let Window { window, event_loop } = self;
+        let light1 = DirectionalLight::new(&context, 1.0, Color::WHITE, &vec3(0.0, -0.5, -0.5));
+        let light2 = DirectionalLight::new(&context, 1.0, Color::WHITE, &vec3(0.0, 0.5, 0.5));
 
-        event_loop.run(move |event, _, control_flow| {
-            let input_event = input_event(
-                &event,
-                &window.inner_size(),
-                &held_mouse_button,
-                viewer.cursor(),
-            );
-            if let Some(input_event) = input_event {
-                viewer.handle_input_event(input_event);
-            }
+        self.window.render_loop(move |mut frame_input| {
+            control.handle_events(&mut camera, &mut frame_input.events);
 
-            match event {
-                Event::WindowEvent {
-                    event: WindowEvent::CloseRequested,
-                    ..
-                } => {
-                    *control_flow = ControlFlow::Exit;
-                }
-                Event::WindowEvent {
-                    event:
-                        WindowEvent::KeyboardInput {
-                            input:
-                                KeyboardInput {
-                                    state: ElementState::Pressed,
-                                    virtual_keycode: Some(virtual_key_code),
-                                    ..
-                                },
-                            ..
-                        },
-                    ..
-                } => match virtual_key_code {
-                    VirtualKeyCode::Escape => *control_flow = ControlFlow::Exit,
-                    VirtualKeyCode::Key1 => {
-                        viewer.toggle_draw_model();
-                    }
-                    VirtualKeyCode::Key2 => {
-                        viewer.toggle_draw_mesh();
-                    }
-                    _ => {}
-                },
-                Event::WindowEvent {
-                    event: WindowEvent::Resized(size),
-                    ..
-                } => {
-                    new_size = Some(ScreenSize {
-                        width: size.width,
-                        height: size.height,
-                    });
-                }
-                Event::WindowEvent {
-                    event: WindowEvent::MouseInput { state, button, .. },
-                    ..
-                } => match state {
-                    ElementState::Pressed => {
-                        held_mouse_button = Some(button);
-                        viewer.add_focus_point();
-                    }
-                    ElementState::Released => {
-                        held_mouse_button = None;
-                        viewer.remove_focus_point();
-                    }
-                },
-                Event::WindowEvent {
-                    event: WindowEvent::MouseWheel { .. },
-                    ..
-                } => viewer.add_focus_point(),
-                Event::MainEventsCleared => {
-                    window.request_redraw();
-                }
-                Event::RedrawRequested(_) => {
-                    // Only do a screen resize once per frame. This protects against
-                    // spurious resize events that cause issues with the renderer.
-                    if let Some(size) = new_size.take() {
-                        stop_drawing = size.width == 0 || size.height == 0;
-                        if !stop_drawing {
-                            viewer.handle_screen_resize(size);
+            let screen = frame_input.screen();
+
+            for event in frame_input.events.iter() {
+                if let UserEvent(model_update) = event {
+                    match model_update {
+                        Ok(model) => {
+                            self.objects.clear();
+                            self.instanced_objects.clear();
+
+                            for object in model.objects.iter() {
+                                let material = &CpuMaterial {
+                                    albedo: object.color,
+                                    ..Default::default()
+                                };
+                                let material = PhysicalMaterial::new(&context, &material);
+
+                                if let Some(transformations) = &object.transformations {
+                                    let mesh = InstancedMesh::new(
+                                        &context,
+                                        &Instances {
+                                            transformations: transformations.to_owned(),
+                                            ..Default::default()
+                                        },
+                                        &object.mesh,
+                                    );
+                                    self.instanced_objects.push(Gm::new(mesh, material));
+                                } else {
+                                    let mesh = Mesh::new(&context, &object.mesh);
+                                    self.objects.push(Gm::new(mesh, material));
+                                }
+                            }
                         }
-                    }
-
-                    if !stop_drawing {
-                        viewer.draw();
+                        Err(err) => eprintln!("Error:{:?}", Report::from(err.to_owned())),
                     }
                 }
-                Event::UserEvent(model) => match model {
-                    Ok(model) => viewer.handle_model_update(model),
-                    Err(err) => eprintln!("Error:{:?}", Report::from(err)),
-                },
-                _ => {}
             }
-        });
+
+            screen.render(&camera, &self.objects, &[&light1, &light2]);
+            screen.render(&camera, &self.instanced_objects, &[&light1, &light2]);
+
+            FrameOutput::default()
+        })
     }
 }
-
-impl Screen for Window {
-    type Window = winit::window::Window;
-
-    fn size(&self) -> ScreenSize {
-        let size = &self.window.inner_size();
-
-        ScreenSize {
-            width: size.width,
-            height: size.height,
-        }
-    }
-
-    fn window(&self) -> &winit::window::Window {
-        &self.window
-    }
-}
-
-#[derive(Debug, thiserror::Error)]
-pub enum Error {
-    /// Failed to initialize window
-    #[error("Failed to initialize window")]
-    WindowInit(#[from] winit::error::OsError),
-
-    /// Failed to initialize graphics
-    #[error("Failed to initialize graphics")]
-    GraphicsInit(#[from] RendererInitError),
-}
-
-fn input_event<T>(
-    event: &Event<T>,
-    screen_size: &PhysicalSize<u32>,
-    held_mouse_button: &Option<MouseButton>,
-    previous_cursor: &mut Option<NormalizedScreenPosition>,
-) -> Option<InputEvent> {
-    match event {
-        Event::WindowEvent {
-            event: WindowEvent::CursorMoved { position, .. },
-            ..
-        } => {
-            let width = screen_size.width as f64;
-            let height = screen_size.height as f64;
-            let aspect_ratio = width / height;
-
-            // Cursor position in normalized coordinates (-1 to +1) with
-            // aspect ratio taken into account.
-            let current = NormalizedScreenPosition {
-                x: position.x / width * 2. - 1.,
-                y: -(position.y / height * 2. - 1.) / aspect_ratio,
-            };
-            let event = match (*previous_cursor, held_mouse_button) {
-                (Some(previous), Some(button)) => match button {
-                    MouseButton::Left => {
-                        let diff_x = current.x - previous.x;
-                        let diff_y = current.y - previous.y;
-                        let angle_x = -diff_y * ROTATION_SENSITIVITY;
-                        let angle_y = diff_x * ROTATION_SENSITIVITY;
-
-                        Some(InputEvent::Rotation { angle_x, angle_y })
-                    }
-                    MouseButton::Right => Some(InputEvent::Translation { previous, current }),
-                    _ => None,
-                },
-                _ => None,
-            };
-            *previous_cursor = Some(current);
-            event
-        }
-        Event::WindowEvent {
-            event: WindowEvent::MouseWheel { delta, .. },
-            ..
-        } => {
-            let delta = match delta {
-                MouseScrollDelta::LineDelta(_, y) => f64::from(*y) * ZOOM_FACTOR_LINE,
-                MouseScrollDelta::PixelDelta(PhysicalPosition { y, .. }) => y * ZOOM_FACTOR_PIXEL,
-            };
-
-            Some(InputEvent::Zoom(delta))
-        }
-        _ => None,
-    }
-}
-
-/// Affects the speed of zoom movement given a scroll wheel input in lines.
-///
-/// Smaller values will move the camera less with the same input.
-/// Larger values will move the camera more with the same input.
-const ZOOM_FACTOR_LINE: f64 = 0.075;
-
-/// Affects the speed of zoom movement given a scroll wheel input in pixels.
-///
-/// Smaller values will move the camera less with the same input.
-/// Larger values will move the camera more with the same input.
-const ZOOM_FACTOR_PIXEL: f64 = 0.005;
-
-/// Affects the speed of rotation given a change in normalized screen position [-1, 1]
-///
-/// Smaller values will move the camera less with the same input.
-/// Larger values will move the camera more with the same input.
-const ROTATION_SENSITIVITY: f64 = 5.;

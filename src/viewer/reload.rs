@@ -1,9 +1,9 @@
 use std::{
     io,
     path::{Path, PathBuf},
+    sync::Arc,
 };
 
-use fj_interop::model::Model;
 use notify::{
     event::{AccessKind::Close, AccessMode::Write},
     recommended_watcher, Event,
@@ -14,15 +14,17 @@ use winit::event_loop::EventLoopProxy;
 
 use crate::model::{self, ViewableModel};
 
+use super::window::ModelUpdate;
+
 pub struct ModelReloader {
     config_path: PathBuf,
-    event_loop_proxy: EventLoopProxy<Result<Model, model::Error>>,
+    event_loop_proxy: EventLoopProxy<ModelUpdate>,
 }
 
 impl ModelReloader {
     pub fn try_new(
         config_path: &Path,
-        event_loop_proxy: EventLoopProxy<Result<Model, model::Error>>,
+        event_loop_proxy: EventLoopProxy<ModelUpdate>,
     ) -> Result<Self, Error> {
         let config_path = config_path.canonicalize()?;
 
@@ -53,9 +55,11 @@ impl ModelReloader {
     }
 
     fn update_model(&self) {
-        let model =
-            model::Model::try_from_config(&self.config_path).map(|model| model.into_mesh_model());
-        let _ = self.event_loop_proxy.send_event(model);
+        let model_update = match model::Model::try_from_config(&self.config_path) {
+            Ok(model) => Ok(model.into_mesh_model()),
+            Err(error) => Err(Arc::new(error)),
+        };
+        let _ = self.event_loop_proxy.send_event(model_update);
     }
 }
 
