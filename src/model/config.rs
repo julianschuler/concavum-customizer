@@ -6,6 +6,8 @@ use serde::{de::Error as DeserializeError, Deserialize, Deserializer};
 
 pub const EPSILON: f64 = 0.001;
 
+pub type CurvatureAngle = Ranged<-20, 50>;
+
 #[derive(Deserialize)]
 pub struct Config {
     pub preview: Preview,
@@ -28,21 +30,21 @@ pub struct Preview {
 pub struct FingerCluster {
     pub rows: u8,
     pub columns: Vec<Column>,
-    pub side_angles: (f64, f64),
+    pub side_angles: (CurvatureAngle, CurvatureAngle),
     pub key_distance: [Positive; 2],
     pub home_row_index: u8,
 }
 
 #[derive(Deserialize)]
 pub struct Column {
-    pub curvature_angle: f64,
+    pub curvature_angle: CurvatureAngle,
     pub offset: DVec2,
 }
 
 #[derive(Deserialize)]
 pub struct ThumbCluster {
     pub keys: u8,
-    pub curvature_angle: f64,
+    pub curvature_angle: Ranged<-20, 45>,
     pub rotation: DVec3,
     pub offset: DVec3,
     pub key_distance: Positive,
@@ -66,15 +68,13 @@ pub struct Colors {
 }
 
 #[derive(Copy, Clone)]
-pub struct Positive {
-    inner: f64,
-}
+pub struct Positive(f64);
 
 impl Deref for Positive {
     type Target = f64;
 
     fn deref(&self) -> &Self::Target {
-        &self.inner
+        &self.0
     }
 }
 
@@ -86,7 +86,7 @@ impl<'de> Deserialize<'de> for Positive {
         let inner = f64::deserialize(deserializer)?;
 
         if inner > 0.0 {
-            Ok(Self { inner })
+            Ok(Self(inner))
         } else {
             Err(D::Error::custom(format!(
                 "invalid value: {inner} is not greater than 0.0"
@@ -110,6 +110,34 @@ impl From<&[Positive; 2]> for PositiveDVec2 {
 impl Config {
     pub fn try_from_path(config_path: &Path) -> Result<Self, Error> {
         Ok(toml::from_str(&read_to_string(config_path)?)?)
+    }
+}
+
+#[derive(Copy, Clone)]
+pub struct Ranged<const LOWER: i8, const UPPER: i8>(f64);
+
+impl<const LOWER: i8, const UPPER: i8> Deref for Ranged<LOWER, UPPER> {
+    type Target = f64;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl<'de, const LOWER: i8, const UPPER: i8> Deserialize<'de> for Ranged<LOWER, UPPER> {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let inner = f64::deserialize(deserializer)?;
+
+        if inner >= LOWER as f64 && inner <= UPPER as f64 {
+            Ok(Self(inner))
+        } else {
+            Err(D::Error::custom(format!(
+                "invalid value: {inner} is not between {LOWER} and {UPPER}"
+            )))
+        }
     }
 }
 
