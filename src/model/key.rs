@@ -100,7 +100,7 @@ impl Switch {
 
         let top_lower_rect = Workplane::xy().rect(TOP_WIDTH, TOP_WIDTH);
         let top_upper_rect = Workplane::xy()
-            .translated(dvec3(0.0, -TOP_OFFSET, Self::TOP_HEIGHT))
+            .translated(dvec3(0.0, TOP_OFFSET, Self::TOP_HEIGHT))
             .rect(TOP_SIZE.x, TOP_SIZE.y);
 
         let shape = Solid::loft([&top_lower_rect, &top_upper_rect]).to_shape();
