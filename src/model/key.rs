@@ -23,9 +23,9 @@ impl Key {
     }
 }
 
-impl Into<(Component, Component)> for Key {
-    fn into(self) -> (Component, Component) {
-        (self.keycap.into(), self.switch.into())
+impl From<Key> for (Component, Component) {
+    fn from(key: Key) -> Self {
+        (key.keycap.into(), key.switch.into())
     }
 }
 
@@ -72,9 +72,9 @@ impl KeyCap {
     }
 }
 
-impl Into<Component> for KeyCap {
-    fn into(self) -> Component {
-        Component::new(self.shape, self.color)
+impl From<KeyCap> for Component {
+    fn from(keycap: KeyCap) -> Self {
+        Component::new(keycap.shape, keycap.color)
     }
 }
 
@@ -113,8 +113,8 @@ impl Switch {
     }
 }
 
-impl Into<Component> for Switch {
-    fn into(self) -> Component {
-        Component::new(self.shape, self.color)
+impl From<Switch> for Component {
+    fn from(switch: Switch) -> Self {
+        Component::new(switch.shape, switch.color)
     }
 }

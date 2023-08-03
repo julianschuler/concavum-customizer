@@ -88,7 +88,7 @@ impl Scene {
         let mut instanced_objects = Vec::new();
 
         for object in model.objects.iter() {
-            let material = &CpuMaterial {
+            let material = CpuMaterial {
                 albedo: object.color,
                 ..Default::default()
             };
@@ -110,11 +110,11 @@ impl Scene {
             }
         }
 
-        let ambient = AmbientLight::new(&context, 0.05, Color::WHITE);
+        let ambient = AmbientLight::new(context, 0.05, Color::WHITE);
         let lights = model
             .light_directions
             .iter()
-            .map(|direction| DirectionalLight::new(&context, 1.0, Color::WHITE, &direction))
+            .map(|direction| DirectionalLight::new(context, 1.0, Color::WHITE, direction))
             .collect();
 
         Scene {
@@ -145,7 +145,7 @@ impl Scene {
                     }
                 }
                 Event::UserEvent(model_update) => match model_update {
-                    Ok(model) => *self = Scene::from_mesh_model(&context, model),
+                    Ok(model) => *self = Scene::from_mesh_model(context, model),
                     Err(err) => eprintln!("Error:{:?}", Report::from(err.to_owned())),
                 },
                 _ => (),
@@ -164,7 +164,7 @@ impl Scene {
         lights.push(&self.ambient as &dyn Light);
 
         screen.clear(ClearState::color_and_depth(r, g, b, a, 1.0));
-        screen.render(&camera, &self.objects, &lights);
-        screen.render(&camera, &self.instanced_objects, &lights);
+        screen.render(camera, &self.objects, &lights);
+        screen.render(camera, &self.instanced_objects, &lights);
     }
 }
