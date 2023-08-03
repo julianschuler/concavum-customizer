@@ -42,7 +42,7 @@ impl Model {
             components,
             light_directions: config.preview.light_directions,
             background_color: config.colors.background,
-            triangulation_tolerance: config.preview.triangulation_tolerance,
+            triangulation_tolerance: *config.preview.triangulation_tolerance,
         })
     }
 }
