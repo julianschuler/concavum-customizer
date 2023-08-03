@@ -50,12 +50,12 @@ impl Window {
 
         let mut camera = Camera::new_perspective(
             self.window.viewport(),
-            vec3(-0.3, 1.0, 1.0).normalize_to(DEFAULT_DISTANCE),
+            vec3(0.3, -1.0, 1.0).normalize_to(DEFAULT_DISTANCE),
             DEFAULT_TARGET, // camera target
             Vec3::unit_z(), // camera up
             DEFAULT_FOV,
-            1.0,
-            1000.0,
+            0.1,
+            10000.0,
         );
         let mut control = OrbitControl::new(DEFAULT_TARGET, 1.0, 1000.0);
         let mut scene = Scene::default();
