@@ -1,11 +1,3 @@
-points1 = [
-  [0.0, 1.0, 0.0], [0.5, 1.0, 0.0], [0.5, 1.0, 0.5], [1.0, 1.0, 0.5]
-]
-points2 = [
-  [0.0, 0.0, 0.0], [0.5, 0.0, 0.0], [0.5, 0.0, 1.0], [1.0, 0.0, 0.5]
-]
-
-
 [preview]
 # Show the keys during preview
 show_keys = true
@@ -16,7 +8,7 @@ show_bottom_plate = true
 # Triangulation tolerance, lower values result in higher preview fidelity
 triangulation_tolerance = 0.1
 # Light directions, will be hardcoded at a later stage
-light_directions = [[0.0, 0.6, 0.1]]
+light_directions = [[0.0, -0.6, 0.1]]
 
 [finger_cluster]
 # Amount of rows, automatic PCB generation is supported for 1 to 5 rows
@@ -33,18 +25,23 @@ columns = [
 ]
 # Finger column side rotation angles for the left- and rightmost columns
 side_angles = [15, 15]
+# Distance between two neighbouring keys in X and Y direction
+key_distance = [19.05, 19.05]
+# Row index of the home row (usually 1)
+home_row_index = 1
 
 
 [thumb_cluster]
 # Amount of thumb keys, automatic PCB generation is supported for 1 to 6 keys
 keys = 3
 # Thumb well curvature as angle between two neighbouring keys
-curvature = 15
+curvature_angle = 15
 # Rotation of the thumb cluster in relation to the finger cluster
 rotation = [30, 15, 80]
 # Offset of the thumb cluster in relation to the finger cluster
 offset = [-3.05, -48, 10]
-
+# Distance between two neighbouring keys
+key_distance = 19.05
 
 [keyboard]
 # Keyboard tilting angle along X and Y
