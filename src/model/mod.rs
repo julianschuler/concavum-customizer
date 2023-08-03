@@ -1,15 +1,18 @@
 mod config;
+mod finger_cluster;
 mod helper;
 mod key;
 
 use std::path::Path;
 
-use glam::{dvec3, DAffine3, DQuat, DVec3};
+use glam::DVec3;
 use hex_color::HexColor;
 
 pub use crate::viewer::model::{Component, ViewableModel};
 use config::Config;
 use key::Key;
+
+use self::finger_cluster::KeyPositions;
 
 pub struct Model {
     components: Vec<Component>,
@@ -24,13 +27,11 @@ impl Model {
 
         let mut components = Vec::new();
 
-        let key_positions = vec![
-            DAffine3::IDENTITY,
-            DAffine3::from_rotation_translation(DQuat::default(), dvec3(19.05, 0.0, 0.0)),
-        ];
-
         let key = Key::new(&config, 1.0);
         let (mut keycap, mut switch) = key.into();
+
+        let key_positions = KeyPositions::from_config(&config.finger_cluster);
+        let key_positions: Vec<_> = key_positions.positions.into_iter().flatten().collect();
 
         keycap.with_positions(key_positions.clone());
         switch.with_positions(key_positions);
