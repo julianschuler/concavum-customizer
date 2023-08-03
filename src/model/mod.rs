@@ -68,6 +68,6 @@ impl ViewableModel for Model {
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
     /// Failed to parse config
-    #[error("Failed to parse config")]
+    #[error("failed to parse config")]
     ParseConfig(#[from] config::Error),
 }

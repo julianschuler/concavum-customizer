@@ -125,7 +125,7 @@ pub struct MeshModel {
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
     /// Triangulation using BRepMesh_IncrementalMesh_ctor failed
-    #[error("Triangulation using BRepMesh_IncrementalMesh_ctor failed")]
+    #[error("triangulation using BRepMesh_IncrementalMesh_ctor failed")]
     #[allow(unused)]
     Triangulation,
 }
