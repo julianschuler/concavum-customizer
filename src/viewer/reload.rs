@@ -41,10 +41,10 @@ impl ModelReloader {
 
         let mut watcher = recommended_watcher(move |result: notify::Result<Event>| {
             if let Ok(event) = result {
-                if matches!(event.kind, Access(Close(Write))) {
-                    if event.paths.iter().any(|path| path == &self.config_path) {
-                        self.update_model();
-                    }
+                if matches!(event.kind, Access(Close(Write)))
+                    && event.paths.iter().any(|path| path == &self.config_path)
+                {
+                    self.update_model();
                 }
             }
         })?;
