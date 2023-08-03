@@ -74,10 +74,9 @@ impl Config {
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
     /// Failed to open file
-    #[error("Failed to open file")]
+    #[error("failed to open file")]
     FileOpen(#[from] io::Error),
-
     /// Failed to parse TOML
-    #[error("Failed to parse TOML")]
+    #[error("failed to parse TOML")]
     TomlParse(#[from] toml::de::Error),
 }
