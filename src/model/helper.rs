@@ -1,3 +1,5 @@
+use std::iter::{Zip, Skip};
+
 use glam::{dvec3, DAffine3, DVec3};
 
 pub fn zvec(z: f64) -> DVec3 {
@@ -31,5 +33,17 @@ impl Rotate for DAffine3 {
 
     fn rotate_z(self, angle: f64) -> Self {
         DAffine3::from_rotation_z(angle) * self
+    }
+}
+
+pub trait ZipNeighbors<T> {
+    fn zip_neighbors(self) -> Zip<T, Skip<T>>;
+}
+
+
+impl<T: Iterator + Clone> ZipNeighbors<T> for T {
+    fn zip_neighbors(self) -> Zip<T, Skip<T>> {
+        let shifted_iterator = self.clone().skip(1);
+        self.zip(shifted_iterator)
     }
 }

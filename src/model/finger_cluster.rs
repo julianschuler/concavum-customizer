@@ -4,7 +4,7 @@ use glam::{dvec2, dvec3, DAffine3, DVec2, DVec3};
 use hex_color::HexColor;
 use opencascade::primitives::{Compound, Face, Shape, Surface};
 
-use crate::model::config::PositiveDVec2;
+use crate::model::{config::PositiveDVec2, helper::ZipNeighbors};
 
 use super::{
     config::{Config, FingerCluster},
@@ -90,10 +90,6 @@ impl KeyPositions {
 
         Self { positions }
     }
-
-    fn positions(&self) -> &Vec<Vec<DAffine3>> {
-        &self.positions
-    }
 }
 
 impl Mul<KeyPositions> for DAffine3 {
@@ -119,39 +115,68 @@ pub struct KeyCluster {
 impl KeyCluster {
     pub fn from_config(config: &Config) -> Self {
         const PLATE_SIZE: DVec2 = dvec2(17.0, 18.0);
-
-        let key_positions = KeyPositions::from_config(&config.finger_cluster);
+        const PLATE_X_2: f64 = PLATE_SIZE.x / 2.0;
+        const PLATE_Y_2: f64 = PLATE_SIZE.y / 2.0;
+        const PLATE_POINT_LB: DVec3 = dvec3(-PLATE_X_2, -PLATE_Y_2, 0.0);
+        const PLATE_POINT_LT: DVec3 = dvec3(-PLATE_X_2, PLATE_Y_2, 0.0);
+        const PLATE_POINT_RB: DVec3 = dvec3(PLATE_X_2, -PLATE_Y_2, 0.0);
+        const PLATE_POINT_RT: DVec3 = dvec3(PLATE_X_2, PLATE_Y_2, 0.0);
 
         let tilting = config.keyboard.tilting_angle;
         let (tilting_x, tilting_y) = (tilting.x.to_radians(), tilting.y.to_radians());
         let tilting_transform = DAffine3::from_rotation_x(tilting_x).rotate_y(tilting_y);
 
-        const PLATE_X_2: f64 = PLATE_SIZE.x / 2.0;
-        const PLATE_Y_2: f64 = PLATE_SIZE.y / 2.0;
-        const PLATE_POINT_1: DVec3 = dvec3(PLATE_X_2, PLATE_Y_2, 0.0);
-        const PLATE_POINT_2: DVec3 = dvec3(PLATE_X_2, -PLATE_Y_2, 0.0);
-        const PLATE_POINT_3: DVec3 = dvec3(-PLATE_X_2, PLATE_Y_2, 0.0);
-        const PLATE_POINT_4: DVec3 = dvec3(-PLATE_X_2, -PLATE_Y_2, 0.0);
-
+        let key_positions = KeyPositions::from_config(&config.finger_cluster);
         let key_positions = tilting_transform * key_positions;
 
-        let faces: Vec<_> = key_positions
-            .positions
-            .iter()
-            .map(|column| {
-                column.iter().map(|position| {
-                    let p1 = position.transform_point3(PLATE_POINT_1);
-                    let p2 = position.transform_point3(PLATE_POINT_2);
-                    let p3 = position.transform_point3(PLATE_POINT_3);
-                    let p4 = position.transform_point3(PLATE_POINT_4);
+        let plate_points = key_positions.positions.iter().map(|column| {
+            column.iter().map(|position| {
+                let lb = position.transform_point3(PLATE_POINT_LB);
+                let lt = position.transform_point3(PLATE_POINT_LT);
+                let rb = position.transform_point3(PLATE_POINT_RB);
+                let rt = position.transform_point3(PLATE_POINT_RT);
 
-                    let surface = Surface::bezier([[p1, p2], [p3, p4]]);
-
-                    Face::from_surface(&surface)
-                })
+                PlatePoints { lb, lt, rb, rt }
             })
-            .flatten()
-            .collect();
+        });
+
+        let plates = plate_points
+            .clone()
+            .flat_map(|column| column.map(Self::plate));
+
+        let top_connectors = plate_points.clone().flat_map(|column| {
+            column
+                .zip_neighbors()
+                .map(|(plate, upper)| Self::top_connector(plate, upper))
+        });
+
+        let side_connectors =
+            plate_points
+                .clone()
+                .zip_neighbors()
+                .flat_map(|(column, next_column)| {
+                    column
+                        .zip(next_column)
+                        .map(|(plate, right)| Self::side_connector(plate, right))
+                });
+
+        let diagonal_connectors =
+            plate_points
+                .clone()
+                .zip_neighbors()
+                .flat_map(|(column, next_column)| {
+                    column.zip_neighbors().zip(next_column.zip_neighbors()).map(
+                        |((plate, upper), (right, diagonal))| {
+                            Self::diagonal_connector(plate, upper, right, diagonal)
+                        },
+                    )
+                });
+
+        let faces = plates
+            .chain(top_connectors)
+            .chain(side_connectors)
+            .chain(diagonal_connectors)
+            .map(|surface| Face::from_surface(&surface));
 
         let shape = Compound::from_shapes(faces.into_iter().map(|face| face.to_shape())).to_shape();
 
@@ -164,11 +189,32 @@ impl KeyCluster {
 
     pub fn key_positions(&self) -> Vec<DAffine3> {
         self.key_positions
-            .positions()
+            .positions
             .iter()
             .flatten()
             .copied()
             .collect()
+    }
+
+    fn plate(plate: PlatePoints) -> Surface {
+        Surface::bezier([[plate.lb, plate.lt], [plate.rb, plate.rt]])
+    }
+
+    fn top_connector(plate: PlatePoints, upper: PlatePoints) -> Surface {
+        Surface::bezier([[plate.lt, upper.lb], [plate.rt, upper.rb]])
+    }
+
+    fn side_connector(plate: PlatePoints, right: PlatePoints) -> Surface {
+        Surface::bezier([[plate.rb, plate.rt], [right.lb, right.lt]])
+    }
+
+    fn diagonal_connector(
+        plate: PlatePoints,
+        upper: PlatePoints,
+        right: PlatePoints,
+        diagonal: PlatePoints,
+    ) -> Surface {
+        Surface::bezier([[plate.rt, upper.rb], [right.lt, diagonal.lb]])
     }
 }
 
@@ -176,4 +222,11 @@ impl From<KeyCluster> for Component {
     fn from(cluster: KeyCluster) -> Self {
         Component::new(cluster.shape, cluster.color)
     }
+}
+
+struct PlatePoints {
+    lb: DVec3,
+    lt: DVec3,
+    rb: DVec3,
+    rt: DVec3,
 }
