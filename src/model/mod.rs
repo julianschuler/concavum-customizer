@@ -12,7 +12,7 @@ pub use crate::viewer::model::{Component, ViewableModel};
 use config::Config;
 use key::Key;
 
-use self::finger_cluster::KeyPositions;
+use self::finger_cluster::KeyCluster;
 
 pub struct Model {
     components: Vec<Component>,
@@ -30,14 +30,15 @@ impl Model {
         let key = Key::new(&config, 1.0);
         let (mut keycap, mut switch) = key.into();
 
-        let key_positions = KeyPositions::from_config(&config.finger_cluster);
-        let key_positions: Vec<_> = key_positions.positions.into_iter().flatten().collect();
+        let finger_cluster = KeyCluster::from_config(&config);
+        let key_positions = finger_cluster.key_positions();
 
         keycap.with_positions(key_positions.clone());
         switch.with_positions(key_positions);
 
         components.push(keycap);
         components.push(switch);
+        components.push(finger_cluster.into());
 
         Ok(Self {
             components,
