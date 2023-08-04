@@ -1,15 +1,24 @@
-use glam::{dvec3, DAffine3};
+use std::ops::Mul;
+
+use glam::{dvec2, dvec3, DAffine3, DVec2, DVec3};
+use hex_color::HexColor;
+use opencascade::primitives::{Compound, Face, Shape, Surface};
 
 use crate::model::config::PositiveDVec2;
 
-use super::{config::FingerCluster, helper::Translate, key::Switch};
+use super::{
+    config::{Config, FingerCluster},
+    helper::{Rotate, Translate},
+    key::Switch,
+    Component,
+};
 
-pub struct KeyPositions {
-    pub positions: Vec<Vec<DAffine3>>,
+struct KeyPositions {
+    positions: Vec<Vec<DAffine3>>,
 }
 
 impl KeyPositions {
-    pub fn from_config(config: &FingerCluster) -> Self {
+    fn from_config(config: &FingerCluster) -> Self {
         const CURVATURE_HEIGHT: f64 = Switch::TOP_HEIGHT;
 
         let (left_side_angle, right_side_angle) = config.side_angles;
@@ -80,5 +89,91 @@ impl KeyPositions {
             .collect();
 
         Self { positions }
+    }
+
+    fn positions(&self) -> &Vec<Vec<DAffine3>> {
+        &self.positions
+    }
+}
+
+impl Mul<KeyPositions> for DAffine3 {
+    type Output = KeyPositions;
+
+    fn mul(self, cluster: KeyPositions) -> Self::Output {
+        let positions = cluster
+            .positions
+            .into_iter()
+            .map(|column| column.into_iter().map(|position| self * position).collect())
+            .collect();
+
+        KeyPositions { positions }
+    }
+}
+
+pub struct KeyCluster {
+    shape: Shape,
+    color: HexColor,
+    key_positions: KeyPositions,
+}
+
+impl KeyCluster {
+    pub fn from_config(config: &Config) -> Self {
+        const PLATE_SIZE: DVec2 = dvec2(17.0, 18.0);
+
+        let key_positions = KeyPositions::from_config(&config.finger_cluster);
+
+        let tilting = config.keyboard.tilting_angle;
+        let (tilting_x, tilting_y) = (tilting.x.to_radians(), tilting.y.to_radians());
+        let tilting_transform = DAffine3::from_rotation_x(tilting_x).rotate_y(tilting_y);
+
+        const PLATE_X_2: f64 = PLATE_SIZE.x / 2.0;
+        const PLATE_Y_2: f64 = PLATE_SIZE.y / 2.0;
+        const PLATE_POINT_1: DVec3 = dvec3(PLATE_X_2, PLATE_Y_2, 0.0);
+        const PLATE_POINT_2: DVec3 = dvec3(PLATE_X_2, -PLATE_Y_2, 0.0);
+        const PLATE_POINT_3: DVec3 = dvec3(-PLATE_X_2, PLATE_Y_2, 0.0);
+        const PLATE_POINT_4: DVec3 = dvec3(-PLATE_X_2, -PLATE_Y_2, 0.0);
+
+        let key_positions = tilting_transform * key_positions;
+
+        let faces: Vec<_> = key_positions
+            .positions
+            .iter()
+            .map(|column| {
+                column.iter().map(|position| {
+                    let p1 = position.transform_point3(PLATE_POINT_1);
+                    let p2 = position.transform_point3(PLATE_POINT_2);
+                    let p3 = position.transform_point3(PLATE_POINT_3);
+                    let p4 = position.transform_point3(PLATE_POINT_4);
+
+                    let surface = Surface::bezier([[p1, p2], [p3, p4]]);
+
+                    Face::from_surface(&surface)
+                })
+            })
+            .flatten()
+            .collect();
+
+        let shape = Compound::from_shapes(faces.into_iter().map(|face| face.to_shape())).to_shape();
+
+        Self {
+            shape,
+            color: config.colors.keyboard,
+            key_positions,
+        }
+    }
+
+    pub fn key_positions(&self) -> Vec<DAffine3> {
+        self.key_positions
+            .positions()
+            .iter()
+            .flatten()
+            .copied()
+            .collect()
+    }
+}
+
+impl From<KeyCluster> for Component {
+    fn from(cluster: KeyCluster) -> Self {
+        Component::new(cluster.shape, cluster.color)
     }
 }

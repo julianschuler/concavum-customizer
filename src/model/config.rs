@@ -59,6 +59,7 @@ pub struct Keyboard {
 
 #[derive(Deserialize)]
 pub struct Colors {
+    pub keyboard: HexColor,
     pub keycap: HexColor,
     pub switch: HexColor,
     pub matrix_pcb: HexColor,
@@ -107,12 +108,6 @@ impl From<&[Positive; 2]> for PositiveDVec2 {
     }
 }
 
-impl Config {
-    pub fn try_from_path(config_path: &Path) -> Result<Self, Error> {
-        Ok(toml::from_str(&read_to_string(config_path)?)?)
-    }
-}
-
 #[derive(Copy, Clone)]
 pub struct Ranged<const LOWER: i8, const UPPER: i8>(f64);
 
@@ -138,6 +133,12 @@ impl<'de, const LOWER: i8, const UPPER: i8> Deserialize<'de> for Ranged<LOWER, U
                 "invalid value: {inner} is not between {LOWER} and {UPPER}"
             )))
         }
+    }
+}
+
+impl Config {
+    pub fn try_from_path(config_path: &Path) -> Result<Self, Error> {
+        Ok(toml::from_str(&read_to_string(config_path)?)?)
     }
 }
 

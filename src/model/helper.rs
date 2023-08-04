@@ -13,3 +13,23 @@ impl Translate for DAffine3 {
         DAffine3::from_translation(translation) * self
     }
 }
+
+pub trait Rotate {
+    fn rotate_x(self, angle: f64) -> Self;
+    fn rotate_y(self, angle: f64) -> Self;
+    fn rotate_z(self, angle: f64) -> Self;
+}
+
+impl Rotate for DAffine3 {
+    fn rotate_x(self, angle: f64) -> Self {
+        DAffine3::from_rotation_x(angle) * self
+    }
+
+    fn rotate_y(self, angle: f64) -> Self {
+        DAffine3::from_rotation_y(angle) * self
+    }
+
+    fn rotate_z(self, angle: f64) -> Self {
+        DAffine3::from_rotation_z(angle) * self
+    }
+}

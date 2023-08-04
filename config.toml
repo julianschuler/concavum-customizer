@@ -8,7 +8,8 @@ show_bottom_plate = true
 # Triangulation tolerance, lower values result in higher preview fidelity
 triangulation_tolerance = 0.1
 # Light directions, will be hardcoded at a later stage
-light_directions = [[0.0, -0.6, 0.1]]
+light_directions = [[0.0, -0.6, 0.3]]
+
 
 [finger_cluster]
 # Amount of rows, automatic PCB generation is supported for 1 to 5 rows
@@ -43,6 +44,7 @@ offset = [-3.05, -48, 10]
 # Distance between two neighbouring keys
 key_distance = 19.05
 
+
 [keyboard]
 # Keyboard tilting angle along X and Y
 tilting_angle = [15, 20]
@@ -53,6 +55,7 @@ bottom_plate_thickness = 1.6
 
 
 [colors]
+keyboard = "#83A598"
 keycap = "#0F0F0F"
 switch = "#FFFFFF"
 matrix_pcb = "#008C4A"
