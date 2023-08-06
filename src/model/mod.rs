@@ -16,7 +16,7 @@ use self::finger_cluster::KeyCluster;
 
 pub struct Model {
     components: Vec<Component>,
-    light_directions: Vec<DVec3>,
+    light_positions: Vec<DVec3>,
     background_color: HexColor,
     triangulation_tolerance: f64,
 }
@@ -33,16 +33,19 @@ impl Model {
         let finger_cluster = KeyCluster::from_config(&config);
         let key_positions = finger_cluster.key_positions();
 
-        keycap.with_positions(key_positions.clone());
-        switch.with_positions(key_positions);
+        if config.preview.show_keys {
+            keycap.with_positions(key_positions.clone());
+            switch.with_positions(key_positions);
 
-        components.push(keycap);
-        components.push(switch);
+            components.push(keycap);
+            components.push(switch);
+        }
+
         components.push(finger_cluster.into());
 
         Ok(Self {
             components,
-            light_directions: config.preview.light_directions,
+            light_positions: config.preview.light_positions,
             background_color: config.colors.background,
             triangulation_tolerance: *config.preview.triangulation_tolerance,
         })
@@ -54,8 +57,8 @@ impl ViewableModel for Model {
         self.components
     }
 
-    fn light_directions(&self) -> Vec<DVec3> {
-        self.light_directions.clone()
+    fn light_positions(&self) -> Vec<DVec3> {
+        self.light_positions.clone()
     }
 
     fn background_color(&self) -> HexColor {

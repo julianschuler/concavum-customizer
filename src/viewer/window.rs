@@ -2,9 +2,10 @@ use std::sync::Arc;
 
 use color_eyre::Report;
 use three_d::{
-    degrees, vec3, AmbientLight, Camera, ClearState, Color, Context, CpuMaterial, Degrees,
-    DirectionalLight, Event, FrameOutput, Gm, InnerSpace, InstancedMesh, Instances, Light, Mesh,
-    MouseButton, OrbitControl, PhysicalMaterial, RenderTarget, Vec3, WindowError, WindowSettings,
+    degrees, vec3, AmbientLight, Attenuation, Camera, ClearState, Color, Context, CpuMaterial,
+    Degrees, Event, FrameOutput, Gm, InnerSpace, InstancedMesh, Instances, Light, Mesh,
+    MouseButton, OrbitControl, PhysicalMaterial, PointLight, RenderTarget, Vec3, WindowError,
+    WindowSettings,
 };
 use winit::event_loop::{EventLoopBuilder, EventLoopProxy};
 
@@ -75,7 +76,7 @@ impl Window {
 struct Scene {
     objects: Vec<Gm<Mesh, PhysicalMaterial>>,
     instanced_objects: Vec<Gm<InstancedMesh, PhysicalMaterial>>,
-    lights: Vec<DirectionalLight>,
+    lights: Vec<PointLight>,
     ambient: AmbientLight,
     background_color: Color,
 }
@@ -110,9 +111,17 @@ impl Scene {
 
         let ambient = AmbientLight::new(context, 0.05, Color::WHITE);
         let lights = model
-            .light_directions
+            .light_positions
             .iter()
-            .map(|direction| DirectionalLight::new(context, 1.0, Color::WHITE, direction))
+            .map(|direction| {
+                PointLight::new(
+                    context,
+                    1.0,
+                    Color::WHITE,
+                    direction,
+                    Attenuation::default(),
+                )
+            })
             .collect();
 
         Scene {
