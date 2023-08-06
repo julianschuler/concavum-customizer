@@ -61,7 +61,7 @@ impl KeyCap {
             .rect(TOP_WIDTH, top_length);
         top.fillet(TOP_FILLET);
 
-        let mut shape = Solid::loft([&bottom, &middle, &top]).to_shape();
+        let mut shape: Shape = Solid::loft([&bottom, &middle, &top]).into();
 
         shape.set_global_translation(zvec(Switch::TOP_HEIGHT));
 
@@ -103,8 +103,8 @@ impl Switch {
             .translated(dvec3(0.0, TOP_OFFSET, Self::TOP_HEIGHT))
             .rect(TOP_SIZE.x, TOP_SIZE.y);
 
-        let shape = Solid::loft([&top_lower_rect, &top_upper_rect]).to_shape();
-        let (shape, _) = shape.union(&bottom);
+        let shape: Shape = Solid::loft([&top_lower_rect, &top_upper_rect]).into();
+        let shape = shape.union(&bottom.into()).into();
 
         Self {
             color: config.colors.switch,
