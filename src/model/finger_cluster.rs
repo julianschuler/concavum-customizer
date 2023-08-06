@@ -2,7 +2,7 @@ use std::ops::Mul;
 
 use glam::{dvec2, dvec3, DAffine3, DVec2, DVec3};
 use hex_color::HexColor;
-use opencascade::primitives::{Compound, Face, Shape, Surface};
+use opencascade::primitives::{Compound, Face, IntoShape, Shape, Surface};
 
 use crate::model::{config::PositiveDVec2, helper::ZipNeighbors};
 
@@ -178,7 +178,7 @@ impl KeyCluster {
             .chain(diagonal_connectors)
             .map(|surface| Face::from_surface(&surface));
 
-        let shape = Compound::from_shapes(faces.into_iter().map(|face| face.to_shape())).to_shape();
+        let shape = Compound::from_shapes(faces.into_iter().map(|face| face.into_shape())).into();
 
         Self {
             shape,

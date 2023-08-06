@@ -1,6 +1,6 @@
 use glam::{DAffine3, DMat4, DVec3};
 use hex_color::HexColor;
-use opencascade::primitives::{Mesh, Shape};
+use opencascade::{mesh::Mesh, primitives::Shape};
 use three_d::{Color, CpuMesh, Indices, Mat4, Positions, Vec3};
 
 pub struct Component {
@@ -28,7 +28,7 @@ impl Component {
             normals,
             indices,
             ..
-        } = self.shape.mesh_with_tolerance(triangulation_tolerance);
+        } = self.shape.mesh_with_tolerance(triangulation_tolerance)?;
 
         let vertices = vertices
             .iter()
@@ -124,8 +124,7 @@ pub struct MeshModel {
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
-    /// Triangulation using BRepMesh_IncrementalMesh_ctor failed
-    #[error("triangulation using BRepMesh_IncrementalMesh_ctor failed")]
-    #[allow(unused)]
-    Triangulation,
+    /// Triangulation failed
+    #[error("triangulation failed")]
+    Triangulation(#[from] opencascade::Error),
 }
