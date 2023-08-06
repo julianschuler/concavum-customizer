@@ -4,11 +4,9 @@ use glam::{dvec2, dvec3, DAffine3, DVec2, DVec3};
 use hex_color::HexColor;
 use opencascade::primitives::{Compound, Face, IntoShape, Shape, Surface};
 
-use crate::model::{config::PositiveDVec2, helper::ZipNeighbors};
-
-use super::{
-    config::{Config, FingerCluster},
-    helper::{Rotate, Translate},
+use crate::model::{
+    config::{Config, FingerCluster, PositiveDVec2},
+    helper::{Rotate, Translate, ZipNeighbors},
     key::Switch,
     Component,
 };

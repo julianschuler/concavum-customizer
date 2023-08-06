@@ -8,9 +8,7 @@ use three_d::{
 };
 use winit::event_loop::{EventLoopBuilder, EventLoopProxy};
 
-use crate::model::Error;
-
-use super::model::MeshModel;
+use crate::{model::Error, viewer::model::MeshModel};
 
 pub type ModelUpdate = Result<MeshModel, Arc<Error>>;
 
