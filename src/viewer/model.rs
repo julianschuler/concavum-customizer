@@ -54,7 +54,7 @@ impl Component {
 
 pub trait ViewableModel {
     fn components(self) -> Vec<Component>;
-    fn light_directions(&self) -> Vec<DVec3>;
+    fn light_positions(&self) -> Vec<DVec3>;
     fn background_color(&self) -> HexColor;
     fn triangulation_tolerance(&self) -> f64;
 
@@ -63,10 +63,10 @@ pub trait ViewableModel {
         Self: Sized,
     {
         let triangulation_tolerance = self.triangulation_tolerance();
-        let light_directions = self
-            .light_directions()
+        let light_positions = self
+            .light_positions()
             .iter()
-            .map(|direction| direction.as_vec3().to_array().into())
+            .map(|position| position.as_vec3().to_array().into())
             .collect();
         let HexColor { r, g, b, a } = self.background_color();
         let background_color = Color::new(r, g, b, a);
@@ -102,7 +102,7 @@ pub trait ViewableModel {
 
         MeshModel {
             objects,
-            light_directions,
+            light_positions,
             background_color,
         }
     }
@@ -118,7 +118,7 @@ pub struct CpuObject {
 #[derive(Clone)]
 pub struct MeshModel {
     pub objects: Vec<CpuObject>,
-    pub light_directions: Vec<Vec3>,
+    pub light_positions: Vec<Vec3>,
     pub background_color: Color,
 }
 

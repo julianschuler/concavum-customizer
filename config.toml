@@ -7,8 +7,8 @@ show_interface_pcb = true
 show_bottom_plate = true
 # Triangulation tolerance, lower values result in higher preview fidelity
 triangulation_tolerance = 0.1
-# Light directions, will be hardcoded at a later stage
-light_directions = [[0.0, -0.6, 0.3]]
+# Light positions, will be hardcoded at a later stage
+light_positions = [[100, 0, 100]]
 
 
 [finger_cluster]
