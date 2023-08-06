@@ -12,9 +12,10 @@ use notify::{
 };
 use winit::event_loop::EventLoopProxy;
 
-use crate::model::{self, ViewableModel};
-
-use super::window::ModelUpdate;
+use crate::{
+    model::{self, ViewableModel},
+    viewer::window::ModelUpdate,
+};
 
 pub struct ModelReloader {
     config_path: PathBuf,

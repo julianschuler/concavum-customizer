@@ -1,4 +1,4 @@
-use std::iter::{Zip, Skip};
+use std::iter::{Skip, Zip};
 
 use glam::{dvec3, DAffine3, DVec3};
 

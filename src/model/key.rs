@@ -5,9 +5,11 @@ use opencascade::{
     workplane::Workplane,
 };
 
-use crate::model::{config::EPSILON, helper::zvec};
-
-use super::{config::Config, Component};
+use crate::model::{
+    config::{Config, EPSILON},
+    helper::zvec,
+    Component,
+};
 
 pub struct Key {
     switch: Switch,
