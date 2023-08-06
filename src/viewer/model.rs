@@ -24,10 +24,7 @@ impl Component {
 
     fn mesh(&self, triangulation_tolerance: f64) -> Result<CpuMesh, Error> {
         let Mesh {
-            vertices,
-            normals,
-            indices,
-            ..
+            vertices, indices, ..
         } = self.shape.mesh_with_tolerance(triangulation_tolerance)?;
 
         let vertices = vertices
@@ -36,19 +33,17 @@ impl Component {
             .collect();
         let indices = indices
             .iter()
-            .map(|index| (*index).try_into().expect("index does not fit in u32"))
-            .collect();
-        let normals = normals
-            .iter()
-            .map(|vertex| vertex.as_vec3().to_array().into())
+            .map(|&index| index.try_into().expect("index does not fit in u32"))
             .collect();
 
-        Ok(CpuMesh {
+        let mut mesh = CpuMesh {
             positions: Positions::F32(vertices),
             indices: Indices::U32(indices),
-            normals: Some(normals),
             ..Default::default()
-        })
+        };
+        mesh.compute_normals();
+
+        Ok(mesh)
     }
 }
 
