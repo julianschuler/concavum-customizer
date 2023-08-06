@@ -40,10 +40,19 @@ pub trait ZipNeighbors<T> {
     fn zip_neighbors(self) -> Zip<T, Skip<T>>;
 }
 
-
 impl<T: Iterator + Clone> ZipNeighbors<T> for T {
     fn zip_neighbors(self) -> Zip<T, Skip<T>> {
         let shifted_iterator = self.clone().skip(1);
         self.zip(shifted_iterator)
+    }
+}
+
+pub trait ProjectOntoPlane {
+    fn project_onto_plane(self, normal: Self) -> Self;
+}
+
+impl ProjectOntoPlane for DVec3 {
+    fn project_onto_plane(self, normal: Self) -> Self {
+        self - self.dot(normal) * normal
     }
 }
