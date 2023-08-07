@@ -143,45 +143,88 @@ impl KeyCluster {
             .clone()
             .flat_map(|column| column.map(Self::plate));
 
-        // Calculate vertical and horizontal connectors between plates
-        let vertical_connector_points = plate_points.clone().map(|column| {
+        let vertical_connectors = plate_points.clone().flat_map(|column| {
             column
                 .zip_neighbors()
-                .map(|(plate, upper)| Self::top_connector_points(plate, upper))
+                .map(|(plate, upper)| Self::top_connector(plate, upper))
         });
 
-        let horizontal_connector_points =
-            plate_points
-                .clone()
+        let column_points = key_positions.positions.iter().map(|column| {
+            column.iter().flat_map(|position| {
+                let matrix = position.matrix3;
+                let tangent = matrix.x_axis;
+                let up = matrix.y_axis;
+                let normal = matrix.z_axis;
+
+                [
+                    ColumnPoint {
+                        left: position.transform_point3(PLATE_POINT_LB),
+                        right: position.transform_point3(PLATE_POINT_RB),
+                        up,
+                        tangent,
+                        normal,
+                    },
+                    ColumnPoint {
+                        left: position.transform_point3(PLATE_POINT_LT),
+                        right: position.transform_point3(PLATE_POINT_RT),
+                        up,
+                        tangent,
+                        normal,
+                    },
+                ]
+            })
+        });
+
+        let column_connectors =
+            column_points
                 .zip_neighbors()
-                .map(|(column, next_column)| {
-                    column
-                        .zip(next_column)
-                        .map(|(plate, right)| Self::side_connector_points(plate, right))
+                .flat_map(|(left_column, right_column)| {
+                    let left_column: Vec<_> = left_column.collect();
+                    let right_column: Vec<_> = right_column.collect();
+
+                    let left_column_length = left_column.len() - 1;
+                    let right_column_length = right_column.len() - 1;
+
+                    let mut previous_points =
+                        Self::calculate_next_points(&left_column[0], &right_column[0]);
+                    let (mut left_index, mut right_index) = (0, 0);
+                    let mut left = &left_column[left_index];
+                    let mut right = &right_column[right_index];
+                    let mut surfaces = Vec::new();
+
+                    while left_index < left_column_length || right_index < right_column_length {
+                        let up = left.up + right.up;
+
+                        let next_left_index = (left_index + 1).min(left_column_length);
+                        let next_right_index = (right_index + 1).min(right_column_length);
+
+                        (left_index, right_index) = if next_left_index != left_index
+                            && (left_column[next_left_index].right - right.left).dot(up) <= 0.0
+                        {
+                            (next_left_index, right_index)
+                        } else if next_right_index != right_index
+                            && (right_column[next_right_index].left - left.right).dot(up) <= 0.0
+                        {
+                            (left_index, next_right_index)
+                        } else {
+                            (next_left_index, next_right_index)
+                        };
+
+                        left = &left_column[left_index];
+                        right = &right_column[right_index];
+
+                        let next_points = Self::calculate_next_points(&left, &right);
+                        surfaces.push(Surface::bezier([previous_points, next_points]));
+                        previous_points = next_points;
+                    }
+
+                    surfaces
                 });
-
-        let horizontal_vertical_connectors = vertical_connector_points
-            .clone()
-            .flatten()
-            .chain(horizontal_connector_points.clone().flatten())
-            .map(Surface::bezier);
-
-        // Calculate diagonal connectors between the horizontal and vertical connectors
-        let diagonal_connectors = vertical_connector_points
-            .zip_neighbors()
-            .map(|(column, next_column)| column.zip(next_column))
-            .zip(horizontal_connector_points.map(|column| column.zip_neighbors()))
-            .flat_map(|(top, side)| {
-                top.zip(side)
-                    .map(|((top_left, top_right), (side_bottom, side_top))| {
-                        Self::diagonal_connector(top_left, top_right, side_bottom, side_top)
-                    })
-            });
 
         // Finally, combine all faces
         let faces = plates
-            .chain(horizontal_vertical_connectors)
-            .chain(diagonal_connectors)
+            .chain(vertical_connectors)
+            .chain(column_connectors)
             .map(|surface| Face::from_surface(&surface));
 
         let shape = Compound::from_shapes(faces.into_iter().map(|face| face.into_shape())).into();
@@ -206,7 +249,7 @@ impl KeyCluster {
         Surface::bezier([[plate.lb, plate.lt], [plate.rb, plate.rt]])
     }
 
-    fn top_connector_points(plate: PlatePoints, upper: PlatePoints) -> [[DVec3; 4]; 2] {
+    fn top_connector(plate: PlatePoints, upper: PlatePoints) -> Surface {
         let (lb, lt, rb, rt) = (plate.lt, upper.lb, plate.rt, upper.rb);
         let normal = (lb - rb + lt - rt).normalize();
         let tangent_lb = (lb - plate.lb).normalize();
@@ -219,7 +262,7 @@ impl KeyCluster {
         let distance_r =
             Self::calculate_control_point_distance(rb, tangent_rb, rt, tangent_rt, normal);
 
-        [
+        Surface::bezier([
             [
                 lb,
                 lb + distance_l * tangent_lb,
@@ -232,62 +275,33 @@ impl KeyCluster {
                 rt + distance_r * tangent_rt,
                 rt,
             ],
-        ]
+        ])
     }
 
-    fn side_connector_points(plate: PlatePoints, right: PlatePoints) -> [[DVec3; 4]; 2] {
-        let (lb, lt, rb, rt) = (plate.rb, plate.rt, right.lb, right.lt);
-        let normal = (lt - lb + lt - rb).normalize();
-        let tangent_lb = (lb - plate.lb).normalize();
-        let tangent_lt = (lt - plate.lt).normalize();
-        let tangent_rb = (rb - right.rb).normalize();
-        let tangent_rt = (rt - right.rt).normalize();
+    fn calculate_next_points(left: &ColumnPoint, right: &ColumnPoint) -> [DVec3; 4] {
+        const MINIMUM_OFFSET_HEIGHT: f64 = 1.5;
+        const DISTANCE_OFFSET_FACTOR: f64 = 0.2;
 
-        let distance_b =
-            Self::calculate_control_point_distance(lb, tangent_lb, rb, tangent_rb, normal);
-        let distance_t =
-            Self::calculate_control_point_distance(lt, tangent_lt, rt, tangent_rt, normal);
+        let up = left.up + right.up;
+        let normal = (left.normal + right.normal).normalize();
+        let left_tangent = left.tangent;
+        let right_tangent = -right.tangent;
+        let left = left.right;
+        let right = right.left;
+
+        let distance =
+            Self::calculate_control_point_distance(left, left_tangent, right, right_tangent, up);
+        let distance_offset = match (left - right).dot(normal) {
+            f if f.abs() >= MINIMUM_OFFSET_HEIGHT => f.signum() * DISTANCE_OFFSET_FACTOR * distance,
+            _ => 0.0,
+        };
 
         [
-            [
-                lb,
-                lb + distance_b * tangent_lb,
-                rb + distance_b * tangent_rb,
-                rb,
-            ],
-            [
-                lt,
-                lt + distance_t * tangent_lt,
-                rt + distance_t * tangent_rt,
-                rt,
-            ],
-        ]
-    }
-
-    fn diagonal_connector(
-        top_left: [[DVec3; 4]; 2],
-        top_right: [[DVec3; 4]; 2],
-        side_bottom: [[DVec3; 4]; 2],
-        side_top: [[DVec3; 4]; 2],
-    ) -> Surface {
-        let [_, left] = top_left;
-        let [right, _] = top_right;
-        let [_, [_, side_lb, side_rb, _]] = side_bottom;
-        let [[_, side_lt, side_rt, _], _] = side_top;
-
-        let [a, b, c, d] = left;
-        let lb = b - a;
-        let lt = c - d;
-        let [a, b, c, d] = right;
-        let rb = b - a;
-        let rt = c - d;
-
-        Surface::bezier([
             left,
-            [side_lb, side_lb + lb, side_lt + lt, side_lt],
-            [side_rb, side_rb + rb, side_rt + rt, side_rt],
+            left + (distance - distance_offset) * left_tangent,
+            right + (distance + distance_offset) * right_tangent,
             right,
-        ])
+        ]
     }
 
     fn calculate_control_point_distance(
@@ -307,8 +321,8 @@ impl KeyCluster {
 
         let candidate_equal_length1 = (dot_dp_dt + sqrt) / r_norm_dt;
         let candidate_equal_length2 = (dot_dp_dt - sqrt) / r_norm_dt;
-        let candidate_perpendicular1 = -1.0 * dp.dot(tangent1) / dt.dot(tangent1);
-        let candidate_perpendicular2 = -1.0 * dp.dot(tangent2) / dt.dot(tangent2);
+        let candidate_perpendicular1 = -2.0 * dp.dot(tangent1) / dt.dot(tangent1);
+        let candidate_perpendicular2 = -2.0 * dp.dot(tangent2) / dt.dot(tangent2);
 
         [
             candidate_equal_length1,
@@ -327,6 +341,14 @@ impl From<KeyCluster> for Component {
     fn from(cluster: KeyCluster) -> Self {
         Component::new(cluster.shape, cluster.color)
     }
+}
+
+struct ColumnPoint {
+    left: DVec3,
+    right: DVec3,
+    up: DVec3,
+    tangent: DVec3,
+    normal: DVec3,
 }
 
 struct PlatePoints {
