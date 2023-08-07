@@ -213,7 +213,7 @@ impl KeyCluster {
                         left = &left_column[left_index];
                         right = &right_column[right_index];
 
-                        let next_points = Self::calculate_next_points(&left, &right);
+                        let next_points = Self::calculate_next_points(left, right);
                         surfaces.push(Surface::bezier([previous_points, next_points]));
                         previous_points = next_points;
                     }
@@ -332,7 +332,7 @@ impl KeyCluster {
         ]
         .into_iter()
         .filter(|&c| c > 0.0)
-        .min_by(|a, b| f64::total_cmp(a, b))
+        .min_by(f64::total_cmp)
         .unwrap_or(1.0)
     }
 }
