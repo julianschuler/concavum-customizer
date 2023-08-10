@@ -56,3 +56,8 @@ impl ProjectOntoPlane for DVec3 {
         self - self.dot(normal) * normal
     }
 }
+
+pub struct Line {
+    pub point: DVec3,
+    pub direction: DVec3,
+}
