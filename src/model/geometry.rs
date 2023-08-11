@@ -62,6 +62,10 @@ impl Line {
     pub fn parametric_point(&self, parameter: f64) -> DVec3 {
         self.point + parameter * self.direction
     }
+
+    pub fn direction(&self) -> DVec3 {
+        self.direction
+    }
 }
 
 pub struct Plane {
@@ -85,5 +89,27 @@ impl Plane {
         intersection_parameter
             .is_finite()
             .then(|| line.parametric_point(intersection_parameter))
+    }
+}
+
+pub struct BoundedPlane {
+    plane: Plane,
+    bounds: Vec<Plane>,
+}
+
+#[allow(unused)]
+impl BoundedPlane {
+    pub fn new(plane: Plane, bounds: impl IntoIterator<Item = Plane>) -> Self {
+        let bounds = bounds.into_iter().collect();
+        Self { plane, bounds }
+    }
+
+    pub fn intersection(&self, line: &Line) -> Option<DVec3> {
+        self.plane.intersection(&line).and_then(|point| {
+            self.bounds
+                .iter()
+                .all(|bound| bound.signed_distance_to(point) >= 0.0)
+                .then_some(point)
+        })
     }
 }
