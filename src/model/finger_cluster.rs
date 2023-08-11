@@ -134,22 +134,18 @@ impl KeyCluster {
                 ));
 
                 // All lines in the center, if any
-                column
-                    .get(1)
-                    .map(|next_position| {
-                        let line = Line::new(first.translation, first.y_axis);
-                        let plane = Plane::new(next_position.translation, next_position.z_axis);
+                if let Some(half_plate_size) = column.get(1).and_then(|next_position| {
+                    let line = Line::new(first.translation, first.y_axis);
+                    let plane = Plane::new(next_position.translation, next_position.z_axis);
 
-                        line.intersection_parameter(&plane)
-                    })
-                    .flatten()
-                    .map(|half_plate_size| {
-                        for position in column.iter().skip(1) {
-                            let point = Line::new(position.translation, position.y_axis)
-                                .parametric_point(-half_plate_size);
-                            lines.push(Line::new(point, position.x_axis));
-                        }
-                    });
+                    line.intersection_parameter(&plane)
+                }) {
+                    for position in column.iter().skip(1) {
+                        let point = Line::new(position.translation, position.y_axis)
+                            .parametric_point(-half_plate_size);
+                        lines.push(Line::new(point, position.x_axis));
+                    }
+                };
 
                 // Last line
                 lines.push(Line::new(
