@@ -55,22 +55,12 @@ pub struct Line {
 #[allow(unused)]
 impl Line {
     pub fn new(point: DVec3, direction: DVec3) -> Self {
+        let direction = direction.normalize();
         Self { point, direction }
     }
 
     pub fn parametric_point(&self, parameter: f64) -> DVec3 {
         self.point + parameter * self.direction
-    }
-
-    pub fn intersection_parameter(&self, plane: &Plane) -> Option<f64> {
-        let normal = plane.normal;
-        let intersect_factor = normal.dot(plane.point - self.point) / self.direction.dot(normal);
-        intersect_factor.is_finite().then_some(intersect_factor)
-    }
-
-    pub fn intersection(&self, plane: &Plane) -> Option<DVec3> {
-        self.intersection_parameter(plane)
-            .map(|factor| self.parametric_point(factor))
     }
 }
 
@@ -79,20 +69,21 @@ pub struct Plane {
     normal: DVec3,
 }
 
-#[allow(unused)]
 impl Plane {
     pub fn new(point: DVec3, normal: DVec3) -> Self {
+        let normal = normal.normalize();
         Self { point, normal }
     }
 
-    pub fn from_normal(normal: DVec3) -> Self {
-        Self {
-            point: DVec3::default(),
-            normal,
-        }
+    pub fn signed_distance_to(&self, point: DVec3) -> f64 {
+        self.normal.dot(point - self.point)
     }
 
-    pub fn project(self, vector: DVec3) -> DVec3 {
-        vector - vector.dot(self.normal) * self.normal
+    pub fn intersection(&self, line: &Line) -> Option<DVec3> {
+        let intersection_parameter =
+            self.normal.dot(self.point - line.point) / line.direction.dot(self.normal);
+        intersection_parameter
+            .is_finite()
+            .then(|| line.parametric_point(intersection_parameter))
     }
 }
