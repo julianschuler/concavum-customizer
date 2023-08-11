@@ -6,7 +6,7 @@ use opencascade::primitives::{Compound, Edge, Face, IntoShape, Shape, Wire};
 
 use crate::model::{
     config::{Config, FingerCluster, PositiveDVec2},
-    geometry::{Line, Plane, Rotate, Translate, ZipNeighbors},
+    geometry::{BoundedPlane, Line, Plane, Rotate, Translate, ZipNeighbors},
     key::Switch,
     Component,
 };
@@ -115,72 +115,119 @@ impl KeyCluster {
         const PLATE_SIZE: DVec2 = dvec2(17.0, 18.0);
         const PLATE_X_2: f64 = PLATE_SIZE.x / 2.0;
         const PLATE_Y_2: f64 = PLATE_SIZE.y / 2.0;
+        const CLEARANCE: f64 = 0.5;
 
         let tilting = config.keyboard.tilting_angle;
         let (tilting_x, tilting_y) = (tilting.x.to_radians(), tilting.y.to_radians());
         let tilting_transform = DAffine3::from_rotation_x(tilting_x).rotate_y(tilting_y);
 
+        let key_distance: PositiveDVec2 = (&config.finger_cluster.key_distance).into();
         let key_positions = KeyPositions::from_config(&config.finger_cluster);
         let key_positions = tilting_transform * key_positions;
 
-        let columns = key_positions.positions.iter().map(|column| {
-            let mut lines = Vec::new();
+        let lines: Vec<_> = key_positions
+            .positions
+            .iter()
+            .map(|column| {
+                let mut lines = Vec::new();
 
-            if let (Some(first), Some(last)) = (column.first(), column.last()) {
-                // First line
-                lines.push(Line::new(
-                    first.translation - PLATE_Y_2 * first.y_axis,
-                    first.x_axis,
-                ));
+                if let (Some(first), Some(last)) = (column.first(), column.last()) {
+                    // First line
+                    lines.push(Line::new(
+                        first.translation - PLATE_Y_2 * first.y_axis,
+                        first.x_axis,
+                    ));
 
-                // All lines in the center, if any
-                for (position, next_position) in column.iter().zip_neighbors() {
-                    let line = Line::new(position.translation, position.y_axis);
-                    let plane = Plane::new(next_position.translation, next_position.z_axis);
+                    // All lines in the center, if any
+                    for (position, next_position) in column.iter().zip_neighbors() {
+                        let line = Line::new(position.translation, position.y_axis);
+                        let plane = Plane::new(next_position.translation, next_position.z_axis);
 
-                    if let Some(point) = plane.intersection(&line) {
-                        lines.push(Line::new(point, position.x_axis));
+                        if let Some(point) = plane.intersection(&line) {
+                            lines.push(Line::new(point, position.x_axis));
+                        }
                     }
+
+                    // Last line
+                    lines.push(Line::new(
+                        last.translation + PLATE_Y_2 * last.y_axis,
+                        last.x_axis,
+                    ));
                 }
 
-                // Last line
-                lines.push(Line::new(
-                    last.translation + PLATE_Y_2 * last.y_axis,
-                    last.x_axis,
-                ));
-            }
+                (lines, column)
+            })
+            .collect();
 
-            lines
-        });
+        let plane_offset = key_distance.x / 2.0 + CLEARANCE;
 
-        let column_edges = columns.map(|column| {
-            let edges: Vec<_> = column
-                .into_iter()
-                .map(|line| {
-                    Edge::segment(
-                        line.parametric_point(-PLATE_X_2),
-                        line.parametric_point(PLATE_X_2),
-                    )
-                })
-                .collect();
+        let points: Vec<_> = lines
+            .iter()
+            .zip_neighbors()
+            .map(|((lines, positions), (next_lines, next_positions))| {
+                if let (Some(left_first), Some(right_first)) = (lines.first(), next_lines.first()) {
+                    let left_bounded_plane = BoundedPlane::new(
+                        Plane::new(
+                            left_first.parametric_point(plane_offset),
+                            left_first.direction(),
+                        ),
+                        positions
+                            .iter()
+                            .map(|position| Plane::new(position.translation, position.z_axis)),
+                    );
+                    let right_bounded_plane = BoundedPlane::new(
+                        Plane::new(
+                            right_first.parametric_point(-plane_offset),
+                            right_first.direction(),
+                        ),
+                        next_positions
+                            .iter()
+                            .map(|position| Plane::new(position.translation, position.z_axis)),
+                    );
 
-            edges
-        });
+                    let left_points: Vec<_> = lines
+                        .iter()
+                        .map(|line| {
+                            right_bounded_plane
+                                .intersection(line)
+                                .unwrap_or_else(|| line.parametric_point(plane_offset))
+                        })
+                        .collect();
+                    let right_points: Vec<_> = next_lines
+                        .iter()
+                        .map(|line| {
+                            left_bounded_plane
+                                .intersection(line)
+                                .unwrap_or_else(|| line.parametric_point(-plane_offset))
+                        })
+                        .collect();
+
+                    (left_points, right_points)
+                } else {
+                    (Vec::default(), Vec::default())
+                }
+            })
+            .collect();
+
+        let column_edges =
+            points
+                .iter()
+                .zip_neighbors()
+                .map(|((_, left_points), (right_points, _))| {
+                    left_points
+                        .iter()
+                        .zip(right_points)
+                        .map(|(&left, &right)| Edge::segment(left, right))
+                });
 
         let faces = column_edges.flat_map(|edges| {
             let faces: Vec<_> = edges
-                .iter()
                 .zip_neighbors()
                 .map(|(edge, next_edge)| {
                     let left_edge = Edge::segment(edge.start_point(), next_edge.start_point());
                     let right_edge = Edge::segment(edge.end_point(), next_edge.end_point());
 
-                    Face::from_wire(&Wire::from_edges([
-                        edge,
-                        &left_edge,
-                        &right_edge,
-                        next_edge,
-                    ]))
+                    Face::from_wire(&Wire::from_edges(&[edge, left_edge, right_edge, next_edge]))
                 })
                 .collect();
 
