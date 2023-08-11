@@ -6,7 +6,7 @@ use opencascade::primitives::{Compound, Edge, Face, IntoShape, Shape, Wire};
 
 use crate::model::{
     config::{Config, FingerCluster, PositiveDVec2},
-    geometry::{Line, Rotate, Translate, ZipNeighbors},
+    geometry::{Line, Plane, Rotate, Translate, ZipNeighbors},
     key::Switch,
     Component,
 };
@@ -128,38 +128,34 @@ impl KeyCluster {
 
             if let (Some(first), Some(last)) = (column.first(), column.last()) {
                 // First line
-                lines.push(Line {
-                    point: first.translation - PLATE_Y_2 * first.y_axis,
-                    direction: first.x_axis,
-                });
+                lines.push(Line::new(
+                    first.translation - PLATE_Y_2 * first.y_axis,
+                    first.x_axis,
+                ));
 
                 // All lines in the center, if any
                 column
                     .get(1)
                     .map(|next_position| {
-                        let tangent = first.y_axis;
-                        let normal = next_position.z_axis;
-                        let p1 = first.translation;
-                        let p2 = next_position.translation;
+                        let line = Line::new(first.translation, first.y_axis);
+                        let plane = Plane::new(next_position.translation, next_position.z_axis);
 
-                        let half_plate_size = normal.dot(p2 - p1) / tangent.dot(normal);
-                        half_plate_size.is_finite().then_some(half_plate_size)
+                        line.intersection_parameter(&plane)
                     })
                     .flatten()
                     .map(|half_plate_size| {
                         for position in column.iter().skip(1) {
-                            lines.push(Line {
-                                point: position.translation - half_plate_size * position.y_axis,
-                                direction: position.x_axis,
-                            });
+                            let point = Line::new(position.translation, position.y_axis)
+                                .parametric_point(-half_plate_size);
+                            lines.push(Line::new(point, position.x_axis));
                         }
                     });
 
                 // Last line
-                lines.push(Line {
-                    point: last.translation + PLATE_Y_2 * last.y_axis,
-                    direction: last.x_axis,
-                });
+                lines.push(Line::new(
+                    last.translation + PLATE_Y_2 * last.y_axis,
+                    last.x_axis,
+                ));
             }
 
             lines
@@ -169,8 +165,10 @@ impl KeyCluster {
             let edges: Vec<_> = column
                 .into_iter()
                 .map(|line| {
-                    let Line { point, direction } = line;
-                    Edge::segment(point - PLATE_X_2 * direction, point + PLATE_Y_2 * direction)
+                    Edge::segment(
+                        line.parametric_point(-PLATE_X_2),
+                        line.parametric_point(PLATE_X_2),
+                    )
                 })
                 .collect();
 
