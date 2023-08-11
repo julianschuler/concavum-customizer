@@ -47,17 +47,52 @@ impl<T: Iterator + Clone> ZipNeighbors<T> for T {
     }
 }
 
-pub trait ProjectOntoPlane {
-    fn project_onto_plane(self, normal: Self) -> Self;
+pub struct Line {
+    point: DVec3,
+    direction: DVec3,
 }
 
-impl ProjectOntoPlane for DVec3 {
-    fn project_onto_plane(self, normal: Self) -> Self {
-        self - self.dot(normal) * normal
+#[allow(unused)]
+impl Line {
+    pub fn new(point: DVec3, direction: DVec3) -> Self {
+        Self { point, direction }
+    }
+
+    pub fn parametric_point(&self, parameter: f64) -> DVec3 {
+        self.point + parameter * self.direction
+    }
+
+    pub fn intersection_parameter(&self, plane: &Plane) -> Option<f64> {
+        let normal = plane.normal;
+        let intersect_factor = normal.dot(plane.point - self.point) / self.direction.dot(normal);
+        intersect_factor.is_finite().then_some(intersect_factor)
+    }
+
+    pub fn intersection(&self, plane: &Plane) -> Option<DVec3> {
+        self.intersection_parameter(plane)
+            .map(|factor| self.parametric_point(factor))
     }
 }
 
-pub struct Line {
-    pub point: DVec3,
-    pub direction: DVec3,
+pub struct Plane {
+    point: DVec3,
+    normal: DVec3,
+}
+
+#[allow(unused)]
+impl Plane {
+    pub fn new(point: DVec3, normal: DVec3) -> Self {
+        Self { point, normal }
+    }
+
+    pub fn from_normal(normal: DVec3) -> Self {
+        Self {
+            point: DVec3::default(),
+            normal,
+        }
+    }
+
+    pub fn project(self, vector: DVec3) -> DVec3 {
+        vector - vector.dot(self.normal) * self.normal
+    }
 }
