@@ -7,7 +7,7 @@ use opencascade::{
 
 use crate::model::{
     config::{Config, EPSILON},
-    helper::zvec,
+    geometry::zvec,
     Component,
 };
 

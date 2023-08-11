@@ -1,6 +1,6 @@
 mod config;
 mod finger_cluster;
-mod helper;
+mod geometry;
 mod key;
 
 use std::path::Path;

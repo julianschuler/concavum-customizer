@@ -6,7 +6,7 @@ use opencascade::primitives::{Compound, Edge, Face, IntoShape, Shape, Wire};
 
 use crate::model::{
     config::{Config, FingerCluster, PositiveDVec2},
-    helper::{Line, Rotate, Translate, ZipNeighbors},
+    geometry::{Line, Rotate, Translate, ZipNeighbors},
     key::Switch,
     Component,
 };
