@@ -11,6 +11,8 @@ use crate::model::{
     Component,
 };
 
+use super::geometry::zvec;
+
 struct KeyPositions {
     positions: Vec<Vec<DAffine3>>,
 }
@@ -88,6 +90,25 @@ impl KeyPositions {
 
         Self { positions }
     }
+
+    pub fn tilt(self, tilting_angle: DVec2) -> Self {
+        const Z_OFFSET: f64 = 12.0;
+
+        let (tilting_x, tilting_y) = (tilting_angle.x.to_radians(), tilting_angle.y.to_radians());
+        let tilting_transform = DAffine3::from_rotation_x(tilting_x).rotate_y(tilting_y);
+
+        let tilted_positions = tilting_transform * self;
+
+        let z_offset = Z_OFFSET
+            - tilted_positions
+                .positions
+                .iter()
+                .flat_map(|column| column.iter().map(|position| position.translation.z))
+                .min_by(f64::total_cmp)
+                .unwrap_or_default();
+
+        DAffine3::from_translation(zvec(z_offset)) * tilted_positions
+    }
 }
 
 impl Mul<KeyPositions> for DAffine3 {
@@ -117,13 +138,10 @@ impl KeyCluster {
         const PLATE_Y_2: f64 = PLATE_SIZE.y / 2.0;
         const CLEARANCE: f64 = 0.5;
 
-        let tilting = config.keyboard.tilting_angle;
-        let (tilting_x, tilting_y) = (tilting.x.to_radians(), tilting.y.to_radians());
-        let tilting_transform = DAffine3::from_rotation_x(tilting_x).rotate_y(tilting_y);
+        let key_positions =
+            KeyPositions::from_config(&config.finger_cluster).tilt(config.keyboard.tilting_angle);
 
         let key_distance: PositiveDVec2 = (&config.finger_cluster.key_distance).into();
-        let key_positions = KeyPositions::from_config(&config.finger_cluster);
-        let key_positions = tilting_transform * key_positions;
 
         let lines: Vec<_> = key_positions
             .positions
