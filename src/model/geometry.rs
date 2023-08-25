@@ -1,5 +1,3 @@
-use std::iter::{Skip, Zip};
-
 use glam::{dvec3, DAffine3, DVec3};
 
 pub fn zvec(z: f64) -> DVec3 {
@@ -33,17 +31,6 @@ impl Rotate for DAffine3 {
 
     fn rotate_z(self, angle: f64) -> Self {
         DAffine3::from_rotation_z(angle) * self
-    }
-}
-
-pub trait ZipNeighbors<T> {
-    fn zip_neighbors(self) -> Zip<T, Skip<T>>;
-}
-
-impl<T: Iterator + Clone> ZipNeighbors<T> for T {
-    fn zip_neighbors(self) -> Zip<T, Skip<T>> {
-        let shifted_iterator = self.clone().skip(1);
-        self.zip(shifted_iterator)
     }
 }
 
@@ -105,7 +92,7 @@ impl BoundedPlane {
     }
 
     pub fn intersection(&self, line: &Line) -> Option<DVec3> {
-        self.plane.intersection(&line).and_then(|point| {
+        self.plane.intersection(line).and_then(|point| {
             self.bounds
                 .iter()
                 .all(|bound| bound.signed_distance_to(point) >= 0.0)

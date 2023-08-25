@@ -1,12 +1,12 @@
 use std::ops::Mul;
 
-use glam::{dvec2, dvec3, DAffine3, DVec2};
+use glam::{dvec2, dvec3, DAffine3, DVec2, DVec3};
 use hex_color::HexColor;
-use opencascade::primitives::{Compound, Edge, Face, IntoShape, Shape, Wire};
+use opencascade::primitives::{IntoShape, Shape, Solid, Wire};
 
 use crate::model::{
     config::{Config, FingerCluster, PositiveDVec2},
-    geometry::{BoundedPlane, Line, Plane, Rotate, Translate, ZipNeighbors},
+    geometry::{Line, Plane, Rotate, Translate},
     key::Switch,
     Component,
 };
@@ -133,126 +133,29 @@ pub struct KeyCluster {
 
 impl KeyCluster {
     pub fn from_config(config: &Config) -> Self {
-        const PLATE_SIZE: DVec2 = dvec2(17.0, 18.0);
-        const PLATE_X_2: f64 = PLATE_SIZE.x / 2.0;
-        const PLATE_Y_2: f64 = PLATE_SIZE.y / 2.0;
-        const CLEARANCE: f64 = 0.5;
+        const KEY_CLEARANCE: f64 = 1.0;
 
         let key_positions =
             KeyPositions::from_config(&config.finger_cluster).tilt(config.keyboard.tilting_angle);
 
         let key_distance: PositiveDVec2 = (&config.finger_cluster.key_distance).into();
+        let key_clearance = dvec2(
+            key_distance.x + KEY_CLEARANCE,
+            key_distance.y + KEY_CLEARANCE,
+        );
 
-        let lines: Vec<_> = key_positions
+        let mount = Mount::from_positions(&key_positions);
+        let mount_height = mount.height;
+        let mut shape = mount.into_shape();
+
+        let clearances = key_positions
             .positions
             .iter()
-            .map(|column| {
-                let mut lines = Vec::new();
+            .map(|column| Self::column_clearance(column, &key_clearance, mount_height));
 
-                if let (Some(first), Some(last)) = (column.first(), column.last()) {
-                    // First line
-                    lines.push(Line::new(
-                        first.translation - PLATE_Y_2 * first.y_axis,
-                        first.x_axis,
-                    ));
-
-                    // All lines in the center, if any
-                    for (position, next_position) in column.iter().zip_neighbors() {
-                        let line = Line::new(position.translation, position.y_axis);
-                        let plane = Plane::new(next_position.translation, next_position.z_axis);
-
-                        if let Some(point) = plane.intersection(&line) {
-                            lines.push(Line::new(point, position.x_axis));
-                        }
-                    }
-
-                    // Last line
-                    lines.push(Line::new(
-                        last.translation + PLATE_Y_2 * last.y_axis,
-                        last.x_axis,
-                    ));
-                }
-
-                (lines, column)
-            })
-            .collect();
-
-        let plane_offset = key_distance.x / 2.0 + CLEARANCE;
-
-        let points: Vec<_> = lines
-            .iter()
-            .zip_neighbors()
-            .map(|((lines, positions), (next_lines, next_positions))| {
-                if let (Some(left_first), Some(right_first)) = (lines.first(), next_lines.first()) {
-                    let left_bounded_plane = BoundedPlane::new(
-                        Plane::new(
-                            left_first.parametric_point(plane_offset),
-                            left_first.direction(),
-                        ),
-                        positions
-                            .iter()
-                            .map(|position| Plane::new(position.translation, position.z_axis)),
-                    );
-                    let right_bounded_plane = BoundedPlane::new(
-                        Plane::new(
-                            right_first.parametric_point(-plane_offset),
-                            right_first.direction(),
-                        ),
-                        next_positions
-                            .iter()
-                            .map(|position| Plane::new(position.translation, position.z_axis)),
-                    );
-
-                    let left_points: Vec<_> = lines
-                        .iter()
-                        .map(|line| {
-                            right_bounded_plane
-                                .intersection(line)
-                                .unwrap_or_else(|| line.parametric_point(plane_offset))
-                        })
-                        .collect();
-                    let right_points: Vec<_> = next_lines
-                        .iter()
-                        .map(|line| {
-                            left_bounded_plane
-                                .intersection(line)
-                                .unwrap_or_else(|| line.parametric_point(-plane_offset))
-                        })
-                        .collect();
-
-                    (left_points, right_points)
-                } else {
-                    (Vec::default(), Vec::default())
-                }
-            })
-            .collect();
-
-        let column_edges =
-            points
-                .iter()
-                .zip_neighbors()
-                .map(|((_, left_points), (right_points, _))| {
-                    left_points
-                        .iter()
-                        .zip(right_points)
-                        .map(|(&left, &right)| Edge::segment(left, right))
-                });
-
-        let faces = column_edges.flat_map(|edges| {
-            let faces: Vec<_> = edges
-                .zip_neighbors()
-                .map(|(edge, next_edge)| {
-                    let left_edge = Edge::segment(edge.start_point(), next_edge.start_point());
-                    let right_edge = Edge::segment(edge.end_point(), next_edge.end_point());
-
-                    Face::from_wire(&Wire::from_edges(&[edge, left_edge, right_edge, next_edge]))
-                })
-                .collect();
-
-            faces
-        });
-
-        let shape = Compound::from_shapes(faces.into_iter().map(|face| face.into_shape())).into();
+        for clearance in clearances {
+            shape = shape.subtract(&clearance.into()).into();
+        }
 
         Self {
             shape,
@@ -269,10 +172,180 @@ impl KeyCluster {
             .copied()
             .collect()
     }
+
+    fn column_clearance(column: &[DAffine3], key_clearance: &DVec2, height: f64) -> Solid {
+        const SIDE: f64 = 50.0;
+
+        let first = first_in_column(column);
+        let last = last_in_column(column);
+
+        let mut lines = Vec::new();
+
+        // First line
+        lines.push(Line::new(
+            first.translation - Mount::PLATE_Y_2 * first.y_axis,
+            first.x_axis,
+        ));
+
+        // All lines in the center, if any
+        for window in column.windows(2) {
+            let position = window[0];
+            let next_position = window[1];
+            let line = Line::new(position.translation, position.y_axis);
+            let plane = Plane::new(next_position.translation, next_position.z_axis);
+
+            if let Some(point) = plane.intersection(&line) {
+                lines.push(Line::new(point, position.x_axis));
+            }
+        }
+
+        // Last line
+        lines.push(Line::new(
+            last.translation + Mount::PLATE_Y_2 * last.y_axis,
+            last.x_axis,
+        ));
+
+        // Get polygon points by intersecting with line
+        let normal = first.x_axis;
+        let plane = Plane::new(first.translation - key_clearance.x / 2.0 * normal, normal);
+
+        let mut points: Vec<_> = lines
+            .into_iter()
+            .map(|line| {
+                plane
+                    .intersection(&line)
+                    .expect("line orthogonal to plane should always intersect")
+            })
+            .collect();
+
+        let side_direction = DVec3::Z.cross(first.x_axis).normalize();
+        let up = first.x_axis.cross(side_direction);
+
+        let last = *last_in_column(&points) + SIDE * side_direction;
+        let first = *first_in_column(&points) - SIDE * side_direction;
+
+        points.extend([last, last + height * up, first + height * up, first]);
+
+        let wire = Wire::from_ordered_points(&points);
+        wire.to_face().extrude(key_clearance.x * normal)
+    }
 }
 
 impl From<KeyCluster> for Component {
     fn from(cluster: KeyCluster) -> Self {
         Component::new(cluster.shape, cluster.color)
     }
+}
+
+struct Mount {
+    shape: Solid,
+    height: f64,
+}
+
+impl Mount {
+    const PLATE_SIZE: DVec2 = dvec2(17.0, 18.0);
+    const PLATE_X_2: f64 = Self::PLATE_SIZE.x / 2.0;
+    const PLATE_Y_2: f64 = Self::PLATE_SIZE.y / 2.0;
+    const CIRCUMFERENCE_DISTANCE: f64 = 2.0;
+
+    pub fn from_positions(key_positions: &KeyPositions) -> Self {
+        let height = Self::calculate_height(key_positions);
+
+        let lower_points = key_positions.positions.windows(2).map(|window| {
+            let first_left = first_in_column(&window[0]);
+            let first_right = first_in_column(&window[1]);
+
+            Self::circumference_point(first_left, first_right, false)
+        });
+        let upper_points = key_positions.positions.windows(2).map(|window| {
+            let last_left = last_in_column(&window[0]);
+            let last_right = last_in_column(&window[1]);
+
+            Self::circumference_point(last_left, last_right, true)
+        });
+        let first_column = key_positions.positions.first().unwrap();
+        let last_column = key_positions.positions.last().unwrap();
+
+        let left_bottom_corner = Self::corner_point(first_in_column(first_column), false, false);
+        let left_top_corner = Self::corner_point(last_in_column(first_column), false, true);
+        let right_bottom_corner = Self::corner_point(first_in_column(last_column), true, false);
+        let right_top_corner = Self::corner_point(last_in_column(last_column), true, true);
+
+        let points: Vec<_> = lower_points
+            .chain([right_bottom_corner, right_top_corner])
+            .chain(upper_points.rev())
+            .chain([left_top_corner, left_bottom_corner])
+            .map(|point| dvec3(point.x, point.y, 0.0))
+            .collect();
+
+        let wire = Wire::from_ordered_points(&points);
+        let shape = wire.to_face().extrude(zvec(height));
+
+        Self { shape, height }
+    }
+
+    fn corner_point(position: &DAffine3, right: bool, top: bool) -> DVec3 {
+        let sign_x = if right { 1.0 } else { -1.0 };
+        let sign_y = if top { 1.0 } else { -1.0 };
+
+        let z_canonical = DVec3::Z;
+        let y_canonical = z_canonical.cross(position.x_axis).normalize();
+        let x_canonical = y_canonical.cross(z_canonical);
+
+        let corner = position.translation
+            + sign_x * Self::PLATE_X_2 * position.x_axis
+            + sign_y * Self::PLATE_Y_2 * position.y_axis;
+
+        corner + Self::CIRCUMFERENCE_DISTANCE * (sign_x * x_canonical + sign_y * y_canonical)
+    }
+
+    fn circumference_point(left: &DAffine3, right: &DAffine3, top: bool) -> DVec3 {
+        let sign = if top { 1.0 } else { -1.0 };
+        let left_y_canonical = DVec3::Z.cross(left.x_axis).normalize();
+        let right_y_canonical = DVec3::Z.cross(right.x_axis).normalize();
+
+        let left_target = left.translation
+            + sign
+                * (Self::PLATE_Y_2 * left.y_axis + Self::CIRCUMFERENCE_DISTANCE * left_y_canonical);
+        let right_target = right.translation
+            + sign
+                * (Self::PLATE_Y_2 * right.y_axis
+                    + Self::CIRCUMFERENCE_DISTANCE * right_y_canonical);
+
+        let y = sign * (left_y_canonical + right_y_canonical).normalize();
+
+        let start = (left_target + right_target) / 2.0;
+
+        let offset_factor = y.dot(left_target - right_target).abs() / 2.0;
+
+        start + offset_factor * y
+    }
+
+    fn calculate_height(key_positions: &KeyPositions) -> f64 {
+        key_positions
+            .positions
+            .iter()
+            .flat_map(|column| column.iter().map(|position| position.translation.z))
+            .max_by(f64::total_cmp)
+            .unwrap_or_default()
+            + 20.0
+    }
+}
+
+impl IntoShape for Mount {
+    fn into_shape(self) -> Shape {
+        self.shape.into_shape()
+    }
+}
+
+fn first_in_column<T>(column: &[T]) -> &T {
+    column
+        .first()
+        .expect("there should always be at least one row")
+}
+
+fn last_in_column<T>(column: &[T]) -> &T {
+    column
+        .last()
+        .expect("there should always be at least one row")
 }
