@@ -1,6 +1,6 @@
 use std::ops::Mul;
 
-use glam::{dvec2, dvec3, DAffine3, DVec2, DVec3};
+use glam::{dvec2, dvec3, DAffine3, DMat3, DVec2, DVec3};
 use hex_color::HexColor;
 use opencascade::primitives::{IntoShape, Shape, Solid, Wire};
 
@@ -216,7 +216,7 @@ impl KeyCluster {
             })
             .collect();
 
-        let side_direction = DVec3::Z.cross(first.x_axis).normalize();
+        let side_direction = canonical_base(first.x_axis).y_axis;
         let up = first.x_axis.cross(side_direction);
 
         let last = *last_in_column(&points) + SIDE * side_direction;
@@ -310,15 +310,13 @@ impl Mount {
         let sign_x = if right { 1.0 } else { -1.0 };
         let sign_y = if top { 1.0 } else { -1.0 };
 
-        let z_canonical = DVec3::Z;
-        let y_canonical = z_canonical.cross(position.x_axis).normalize();
-        let x_canonical = y_canonical.cross(z_canonical);
+        let canonical = canonical_base(position.x_axis);
 
         let corner = position.translation
             + sign_x * Self::PLATE_X_2 * position.x_axis
             + sign_y * Self::PLATE_Y_2 * position.y_axis;
 
-        corner + circumference_distance * (sign_x * x_canonical + sign_y * y_canonical)
+        corner + circumference_distance * (sign_x * canonical.x_axis + sign_y * canonical.y_axis)
     }
 
     fn circumference_point(
@@ -328,8 +326,8 @@ impl Mount {
         circumference_distance: f64,
     ) -> DVec3 {
         let sign = if top { 1.0 } else { -1.0 };
-        let left_y_canonical = DVec3::Z.cross(left.x_axis).normalize();
-        let right_y_canonical = DVec3::Z.cross(right.x_axis).normalize();
+        let left_y_canonical = canonical_base(left.x_axis).y_axis;
+        let right_y_canonical = canonical_base(right.x_axis).y_axis;
 
         let left_target = left.translation
             + sign * (Self::PLATE_Y_2 * left.y_axis + circumference_distance * left_y_canonical);
@@ -372,4 +370,12 @@ fn last_in_column<T>(column: &[T]) -> &T {
     column
         .last()
         .expect("there should always be at least one row")
+}
+
+fn canonical_base(x_axis: DVec3) -> DMat3 {
+    let z_canonical = DVec3::Z;
+    let y_canonical = z_canonical.cross(x_axis).normalize();
+    let x_canonical = y_canonical.cross(z_canonical);
+
+    DMat3::from_cols(x_canonical, y_canonical, z_canonical)
 }
