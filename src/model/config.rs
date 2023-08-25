@@ -53,6 +53,7 @@ pub struct ThumbCluster {
 #[derive(Deserialize)]
 pub struct Keyboard {
     pub tilting_angle: DVec2,
+    pub circumference_distance: Positive,
     pub shell_thickness: Positive,
     pub bottom_plate_thickness: Positive,
 }
