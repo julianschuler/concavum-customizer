@@ -6,12 +6,10 @@ use opencascade::primitives::{IntoShape, Shape, Solid, Wire};
 
 use crate::model::{
     config::{Config, FingerCluster, PositiveDVec2},
-    geometry::{Line, Plane, Rotate, Translate},
+    geometry::{zvec, Line, Plane, Rotate, Translate},
     key::Switch,
     Component,
 };
-
-use super::geometry::zvec;
 
 struct KeyPositions {
     positions: Vec<Vec<DAffine3>>,
@@ -144,7 +142,7 @@ impl KeyCluster {
             key_distance.y + KEY_CLEARANCE,
         );
 
-        let mount = Mount::from_positions(&key_positions);
+        let mount = Mount::from_positions(&key_positions, *config.keyboard.circumference_distance);
         let mount_height = mount.height;
         let mut shape = mount.into_shape();
 
@@ -246,30 +244,48 @@ impl Mount {
     const PLATE_SIZE: DVec2 = dvec2(17.0, 18.0);
     const PLATE_X_2: f64 = Self::PLATE_SIZE.x / 2.0;
     const PLATE_Y_2: f64 = Self::PLATE_SIZE.y / 2.0;
-    const CIRCUMFERENCE_DISTANCE: f64 = 2.0;
 
-    pub fn from_positions(key_positions: &KeyPositions) -> Self {
-        let height = Self::calculate_height(key_positions);
-
+    pub fn from_positions(key_positions: &KeyPositions, circumference_distance: f64) -> Self {
         let lower_points = key_positions.positions.windows(2).map(|window| {
             let first_left = first_in_column(&window[0]);
             let first_right = first_in_column(&window[1]);
 
-            Self::circumference_point(first_left, first_right, false)
+            Self::circumference_point(first_left, first_right, false, circumference_distance)
         });
         let upper_points = key_positions.positions.windows(2).map(|window| {
             let last_left = last_in_column(&window[0]);
             let last_right = last_in_column(&window[1]);
 
-            Self::circumference_point(last_left, last_right, true)
+            Self::circumference_point(last_left, last_right, true, circumference_distance)
         });
+
         let first_column = key_positions.positions.first().unwrap();
         let last_column = key_positions.positions.last().unwrap();
 
-        let left_bottom_corner = Self::corner_point(first_in_column(first_column), false, false);
-        let left_top_corner = Self::corner_point(last_in_column(first_column), false, true);
-        let right_bottom_corner = Self::corner_point(first_in_column(last_column), true, false);
-        let right_top_corner = Self::corner_point(last_in_column(last_column), true, true);
+        let left_bottom_corner = Self::corner_point(
+            first_in_column(first_column),
+            false,
+            false,
+            circumference_distance,
+        );
+        let left_top_corner = Self::corner_point(
+            last_in_column(first_column),
+            false,
+            true,
+            circumference_distance,
+        );
+        let right_bottom_corner = Self::corner_point(
+            first_in_column(last_column),
+            true,
+            false,
+            circumference_distance,
+        );
+        let right_top_corner = Self::corner_point(
+            last_in_column(last_column),
+            true,
+            true,
+            circumference_distance,
+        );
 
         let points: Vec<_> = lower_points
             .chain([right_bottom_corner, right_top_corner])
@@ -278,13 +294,19 @@ impl Mount {
             .map(|point| dvec3(point.x, point.y, 0.0))
             .collect();
 
+        let height = Self::calculate_height(key_positions);
         let wire = Wire::from_ordered_points(&points);
         let shape = wire.to_face().extrude(zvec(height));
 
         Self { shape, height }
     }
 
-    fn corner_point(position: &DAffine3, right: bool, top: bool) -> DVec3 {
+    fn corner_point(
+        position: &DAffine3,
+        right: bool,
+        top: bool,
+        circumference_distance: f64,
+    ) -> DVec3 {
         let sign_x = if right { 1.0 } else { -1.0 };
         let sign_y = if top { 1.0 } else { -1.0 };
 
@@ -296,21 +318,23 @@ impl Mount {
             + sign_x * Self::PLATE_X_2 * position.x_axis
             + sign_y * Self::PLATE_Y_2 * position.y_axis;
 
-        corner + Self::CIRCUMFERENCE_DISTANCE * (sign_x * x_canonical + sign_y * y_canonical)
+        corner + circumference_distance * (sign_x * x_canonical + sign_y * y_canonical)
     }
 
-    fn circumference_point(left: &DAffine3, right: &DAffine3, top: bool) -> DVec3 {
+    fn circumference_point(
+        left: &DAffine3,
+        right: &DAffine3,
+        top: bool,
+        circumference_distance: f64,
+    ) -> DVec3 {
         let sign = if top { 1.0 } else { -1.0 };
         let left_y_canonical = DVec3::Z.cross(left.x_axis).normalize();
         let right_y_canonical = DVec3::Z.cross(right.x_axis).normalize();
 
         let left_target = left.translation
-            + sign
-                * (Self::PLATE_Y_2 * left.y_axis + Self::CIRCUMFERENCE_DISTANCE * left_y_canonical);
+            + sign * (Self::PLATE_Y_2 * left.y_axis + circumference_distance * left_y_canonical);
         let right_target = right.translation
-            + sign
-                * (Self::PLATE_Y_2 * right.y_axis
-                    + Self::CIRCUMFERENCE_DISTANCE * right_y_canonical);
+            + sign * (Self::PLATE_Y_2 * right.y_axis + circumference_distance * right_y_canonical);
 
         let y = sign * (left_y_canonical + right_y_canonical).normalize();
 
