@@ -1158,9 +1158,9 @@ dependencies = [
 
 [[package]]
 name = "occt-sys"
-version = "0.2.0"
+version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7acaa7d857f483c1d7c5c9391e470b990f6e52fa5f2d4353eeee6be208390899"
+checksum = "abf7e266531942bf47dfbc2e257cbd83a2b21dd997c15ec257a1168bb62c030a"
 dependencies = [
  "cmake",
 ]
@@ -1173,7 +1173,7 @@ checksum = "dd8b5dd2ae5ed71462c540258bedcb51965123ad7e7ccf4b9a8cafaa4a63576d"
 
 [[package]]
 name = "opencascade"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "cxx",
  "glam",
@@ -1183,7 +1183,7 @@ dependencies = [
 
 [[package]]
 name = "opencascade-sys"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "cmake",
  "cxx",

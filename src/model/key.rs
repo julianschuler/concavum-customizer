@@ -50,18 +50,19 @@ impl KeyCap {
         let mid_length = KEYCAP_PITCH * size_u - (KEYCAP_PITCH - MIDDLE_WIDTH);
         let top_length = KEYCAP_PITCH * size_u - (KEYCAP_PITCH - TOP_WIDTH);
 
-        let mut bottom = Workplane::xy().rect(bottom_length, BOTTOM_WIDTH);
-        bottom.fillet(BOTTOM_FILLET);
+        let bottom = Workplane::xy()
+            .rect(bottom_length, BOTTOM_WIDTH)
+            .fillet(BOTTOM_FILLET);
 
-        let mut middle = Workplane::xy()
+        let middle = Workplane::xy()
             .translated(zvec(HEIGHT / 2.0))
-            .rect(MIDDLE_WIDTH, mid_length);
-        middle.fillet((TOP_FILLET + BOTTOM_FILLET) / 2.0);
+            .rect(MIDDLE_WIDTH, mid_length)
+            .fillet((TOP_FILLET + BOTTOM_FILLET) / 2.0);
 
-        let mut top = Workplane::xy()
+        let top = Workplane::xy()
             .translated(zvec(HEIGHT))
-            .rect(TOP_WIDTH, top_length);
-        top.fillet(TOP_FILLET);
+            .rect(TOP_WIDTH, top_length)
+            .fillet(TOP_FILLET);
 
         let mut shape: Shape = Solid::loft([&bottom, &middle, &top]).into();
 
