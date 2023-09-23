@@ -224,7 +224,7 @@ impl KeyCluster {
 
         points.extend([last, last + height * up, first + height * up, first]);
 
-        let wire = Wire::from_ordered_points(&points);
+        let wire = Wire::from_ordered_points(points).unwrap();
         wire.to_face().extrude(key_clearance.x * normal)
     }
 }
@@ -295,7 +295,7 @@ impl Mount {
             .collect();
 
         let height = Self::calculate_height(key_positions);
-        let wire = Wire::from_ordered_points(&points);
+        let wire = Wire::from_ordered_points(points).unwrap();
         let shape = wire.to_face().extrude(zvec(height));
 
         Self { shape, height }
