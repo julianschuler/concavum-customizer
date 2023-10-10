@@ -29,7 +29,7 @@ pub struct Preview {
 #[derive(Deserialize)]
 pub struct FingerCluster {
     pub rows: u8,
-    pub columns: Vec<Column>,
+    pub columns: Columns,
     pub side_angles: (CurvatureAngle, CurvatureAngle),
     pub key_distance: [Positive; 2],
     pub home_row_index: u8,
@@ -67,6 +67,33 @@ pub struct Colors {
     pub interface_pcb: HexColor,
     pub fpc_connector: HexColor,
     pub background: HexColor,
+}
+
+pub struct Columns(Vec<Column>);
+
+impl Deref for Columns {
+    type Target = Vec<Column>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl<'de> Deserialize<'de> for Columns {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let inner = Vec::deserialize(deserializer)?;
+
+        if !inner.is_empty() {
+            Ok(Self(inner))
+        } else {
+            Err(D::Error::custom(format!(
+                "invalid value: columns must not be empty"
+            )))
+        }
+    }
 }
 
 #[derive(Copy, Clone)]
