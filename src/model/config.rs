@@ -96,7 +96,7 @@ impl<'de> Deserialize<'de> for Columns {
     }
 }
 
-/// Strictly positive 8-Bit integer type.
+/// Strictly positive 8-bit unsigned integer type.
 #[derive(Copy, Clone)]
 pub struct PositiveInt(u8);
 
@@ -125,7 +125,7 @@ impl<'de> Deserialize<'de> for PositiveInt {
     }
 }
 
-/// Strictly positive 8-Bit integer type.
+/// Strictly positive 64-bit floating point type.
 #[derive(Copy, Clone)]
 pub struct PositiveFloat(f64);
 
