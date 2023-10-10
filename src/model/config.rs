@@ -22,16 +22,16 @@ pub struct Preview {
     pub show_keys: bool,
     pub show_interface_pcb: bool,
     pub show_bottom_plate: bool,
-    pub triangulation_tolerance: Positive,
+    pub triangulation_tolerance: PositiveFloat,
     pub light_positions: Vec<DVec3>,
 }
 
 #[derive(Deserialize)]
 pub struct FingerCluster {
-    pub rows: u8,
+    pub rows: PositiveInt,
     pub columns: Columns,
     pub side_angles: (CurvatureAngle, CurvatureAngle),
-    pub key_distance: [Positive; 2],
+    pub key_distance: [PositiveFloat; 2],
     pub home_row_index: u8,
 }
 
@@ -43,19 +43,19 @@ pub struct Column {
 
 #[derive(Deserialize)]
 pub struct ThumbCluster {
-    pub keys: u8,
+    pub keys: PositiveInt,
     pub curvature_angle: Ranged<-20, 45>,
     pub rotation: DVec3,
     pub offset: DVec3,
-    pub key_distance: Positive,
+    pub key_distance: PositiveFloat,
 }
 
 #[derive(Deserialize)]
 pub struct Keyboard {
     pub tilting_angle: DVec2,
-    pub circumference_distance: Positive,
-    pub shell_thickness: Positive,
-    pub bottom_plate_thickness: Positive,
+    pub circumference_distance: PositiveFloat,
+    pub shell_thickness: PositiveFloat,
+    pub bottom_plate_thickness: PositiveFloat,
 }
 
 #[derive(Deserialize)]
@@ -96,10 +96,40 @@ impl<'de> Deserialize<'de> for Columns {
     }
 }
 
+/// Strictly positive 8-Bit integer type.
 #[derive(Copy, Clone)]
-pub struct Positive(f64);
+pub struct PositiveInt(u8);
 
-impl Deref for Positive {
+impl Deref for PositiveInt {
+    type Target = u8;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl<'de> Deserialize<'de> for PositiveInt {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let inner = u8::deserialize(deserializer)?;
+
+        if inner > 0 {
+            Ok(Self(inner))
+        } else {
+            Err(D::Error::custom(format!(
+                "invalid value: {inner} is not greater than 0"
+            )))
+        }
+    }
+}
+
+/// Strictly positive 8-Bit integer type.
+#[derive(Copy, Clone)]
+pub struct PositiveFloat(f64);
+
+impl Deref for PositiveFloat {
     type Target = f64;
 
     fn deref(&self) -> &Self::Target {
@@ -107,7 +137,7 @@ impl Deref for Positive {
     }
 }
 
-impl<'de> Deserialize<'de> for Positive {
+impl<'de> Deserialize<'de> for PositiveFloat {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: Deserializer<'de>,
@@ -129,8 +159,8 @@ pub struct PositiveDVec2 {
     pub y: f64,
 }
 
-impl From<&[Positive; 2]> for PositiveDVec2 {
-    fn from(value: &[Positive; 2]) -> Self {
+impl From<&[PositiveFloat; 2]> for PositiveDVec2 {
+    fn from(value: &[PositiveFloat; 2]) -> Self {
         let [x, y] = *value;
         Self { x: *x, y: *y }
     }

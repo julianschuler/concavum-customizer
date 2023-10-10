@@ -54,7 +54,7 @@ impl KeyPositions {
 
                 let curvature_angle = column.curvature_angle.to_radians();
                 if curvature_angle == 0.0 {
-                    (0..config.rows)
+                    (0..*config.rows)
                         .map(|j| {
                             let y =
                                 key_distance.y * (j as i16 - config.home_row_index as i16) as f64;
@@ -65,7 +65,7 @@ impl KeyPositions {
                     let keycap_radius = key_distance.y / 2.0 / (curvature_angle / 2.0).tan();
                     let curvature_radius = keycap_radius + CURVATURE_HEIGHT;
 
-                    (0..config.rows)
+                    (0..*config.rows)
                         .map(|j| {
                             let total_angle =
                                 curvature_angle * (j as i16 - config.home_row_index as i16) as f64;
