@@ -128,10 +128,10 @@ struct SupportPlanes {
 }
 
 impl SupportPlanes {
-    fn try_new(key_positions: &KeyPositions) -> Option<Self> {
+    fn from_positions(key_positions: &KeyPositions) -> Self {
         let columns = &key_positions.columns;
-        let second_column = columns.get(2)?;
-        let x_axis = second_column.first().x_axis;
+        let reference_column = columns.get(1).unwrap_or_else(|| columns.first());
+        let x_axis = reference_column.first().x_axis;
         let normal = x_axis.cross(DVec3::Y);
 
         let mut lower_points: Vec<_> = columns
@@ -155,10 +155,10 @@ impl SupportPlanes {
         let lower_plane = Self::calculate_median_plane(normal, &mut lower_points);
         let upper_plane = Self::calculate_median_plane(normal, &mut upper_points);
 
-        Some(Self {
+        Self {
             lower_plane,
             upper_plane,
-        })
+        }
     }
 
     fn calculate_median_plane(normal: DVec3, points: &mut Vec<DVec3>) -> Plane {
