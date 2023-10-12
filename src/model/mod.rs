@@ -2,6 +2,7 @@ mod config;
 mod finger_cluster;
 mod geometry;
 mod key;
+mod key_positions;
 
 use std::path::Path;
 
