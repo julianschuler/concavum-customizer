@@ -171,6 +171,49 @@ impl KeyCluster {
             .collect()
     }
 
+    fn calculate_planes(
+        key_positions: &KeyPositions,
+        key_clearance: &DVec2,
+    ) -> Option<(Plane, Plane)> {
+        let positions = &key_positions.positions;
+        let second_column = positions.get(2)?;
+        let x_axis = first_in_column(second_column).x_axis;
+        let normal = x_axis.cross(DVec3::Y);
+
+        let mut lower_points: Vec<_> = positions
+            .iter()
+            .map(|column| {
+                let position = last_in_column(column);
+
+                position.translation - key_clearance.y * position.y_axis
+            })
+            .collect();
+
+        let mut upper_points: Vec<_> = positions
+            .iter()
+            .map(|column| {
+                let position = last_in_column(column);
+
+                position.translation + key_clearance.y * position.y_axis
+            })
+            .collect();
+
+        let lower_plane = Self::calculate_median_plane(normal, &mut lower_points);
+        let upper_plane = Self::calculate_median_plane(normal, &mut upper_points);
+
+        Some((lower_plane, upper_plane))
+    }
+
+    fn calculate_median_plane(normal: DVec3, points: &mut Vec<DVec3>) -> Plane {
+        points.sort_unstable_by(|position1, position2| {
+            normal.dot(*position1).total_cmp(&normal.dot(*position2))
+        });
+
+        let median_point = points[points.len() / 2];
+
+        Plane::new(median_point, normal)
+    }
+
     fn column_clearance(column: &[DAffine3], key_clearance: &DVec2, height: f64) -> Solid {
         const SIDE: f64 = 50.0;
 
