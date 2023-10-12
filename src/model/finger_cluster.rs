@@ -5,7 +5,7 @@ use opencascade::primitives::{IntoShape, Shape, Solid, Wire};
 use crate::model::{
     config::{Config, PositiveDVec2},
     geometry::{zvec, Line, Plane},
-    key_positions::KeyPositions,
+    key_positions::{Column, KeyPositions},
     Component,
 };
 
@@ -63,13 +63,13 @@ impl KeyCluster {
     ) -> Option<(Plane, Plane)> {
         let columns = &key_positions.columns;
         let second_column = columns.get(2)?;
-        let x_axis = first_in_column(second_column).x_axis;
+        let x_axis = second_column.first().x_axis;
         let normal = x_axis.cross(DVec3::Y);
 
         let mut lower_points: Vec<_> = columns
             .iter()
             .map(|column| {
-                let position = last_in_column(column);
+                let position = column.first();
 
                 position.translation - key_clearance.y * position.y_axis
             })
@@ -78,7 +78,7 @@ impl KeyCluster {
         let mut upper_points: Vec<_> = columns
             .iter()
             .map(|column| {
-                let position = last_in_column(column);
+                let position = column.last();
 
                 position.translation + key_clearance.y * position.y_axis
             })
@@ -100,11 +100,11 @@ impl KeyCluster {
         Plane::new(median_point, normal)
     }
 
-    fn column_clearance(column: &[DAffine3], key_clearance: &DVec2, height: f64) -> Solid {
+    fn column_clearance(column: &Column, key_clearance: &DVec2, height: f64) -> Solid {
         const SIDE: f64 = 50.0;
 
-        let first = first_in_column(column);
-        let last = last_in_column(column);
+        let first = column.first();
+        let last = column.last();
 
         let mut lines = Vec::new();
 
@@ -148,8 +148,9 @@ impl KeyCluster {
         let side_direction = canonical_base(first.x_axis).y_axis;
         let up = first.x_axis.cross(side_direction);
 
-        let last = *last_in_column(&points) + SIDE * side_direction;
-        let first = *first_in_column(&points) - SIDE * side_direction;
+        // Since all columns are non-empty, there is always a first and last element
+        let last = *points.last().unwrap() + SIDE * side_direction;
+        let first = *points.first().unwrap() - SIDE * side_direction;
 
         points.extend([last, last + height * up, first + height * up, first]);
 
@@ -192,30 +193,14 @@ impl Mount {
             Self::circumference_point(last_left, last_right, true, circumference_distance)
         });
 
-        let left_bottom_corner = Self::corner_point(
-            first_in_column(first_column),
-            false,
-            false,
-            circumference_distance,
-        );
-        let left_top_corner = Self::corner_point(
-            last_in_column(first_column),
-            false,
-            true,
-            circumference_distance,
-        );
-        let right_bottom_corner = Self::corner_point(
-            first_in_column(last_column),
-            true,
-            false,
-            circumference_distance,
-        );
-        let right_top_corner = Self::corner_point(
-            last_in_column(last_column),
-            true,
-            true,
-            circumference_distance,
-        );
+        let left_bottom_corner =
+            Self::corner_point(first_column.first(), false, false, circumference_distance);
+        let left_top_corner =
+            Self::corner_point(first_column.last(), false, true, circumference_distance);
+        let right_bottom_corner =
+            Self::corner_point(last_column.first(), true, false, circumference_distance);
+        let right_top_corner =
+            Self::corner_point(last_column.last(), true, true, circumference_distance);
 
         let points: Vec<_> = lower_points
             .chain([right_bottom_corner, right_top_corner])
@@ -288,18 +273,6 @@ impl IntoShape for Mount {
     fn into_shape(self) -> Shape {
         self.shape.into_shape()
     }
-}
-
-fn first_in_column<T>(column: &[T]) -> &T {
-    column
-        .first()
-        .expect("there should always be at least one row")
-}
-
-fn last_in_column<T>(column: &[T]) -> &T {
-    column
-        .last()
-        .expect("there should always be at least one row")
 }
 
 fn canonical_base(x_axis: DVec3) -> DMat3 {
