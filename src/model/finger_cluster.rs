@@ -57,49 +57,6 @@ impl KeyCluster {
             .collect()
     }
 
-    fn calculate_planes(
-        key_positions: &KeyPositions,
-        key_clearance: &DVec2,
-    ) -> Option<(Plane, Plane)> {
-        let columns = &key_positions.columns;
-        let second_column = columns.get(2)?;
-        let x_axis = second_column.first().x_axis;
-        let normal = x_axis.cross(DVec3::Y);
-
-        let mut lower_points: Vec<_> = columns
-            .iter()
-            .map(|column| {
-                let position = column.first();
-
-                position.translation - key_clearance.y * position.y_axis
-            })
-            .collect();
-
-        let mut upper_points: Vec<_> = columns
-            .iter()
-            .map(|column| {
-                let position = column.last();
-
-                position.translation + key_clearance.y * position.y_axis
-            })
-            .collect();
-
-        let lower_plane = Self::calculate_median_plane(normal, &mut lower_points);
-        let upper_plane = Self::calculate_median_plane(normal, &mut upper_points);
-
-        Some((lower_plane, upper_plane))
-    }
-
-    fn calculate_median_plane(normal: DVec3, points: &mut Vec<DVec3>) -> Plane {
-        points.sort_unstable_by(|position1, position2| {
-            normal.dot(*position1).total_cmp(&normal.dot(*position2))
-        });
-
-        let median_point = points[points.len() / 2];
-
-        Plane::new(median_point, normal)
-    }
-
     fn column_clearance(column: &Column, key_clearance: &DVec2, height: f64) -> Solid {
         const SIDE: f64 = 50.0;
 
@@ -162,6 +119,56 @@ impl KeyCluster {
 impl From<KeyCluster> for Component {
     fn from(cluster: KeyCluster) -> Self {
         Component::new(cluster.shape, cluster.color)
+    }
+}
+
+struct SupportPlanes {
+    lower_plane: Plane,
+    upper_plane: Plane,
+}
+
+impl SupportPlanes {
+    fn try_new(key_positions: &KeyPositions) -> Option<Self> {
+        let columns = &key_positions.columns;
+        let second_column = columns.get(2)?;
+        let x_axis = second_column.first().x_axis;
+        let normal = x_axis.cross(DVec3::Y);
+
+        let mut lower_points: Vec<_> = columns
+            .iter()
+            .map(|column| {
+                let position = column.first();
+
+                position.translation - Mount::PLATE_Y_2 * position.y_axis
+            })
+            .collect();
+
+        let mut upper_points: Vec<_> = columns
+            .iter()
+            .map(|column| {
+                let position = column.last();
+
+                position.translation + Mount::PLATE_Y_2 * position.y_axis
+            })
+            .collect();
+
+        let lower_plane = Self::calculate_median_plane(normal, &mut lower_points);
+        let upper_plane = Self::calculate_median_plane(normal, &mut upper_points);
+
+        Some(Self {
+            lower_plane,
+            upper_plane,
+        })
+    }
+
+    fn calculate_median_plane(normal: DVec3, points: &mut Vec<DVec3>) -> Plane {
+        points.sort_unstable_by(|position1, position2| {
+            normal.dot(*position1).total_cmp(&normal.dot(*position2))
+        });
+
+        let median_point = points[points.len() / 2];
+
+        Plane::new(median_point, normal)
     }
 }
 
