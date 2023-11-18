@@ -77,6 +77,14 @@ impl Plane {
             .is_finite()
             .then(|| line.parametric_point(intersection_parameter))
     }
+
+    pub fn project_point_onto(&self, point: DVec3) -> DVec3 {
+        point - self.signed_distance_to(point) * self.normal
+    }
+
+    pub fn normal(&self) -> DVec3 {
+        self.normal
+    }
 }
 
 pub struct BoundedPlane {

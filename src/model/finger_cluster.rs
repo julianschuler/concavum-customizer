@@ -3,7 +3,7 @@ use hex_color::HexColor;
 use opencascade::primitives::{IntoShape, Shape, Solid, Wire};
 
 use crate::model::{
-    config::{Config, PositiveDVec2},
+    config::{Config, PositiveDVec2, EPSILON},
     geometry::{zvec, Line, Plane},
     key_positions::{Column, KeyPositions},
     Component,
@@ -28,14 +28,15 @@ impl KeyCluster {
             key_distance.y + KEY_CLEARANCE,
         );
 
+        let support_planes = SupportPlanes::from_positions(&key_positions);
+
         let mount = Mount::from_positions(&key_positions, *config.keyboard.circumference_distance);
         let mount_height = mount.height;
         let mut shape = mount.into_shape();
 
-        let clearances = key_positions
-            .columns
-            .iter()
-            .map(|column| Self::column_clearance(column, &key_clearance, mount_height));
+        let clearances = key_positions.columns.iter().map(|column| {
+            Self::column_clearance(column, &key_clearance, &support_planes, mount_height)
+        });
 
         for clearance in clearances {
             shape = shape.subtract(&clearance.into()).into();
@@ -57,59 +58,46 @@ impl KeyCluster {
             .collect()
     }
 
-    fn column_clearance(column: &Column, key_clearance: &DVec2, height: f64) -> Solid {
-        const SIDE: f64 = 50.0;
-
+    fn column_clearance(
+        column: &Column,
+        key_clearance: &DVec2,
+        support_planes: &SupportPlanes,
+        mount_height: f64,
+    ) -> Solid {
         let first = column.first();
         let last = column.last();
 
-        let mut lines = Vec::new();
+        // All points in the center, if any
+        let mut points: Vec<_> = column
+            .windows(2)
+            .filter_map(|window| {
+                let position = window[0];
+                let next_position = window[1];
+                let line = Line::new(position.translation, position.y_axis);
+                let plane = Plane::new(next_position.translation, next_position.z_axis);
 
-        // First line
-        lines.push(Line::new(
-            first.translation - Mount::PLATE_Y_2 * first.y_axis,
-            first.x_axis,
-        ));
-
-        // All lines in the center, if any
-        for window in column.windows(2) {
-            let position = window[0];
-            let next_position = window[1];
-            let line = Line::new(position.translation, position.y_axis);
-            let plane = Plane::new(next_position.translation, next_position.z_axis);
-
-            if let Some(point) = plane.intersection(&line) {
-                lines.push(Line::new(point, position.x_axis));
-            }
-        }
-
-        // Last line
-        lines.push(Line::new(
-            last.translation + Mount::PLATE_Y_2 * last.y_axis,
-            last.x_axis,
-        ));
-
-        // Get polygon points by intersecting with line
-        let normal = first.x_axis;
-        let plane = Plane::new(first.translation - key_clearance.x / 2.0 * normal, normal);
-
-        let mut points: Vec<_> = lines
-            .into_iter()
-            .map(|line| {
-                plane
-                    .intersection(&line)
-                    .expect("line orthogonal to plane should always intersect")
+                plane.intersection(&line)
             })
             .collect();
 
-        let side_direction = canonical_base(first.x_axis).y_axis;
-        let up = first.x_axis.cross(side_direction);
+        // Upper an lower support points derived from the first and last entries
+        let mut lower_support_points = support_planes.project_to_plane(first, false);
+        let upper_support_points = support_planes.project_to_plane(last, true);
 
-        // Since all columns are non-empty, there is always a first and last element
-        let last = *points.last().unwrap() + SIDE * side_direction;
-        let first = *points.first().unwrap() - SIDE * side_direction;
+        // Combine upper and lower support points with clearance points to polygon points
+        let lower_clearance_point = *lower_support_points.last().unwrap() + mount_height * DVec3::Z;
+        let upper_clearance_point = *upper_support_points.last().unwrap() + mount_height * DVec3::Z;
+        points.extend(upper_support_points);
+        points.extend([upper_clearance_point, lower_clearance_point]);
+        lower_support_points.reverse();
+        points.extend(lower_support_points);
 
-        points.extend([last, last + height * up, first + height * up, first]);
+        // Get polygon points by projecting to plane
+        let normal = first.x_axis;
+        let plane = Plane::new(first.translation - key_clearance.x / 2.0 * normal, normal);
+        let points = points
+            .into_iter()
+            .map(|point| plane.project_point_onto(point));
 
         let wire = Wire::from_ordered_points(points).unwrap();
         wire.to_face().extrude(key_clearance.x * normal)
@@ -169,6 +157,38 @@ impl SupportPlanes {
         let median_point = points[points.len() / 2];
 
         Plane::new(median_point, normal)
+    }
+
+    fn project_to_plane(&self, position: &DAffine3, upper: bool) -> Vec<DVec3> {
+        const SIDE: f64 = 50.0;
+
+        let (sign, plane) = if upper {
+            (1.0, &self.upper_plane)
+        } else {
+            (-1.0, &self.lower_plane)
+        };
+        let point_direction = sign * position.y_axis;
+        let point = position.translation + Mount::PLATE_Y_2 * point_direction;
+
+        let point_is_above = plane.signed_distance_to(point) > 0.0;
+        let point_direction_is_upwards = point_direction.dot(plane.normal()) > 0.0;
+
+        let projected_point = if point_is_above == point_direction_is_upwards {
+            let line = Line::new(point, position.z_axis);
+
+            plane.intersection(&line).unwrap()
+        } else {
+            plane.project_point_onto(point)
+        };
+
+        let mut points = vec![point];
+        if !point.abs_diff_eq(projected_point, EPSILON) {
+            points.push(projected_point);
+        }
+
+        let outwards_point = projected_point + sign * SIDE * DVec3::Y;
+        points.push(outwards_point);
+        points
     }
 }
 
