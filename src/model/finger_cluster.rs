@@ -31,11 +31,11 @@ impl KeyCluster {
         let support_planes = SupportPlanes::from_positions(&key_positions);
 
         let mount = Mount::from_positions(&key_positions, *config.keyboard.circumference_distance);
-        let mount_height = mount.height;
+        let mount_size = mount.size.clone();
         let mut shape = mount.into_shape();
 
         let clearances = key_positions.columns.iter().map(|column| {
-            Self::column_clearance(column, &key_clearance, &support_planes, mount_height)
+            Self::column_clearance(column, &key_clearance, &support_planes, &mount_size)
         });
 
         for clearance in clearances {
@@ -62,7 +62,7 @@ impl KeyCluster {
         column: &Column,
         key_clearance: &DVec2,
         support_planes: &SupportPlanes,
-        mount_height: f64,
+        mount_size: &MountSize,
     ) -> Solid {
         let first = column.first();
         let last = column.last();
@@ -81,12 +81,16 @@ impl KeyCluster {
             .collect();
 
         // Upper an lower support points derived from the first and last entries
-        let mut lower_support_points = support_planes.project_to_plane(first, false);
-        let upper_support_points = support_planes.project_to_plane(last, true);
+        let mut lower_support_points =
+            support_planes.calculate_support_points(first, false, mount_size.width);
+        let upper_support_points =
+            support_planes.calculate_support_points(last, true, mount_size.width);
 
         // Combine upper and lower support points with clearance points to polygon points
-        let lower_clearance_point = *lower_support_points.last().unwrap() + mount_height * DVec3::Z;
-        let upper_clearance_point = *upper_support_points.last().unwrap() + mount_height * DVec3::Z;
+        let lower_clearance_point =
+            *lower_support_points.last().unwrap() + mount_size.height * DVec3::Z;
+        let upper_clearance_point =
+            *upper_support_points.last().unwrap() + mount_size.height * DVec3::Z;
         points.extend(upper_support_points);
         points.extend([upper_clearance_point, lower_clearance_point]);
         lower_support_points.reverse();
@@ -159,9 +163,12 @@ impl SupportPlanes {
         Plane::new(median_point, normal)
     }
 
-    fn project_to_plane(&self, position: &DAffine3, upper: bool) -> Vec<DVec3> {
-        const SIDE: f64 = 50.0;
-
+    fn calculate_support_points(
+        &self,
+        position: &DAffine3,
+        upper: bool,
+        mount_width: f64,
+    ) -> Vec<DVec3> {
         let (sign, plane) = if upper {
             (1.0, &self.upper_plane)
         } else {
@@ -186,15 +193,21 @@ impl SupportPlanes {
             points.push(projected_point);
         }
 
-        let outwards_point = projected_point + sign * SIDE * DVec3::Y;
+        let outwards_point = projected_point + sign * mount_width * DVec3::Y;
         points.push(outwards_point);
         points
     }
 }
 
+#[derive(Clone)]
+struct MountSize {
+    height: f64,
+    width: f64,
+}
+
 struct Mount {
     shape: Solid,
-    height: f64,
+    size: MountSize,
 }
 
 impl Mount {
@@ -236,11 +249,11 @@ impl Mount {
             .map(|point| dvec3(point.x, point.y, 0.0))
             .collect();
 
-        let height = Self::calculate_height(key_positions);
+        let size = Self::calculate_size(key_positions, &points);
         let wire = Wire::from_ordered_points(points).unwrap();
-        let shape = wire.to_face().extrude(zvec(height));
+        let shape = wire.to_face().extrude(zvec(size.height));
 
-        Self { shape, height }
+        Self { shape, size }
     }
 
     fn corner_point(
@@ -285,14 +298,28 @@ impl Mount {
         start + offset_factor * y
     }
 
-    fn calculate_height(key_positions: &KeyPositions) -> f64 {
-        key_positions
+    fn calculate_size(key_positions: &KeyPositions, points: &[DVec3]) -> MountSize {
+        let height = key_positions
             .columns
             .iter()
             .flat_map(|column| column.iter().map(|position| position.translation.z))
             .max_by(f64::total_cmp)
             .unwrap_or_default()
-            + 20.0
+            + 20.0;
+
+        let max_y = points
+            .iter()
+            .map(|point| point.y)
+            .max_by(f64::total_cmp)
+            .unwrap_or_default();
+        let min_y = points
+            .iter()
+            .map(|point| point.y)
+            .min_by(f64::total_cmp)
+            .unwrap_or_default();
+        let width = max_y - min_y;
+
+        MountSize { height, width }
     }
 }
 
