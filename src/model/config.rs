@@ -89,9 +89,7 @@ impl<'de> Deserialize<'de> for Columns {
         if !inner.is_empty() {
             Ok(Self(inner))
         } else {
-            Err(D::Error::custom(format!(
-                "invalid value: columns must not be empty"
-            )))
+            Err(D::Error::custom("invalid value: columns must not be empty"))
         }
     }
 }
