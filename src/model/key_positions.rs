@@ -172,13 +172,8 @@ impl Mul<KeyPositions> for DAffine3 {
     fn mul(self, key_positions: KeyPositions) -> Self::Output {
         let columns = key_positions
             .columns
-            .into_iter()
-            .map(|column| {
-                column
-                    .into_iter()
-                    .map(|position| self * *position)
-                    .collect()
-            })
+            .iter()
+            .map(|column| column.iter().map(|position| self * *position).collect())
             .collect();
 
         KeyPositions { columns }

@@ -213,7 +213,7 @@ impl Scene {
                 if *button == Some(MouseButton::Right) {
                     let right = camera.right_direction().normalize();
                     let up = right.cross(camera.view_direction());
-                    let translation = -delta.0 as f32 * right + delta.1 as f32 * up;
+                    let translation = -delta.0 * right + delta.1 * up;
                     let speed = 0.001 * camera.position().magnitude();
 
                     camera.translate(&(speed * translation));
