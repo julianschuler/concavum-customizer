@@ -1,6 +1,6 @@
-use glam::{dvec2, dvec3, DAffine3, DMat3, DVec2, DVec3};
+use glam::{dvec2, dvec3, DAffine3, DVec2, DVec3};
 use hex_color::HexColor;
-use opencascade::primitives::{IntoShape, Shape, Solid, Wire};
+use opencascade::primitives::{IntoShape, JoinType, Shape, Solid, Wire};
 
 use crate::model::{
     config::{Config, PositiveDVec2, EPSILON},
@@ -224,23 +224,19 @@ impl Mount {
             let first_left = window[0].first();
             let first_right = window[1].first();
 
-            Self::circumference_point(first_left, first_right, false, circumference_distance)
+            Self::circumference_point(first_left, first_right, false)
         });
         let upper_points = key_positions.columns.windows(2).map(|window| {
             let last_left = window[0].last();
             let last_right = window[1].last();
 
-            Self::circumference_point(last_left, last_right, true, circumference_distance)
+            Self::circumference_point(last_left, last_right, true)
         });
 
-        let left_bottom_corner =
-            Self::corner_point(first_column.first(), false, false, circumference_distance);
-        let left_top_corner =
-            Self::corner_point(first_column.last(), false, true, circumference_distance);
-        let right_bottom_corner =
-            Self::corner_point(last_column.first(), true, false, circumference_distance);
-        let right_top_corner =
-            Self::corner_point(last_column.last(), true, true, circumference_distance);
+        let left_bottom_corner = Self::corner_point(first_column.first(), false, false);
+        let left_top_corner = Self::corner_point(first_column.last(), false, true);
+        let right_bottom_corner = Self::corner_point(last_column.first(), true, false);
+        let right_top_corner = Self::corner_point(last_column.last(), true, true);
 
         let points: Vec<_> = lower_points
             .chain([right_bottom_corner, right_top_corner])
@@ -251,51 +247,35 @@ impl Mount {
 
         let size = Self::calculate_size(key_positions, &points);
         let wire = Wire::from_ordered_points(points).unwrap();
+        let wire = wire.offset(circumference_distance, JoinType::Arc);
         let shape = wire.to_face().extrude(zvec(size.height));
 
         Self { shape, size }
     }
 
-    fn corner_point(
-        position: &DAffine3,
-        right: bool,
-        top: bool,
-        circumference_distance: f64,
-    ) -> DVec3 {
+    fn corner_point(position: &DAffine3, right: bool, top: bool) -> DVec3 {
         let sign_x = if right { 1.0 } else { -1.0 };
         let sign_y = if top { 1.0 } else { -1.0 };
 
-        let canonical = canonical_base(position.x_axis);
-
-        let corner = position.translation
+        position.translation
             + sign_x * Self::PLATE_X_2 * position.x_axis
-            + sign_y * Self::PLATE_Y_2 * position.y_axis;
-
-        corner + circumference_distance * (sign_x * canonical.x_axis + sign_y * canonical.y_axis)
+            + sign_y * Self::PLATE_Y_2 * position.y_axis
     }
 
-    fn circumference_point(
-        left: &DAffine3,
-        right: &DAffine3,
-        top: bool,
-        circumference_distance: f64,
-    ) -> DVec3 {
+    fn circumference_point(left: &DAffine3, right: &DAffine3, top: bool) -> DVec3 {
         let sign = if top { 1.0 } else { -1.0 };
-        let left_y_canonical = canonical_base(left.x_axis).y_axis;
-        let right_y_canonical = canonical_base(right.x_axis).y_axis;
 
-        let left_target = left.translation
-            + sign * (Self::PLATE_Y_2 * left.y_axis + circumference_distance * left_y_canonical);
-        let right_target = right.translation
-            + sign * (Self::PLATE_Y_2 * right.y_axis + circumference_distance * right_y_canonical);
+        let left_point =
+            left.translation + Self::PLATE_X_2 * left.x_axis + sign * Self::PLATE_Y_2 * left.y_axis;
+        let right_point = right.translation - Self::PLATE_X_2 * right.x_axis
+            + sign * Self::PLATE_Y_2 * right.y_axis;
 
-        let y = sign * (left_y_canonical + right_y_canonical).normalize();
-
-        let start = (left_target + right_target) / 2.0;
-
-        let offset_factor = y.dot(left_target - right_target).abs() / 2.0;
-
-        start + offset_factor * y
+        // Get point which is more outward
+        if (left_point - right_point).y.signum() == sign {
+            left_point
+        } else {
+            right_point
+        }
     }
 
     fn calculate_size(key_positions: &KeyPositions, points: &[DVec3]) -> MountSize {
@@ -327,12 +307,4 @@ impl IntoShape for Mount {
     fn into_shape(self) -> Shape {
         self.shape.into_shape()
     }
-}
-
-fn canonical_base(x_axis: DVec3) -> DMat3 {
-    let z_canonical = DVec3::Z;
-    let y_canonical = z_canonical.cross(x_axis).normalize();
-    let x_canonical = y_canonical.cross(z_canonical);
-
-    DMat3::from_cols(x_canonical, y_canonical, z_canonical)
 }
