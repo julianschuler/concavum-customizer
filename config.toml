@@ -58,7 +58,7 @@ bottom_plate_thickness = 1.6
 
 [colors]
 keyboard = "#83A598"
-keycap = "#0F0F0F"
+keycap = "#3F3F3F"
 switch = "#FFFFFF"
 matrix_pcb = "#008C4A"
 interface_pcb = "#6C0D5D"
