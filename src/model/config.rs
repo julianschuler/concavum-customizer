@@ -30,7 +30,6 @@ pub struct Preview {
 pub struct FingerCluster {
     pub rows: PositiveInt,
     pub columns: Columns,
-    pub side_angles: (CurvatureAngle, CurvatureAngle),
     pub key_distance: [PositiveFloat; 2],
     pub home_row_index: u8,
 }
@@ -38,7 +37,15 @@ pub struct FingerCluster {
 #[derive(Deserialize)]
 pub struct Column {
     pub curvature_angle: CurvatureAngle,
-    pub offset: DVec2,
+    #[serde(flatten)]
+    pub column_type: ColumnType,
+}
+
+#[derive(Deserialize)]
+#[serde(untagged, deny_unknown_fields)]
+pub enum ColumnType {
+    Normal { offset: DVec2 },
+    Side { side_angle: CurvatureAngle },
 }
 
 #[derive(Deserialize)]
@@ -84,9 +91,19 @@ impl<'de> Deserialize<'de> for Columns {
     where
         D: Deserializer<'de>,
     {
-        let inner = Vec::deserialize(deserializer)?;
+        let inner: Vec<Column> = Vec::deserialize(deserializer)?;
 
         if !inner.is_empty() {
+            for (i, column) in inner.iter().enumerate() {
+                if i != 0 && i != inner.len() - 1 {
+                    if let ColumnType::Side { .. } = column.column_type {
+                        return Err(D::Error::custom(
+                            "invalid value: only the first and last column can have a side angle",
+                        ));
+                    }
+                }
+            }
+
             Ok(Self(inner))
         } else {
             Err(D::Error::custom("invalid value: columns must not be empty"))

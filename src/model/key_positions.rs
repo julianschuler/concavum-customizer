@@ -3,7 +3,7 @@ use std::ops::{Deref, Mul};
 use glam::{dvec3, DAffine3, DVec2};
 
 use crate::model::{
-    config::{FingerCluster, PositiveDVec2},
+    config::{ColumnType, FingerCluster, PositiveDVec2},
     geometry::{zvec, Rotate, Translate},
     key::Switch,
 };
@@ -76,7 +76,6 @@ impl KeyPositions {
     pub fn from_config(config: &FingerCluster) -> Self {
         const CURVATURE_HEIGHT: f64 = Switch::TOP_HEIGHT;
 
-        let (left_side_angle, right_side_angle) = config.side_angles;
         let key_distance: PositiveDVec2 = (&config.key_distance).into();
 
         let columns = config
@@ -84,10 +83,24 @@ impl KeyPositions {
             .iter()
             .enumerate()
             .map(|(i, column)| {
-                let (side_angle, side) = match i {
-                    0 => (*left_side_angle, 1.0),
-                    i if i == config.columns.len() - 1 => (*right_side_angle, -1.0),
-                    _ => (0.0, 0.0),
+                let (side_angle, side, offset) = match column.column_type {
+                    ColumnType::Normal { offset } => (0.0, 0.0, offset),
+                    ColumnType::Side { side_angle } => {
+                        let (side, column) = if i == 0 {
+                            (1.0, config.columns.get(1))
+                        } else {
+                            (-1.0, config.columns.get(config.columns.len() - 2))
+                        };
+
+                        let offset = column
+                            .map(|column| match column.column_type {
+                                ColumnType::Normal { offset } => offset,
+                                _ => DVec2::default(),
+                            })
+                            .unwrap_or(DVec2::default());
+
+                        (*side_angle, side, offset)
+                    }
                 };
                 let side_angle = side_angle.to_radians();
                 let side_angle_tan = side_angle.tan();
@@ -105,7 +118,7 @@ impl KeyPositions {
                     )
                 };
 
-                let translation = dvec3(x, column.offset.x, column.offset.y + z_offset);
+                let translation = dvec3(x, offset.x, offset.y + z_offset);
                 let column_transform =
                     DAffine3::from_rotation_y(side * side_angle).translate(translation);
 
