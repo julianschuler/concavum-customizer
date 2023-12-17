@@ -3,24 +3,63 @@ use std::ops::{Deref, Mul};
 use glam::{dvec3, DAffine3, DVec2};
 
 use crate::model::{
-    config::{ColumnType, FingerCluster, PositiveDVec2},
+    config::{self, FingerCluster, PositiveDVec2},
     geometry::{zvec, Rotate, Translate},
     key::Switch,
 };
 
-pub struct Column(Vec<DAffine3>);
+pub struct Column {
+    entries: Vec<DAffine3>,
+    column_type: ColumnType,
+}
+
+#[derive(Clone, Copy)]
+pub enum ColumnType {
+    Normal,
+    Side,
+}
+
+impl From<config::ColumnType> for ColumnType {
+    fn from(value: config::ColumnType) -> Self {
+        match value {
+            config::ColumnType::Normal { .. } => Self::Normal,
+            config::ColumnType::Side { .. } => Self::Side,
+        }
+    }
+}
 
 impl Column {
+    pub fn new(entries: Vec<DAffine3>, column_type: ColumnType) -> Self {
+        Self {
+            entries,
+            column_type,
+        }
+    }
+
     pub fn first(&self) -> &DAffine3 {
-        self.0
+        self.entries
             .first()
             .expect("there should always be at least one row")
     }
 
     pub fn last(&self) -> &DAffine3 {
-        self.0
+        self.entries
             .last()
             .expect("there should always be at least one row")
+    }
+
+    pub fn column_type(&self) -> ColumnType {
+        self.column_type
+    }
+}
+
+impl Mul<&Column> for DAffine3 {
+    type Output = Column;
+
+    fn mul(self, column: &Column) -> Self::Output {
+        let entries = column.entries.iter().map(|entry| self * *entry).collect();
+
+        Column::new(entries, column.column_type)
     }
 }
 
@@ -28,13 +67,7 @@ impl Deref for Column {
     type Target = [DAffine3];
 
     fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-impl FromIterator<DAffine3> for Column {
-    fn from_iter<T: IntoIterator<Item = DAffine3>>(iter: T) -> Self {
-        Self(iter.into_iter().collect())
+        &self.entries
     }
 }
 
@@ -84,8 +117,8 @@ impl KeyPositions {
             .enumerate()
             .map(|(i, column)| {
                 let (side_angle, side, offset) = match column.column_type {
-                    ColumnType::Normal { offset } => (0.0, 0.0, offset),
-                    ColumnType::Side { side_angle } => {
+                    config::ColumnType::Normal { offset } => (0.0, 0.0, offset),
+                    config::ColumnType::Side { side_angle } => {
                         let (side, column) = if i == 0 {
                             (1.0, config.columns.get(1))
                         } else {
@@ -94,7 +127,7 @@ impl KeyPositions {
 
                         let offset = column
                             .map(|column| match column.column_type {
-                                ColumnType::Normal { offset } => offset,
+                                config::ColumnType::Normal { offset } => offset,
                                 _ => DVec2::default(),
                             })
                             .unwrap_or(DVec2::default());
@@ -123,7 +156,7 @@ impl KeyPositions {
                     DAffine3::from_rotation_y(side * side_angle).translate(translation);
 
                 let curvature_angle = column.curvature_angle.to_radians();
-                if curvature_angle == 0.0 {
+                let entries = if curvature_angle == 0.0 {
                     (0..*config.rows)
                         .map(|j| {
                             let y =
@@ -152,7 +185,9 @@ impl KeyPositions {
                                 * DAffine3::from_rotation_x(total_angle).translate(dvec3(x, y, z))
                         })
                         .collect()
-                }
+                };
+
+                Column::new(entries, column.column_type.into())
             })
             .collect();
 
@@ -186,7 +221,7 @@ impl Mul<KeyPositions> for DAffine3 {
         let columns = key_positions
             .columns
             .iter()
-            .map(|column| column.iter().map(|position| self * *position).collect())
+            .map(|column| self * column)
             .collect();
 
         KeyPositions { columns }

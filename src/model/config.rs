@@ -41,7 +41,7 @@ pub struct Column {
     pub column_type: ColumnType,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Clone, Copy)]
 #[serde(untagged, deny_unknown_fields)]
 pub enum ColumnType {
     Normal { offset: DVec2 },
