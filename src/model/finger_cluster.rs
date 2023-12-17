@@ -4,7 +4,7 @@ use opencascade::primitives::{IntoShape, JoinType, Shape, Solid, Wire};
 
 use crate::model::{
     config::{Config, PositiveDVec2, EPSILON},
-    geometry::{zvec, Line, Plane},
+    geometry::{zvec, Line, Plane, Project},
     key_positions::{Column, KeyPositions},
     Component,
 };
@@ -80,7 +80,7 @@ impl KeyCluster {
             })
             .collect();
 
-        // Upper an lower support points derived from the first and last entries
+        // Upper and lower support points derived from the first and last entries
         let mut lower_support_points =
             support_planes.calculate_support_points(first, false, mount_size.width);
         let upper_support_points =
@@ -99,9 +99,7 @@ impl KeyCluster {
         // Get polygon points by projecting to plane
         let normal = first.x_axis;
         let plane = Plane::new(first.translation - key_clearance.x / 2.0 * normal, normal);
-        let points = points
-            .into_iter()
-            .map(|point| plane.project_point_onto(point));
+        let points = points.into_iter().map(|point| point.project_to(&plane));
 
         let wire = Wire::from_ordered_points(points).unwrap();
         wire.to_face().extrude(key_clearance.x * normal)
@@ -185,7 +183,7 @@ impl SupportPlanes {
 
             plane.intersection(&line).unwrap()
         } else {
-            plane.project_point_onto(point)
+            point.project_to(plane)
         };
 
         let mut points = vec![point];
