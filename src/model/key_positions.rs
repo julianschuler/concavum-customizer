@@ -16,20 +16,23 @@ pub struct Column {
 #[derive(Clone, Copy)]
 pub enum ColumnType {
     Normal,
-    Side,
-}
-
-impl From<config::ColumnType> for ColumnType {
-    fn from(value: config::ColumnType) -> Self {
-        match value {
-            config::ColumnType::Normal { .. } => Self::Normal,
-            config::ColumnType::Side { .. } => Self::Side,
-        }
-    }
+    SideLeft,
+    SideRight,
 }
 
 impl Column {
-    pub fn new(entries: Vec<DAffine3>, column_type: ColumnType) -> Self {
+    pub fn new(entries: Vec<DAffine3>, column_type: &config::ColumnType, left: bool) -> Self {
+        let column_type = match column_type {
+            config::ColumnType::Normal { .. } => ColumnType::Normal,
+            config::ColumnType::Side { .. } => {
+                if left {
+                    ColumnType::SideLeft
+                } else {
+                    ColumnType::SideRight
+                }
+            }
+        };
+
         Self {
             entries,
             column_type,
@@ -59,7 +62,10 @@ impl Mul<&Column> for DAffine3 {
     fn mul(self, column: &Column) -> Self::Output {
         let entries = column.entries.iter().map(|entry| self * *entry).collect();
 
-        Column::new(entries, column.column_type)
+        Column {
+            entries,
+            column_type: column.column_type,
+        }
     }
 }
 
@@ -187,7 +193,7 @@ impl KeyPositions {
                         .collect()
                 };
 
-                Column::new(entries, column.column_type.into())
+                Column::new(entries, &column.column_type, i == 0)
             })
             .collect();
 
