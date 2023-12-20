@@ -16,21 +16,14 @@ pub struct Column {
 #[derive(Clone, Copy)]
 pub enum ColumnType {
     Normal,
-    SideLeft,
-    SideRight,
+    Side,
 }
 
 impl Column {
-    pub fn new(entries: Vec<DAffine3>, column_type: &config::ColumnType, left: bool) -> Self {
+    pub fn new(entries: Vec<DAffine3>, column_type: &config::Column) -> Self {
         let column_type = match column_type {
-            config::ColumnType::Normal { .. } => ColumnType::Normal,
-            config::ColumnType::Side { .. } => {
-                if left {
-                    ColumnType::SideLeft
-                } else {
-                    ColumnType::SideRight
-                }
-            }
+            config::Column::Normal { .. } => ColumnType::Normal,
+            config::Column::Side { .. } => ColumnType::Side,
         };
 
         Self {
@@ -42,13 +35,13 @@ impl Column {
     pub fn first(&self) -> &DAffine3 {
         self.entries
             .first()
-            .expect("there should always be at least one row")
+            .expect("there has to be at least one row")
     }
 
     pub fn last(&self) -> &DAffine3 {
         self.entries
             .last()
-            .expect("there should always be at least one row")
+            .expect("there has to be at least one row")
     }
 
     pub fn column_type(&self) -> ColumnType {
@@ -81,15 +74,11 @@ pub struct Columns(Vec<Column>);
 
 impl Columns {
     pub fn first(&self) -> &Column {
-        self.0
-            .first()
-            .expect("there should always be at least one column")
+        self.0.first().expect("there has to be at least one column")
     }
 
     pub fn last(&self) -> &Column {
-        self.0
-            .last()
-            .expect("there should always be at least one column")
+        self.0.last().expect("there has to be at least one column")
     }
 }
 
@@ -122,23 +111,28 @@ impl KeyPositions {
             .iter()
             .enumerate()
             .map(|(i, column)| {
-                let (side_angle, side, offset) = match column.column_type {
-                    config::ColumnType::Normal { offset } => (0.0, 0.0, offset),
-                    config::ColumnType::Side { side_angle } => {
+                let (curvature_angle, offset, side_angle, side) = match column {
+                    config::Column::Normal {
+                        curvature_angle,
+                        offset,
+                    } => (curvature_angle, offset, 0.0, 0.0),
+                    config::Column::Side { side_angle } => {
                         let (side, column) = if i == 0 {
                             (1.0, config.columns.get(1))
                         } else {
                             (-1.0, config.columns.get(config.columns.len() - 2))
                         };
 
-                        let offset = column
-                            .map(|column| match column.column_type {
-                                config::ColumnType::Normal { offset } => offset,
-                                _ => DVec2::default(),
-                            })
-                            .unwrap_or(DVec2::default());
+                        let (curvature_angle, offset) =
+                            match column.expect("there has to be at least one normal column") {
+                                config::Column::Normal {
+                                    curvature_angle,
+                                    offset,
+                                } => (curvature_angle, offset),
+                                _ => panic!("there has to be at least one normal column"),
+                            };
 
-                        (*side_angle, side, offset)
+                        (curvature_angle, offset, **side_angle, side)
                     }
                 };
                 let side_angle = side_angle.to_radians();
@@ -161,7 +155,7 @@ impl KeyPositions {
                 let column_transform =
                     DAffine3::from_rotation_y(side * side_angle).translate(translation);
 
-                let curvature_angle = column.curvature_angle.to_radians();
+                let curvature_angle = curvature_angle.to_radians();
                 let entries = if curvature_angle == 0.0 {
                     (0..*config.rows)
                         .map(|j| {
@@ -193,7 +187,7 @@ impl KeyPositions {
                         .collect()
                 };
 
-                Column::new(entries, &column.column_type, i == 0)
+                Column::new(entries, &column)
             })
             .collect();
 

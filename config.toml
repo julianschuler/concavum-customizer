@@ -17,13 +17,14 @@ rows = 3
 # Settings per column, automatic PCB generation is supported for 2 to 6 columns
 columns = [
   # Finger column curvature as angle between two neighbouring keys and offset along Y and Z
-  # The first and last columns may specify a side angle instead of an offset
-  { curvature_angle = 20, side_angle = 15 },
+  # The first and last columns may specify a side angle instead of an offset and curvature
+  # The side column curvature is derived from the curvature of the neighbour
+  { side_angle = 15 },
   { curvature_angle = 20, offset = [0, 0] },
   { curvature_angle = 20, offset = [0, -3] },
   { curvature_angle = 20, offset = [0, 0] },
   { curvature_angle = 20, offset = [-20, 5] },
-  { curvature_angle = 20, side_angle = 15 },
+  { side_angle = 15 },
 ]
 # Distance between two neighbouring keys in X and Y direction
 key_distance = [19.05, 19.05]
