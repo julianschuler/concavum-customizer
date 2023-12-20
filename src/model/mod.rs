@@ -1,7 +1,7 @@
 mod config;
-mod finger_cluster;
 mod geometry;
 mod key;
+mod key_cluster;
 mod key_positions;
 
 use std::path::Path;
@@ -12,8 +12,7 @@ use hex_color::HexColor;
 pub use crate::viewer::model::{Component, ViewableModel};
 use config::Config;
 use key::Key;
-
-use self::finger_cluster::KeyCluster;
+use key_cluster::KeyCluster;
 
 pub struct Model {
     components: Vec<Component>,
