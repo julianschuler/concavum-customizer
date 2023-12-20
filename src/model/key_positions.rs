@@ -183,7 +183,7 @@ impl KeyPositions {
                         .collect()
                 };
 
-                Column::new(entries, &column)
+                Column::new(entries, column)
             })
             .collect();
 
