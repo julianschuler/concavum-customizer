@@ -25,7 +25,7 @@ impl KeyCluster {
 
         let mut shape = mount.into_shape();
         for clearance in clearances {
-            shape = shape.subtract(&clearance.into()).into();
+            shape = shape.subtract(&clearance).into();
         }
 
         Self {
@@ -62,7 +62,7 @@ impl<'a> ClearanceBuilder<'a> {
             key_distance.y + KEY_CLEARANCE,
         );
 
-        let support_planes = SupportPlanes::from_columns(&columns);
+        let support_planes = SupportPlanes::from_columns(columns);
         let mount_size = mount_size.to_owned();
 
         Self {
