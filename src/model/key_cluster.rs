@@ -16,30 +16,15 @@ pub struct KeyCluster {
 }
 
 impl KeyCluster {
-    const KEY_CLEARANCE: f64 = 1.0;
-
     pub fn from_config(config: &Config) -> Self {
         let key_positions =
             KeyPositions::from_config(&config.finger_cluster).tilt(config.keyboard.tilting_angle);
-
-        let key_distance: PositiveDVec2 = (&config.finger_cluster.key_distance).into();
-        let key_clearance = dvec2(
-            key_distance.x + Self::KEY_CLEARANCE,
-            key_distance.y + Self::KEY_CLEARANCE,
-        );
-
-        let support_planes = SupportPlanes::from_positions(&key_positions);
-
         let mount = Mount::from_positions(&key_positions, *config.keyboard.circumference_distance);
-        let mount_size = mount.size.clone();
-        let mut shape = mount.into_shape();
 
-        for clearance in Self::column_clearances(
-            &key_positions.columns,
-            &key_clearance,
-            &support_planes,
-            &mount_size,
-        ) {
+        let clearances = ClearanceBuilder::new(config, &key_positions.columns, &mount.size).build();
+
+        let mut shape = mount.into_shape();
+        for clearance in clearances {
             shape = shape.subtract(&clearance.into()).into();
         }
 
@@ -58,32 +43,50 @@ impl KeyCluster {
             .copied()
             .collect()
     }
+}
 
-    fn column_clearances(
-        columns: &Columns,
-        key_clearance: &DVec2,
-        support_planes: &SupportPlanes,
-        mount_size: &MountSize,
-    ) -> Vec<Shape> {
-        let first = columns.first();
-        let last = columns.last();
+struct ClearanceBuilder<'a> {
+    columns: &'a Columns,
+    key_clearance: DVec2,
+    support_planes: SupportPlanes,
+    mount_size: MountSize,
+}
+
+impl<'a> ClearanceBuilder<'a> {
+    fn new(config: &Config, columns: &'a Columns, mount_size: &MountSize) -> Self {
+        const KEY_CLEARANCE: f64 = 1.0;
+
+        let key_distance: PositiveDVec2 = (&config.finger_cluster.key_distance).into();
+        let key_clearance = dvec2(
+            key_distance.x + KEY_CLEARANCE,
+            key_distance.y + KEY_CLEARANCE,
+        );
+
+        let support_planes = SupportPlanes::from_columns(&columns);
+        let mount_size = mount_size.to_owned();
+
+        Self {
+            columns,
+            key_clearance,
+            support_planes,
+            mount_size,
+        }
+    }
+
+    fn build(self) -> Vec<Shape> {
+        let first = self.columns.first();
+        let last = self.columns.last();
 
         let mut clearances = Vec::new();
 
         let normal_start = match first.column_type {
             ColumnType::Normal => 0,
             ColumnType::Side => {
-                let right_neighbor = columns
+                let right_neighbor = self
+                    .columns
                     .get(1)
                     .expect("there has to be at least one normal column");
-                let side_column_clearance = Self::side_column_clearance(
-                    first,
-                    right_neighbor,
-                    true,
-                    key_clearance,
-                    support_planes,
-                    mount_size,
-                );
+                let side_column_clearance = self.side_column_clearance(first, right_neighbor, true);
                 clearances.push(side_column_clearance);
 
                 2
@@ -91,86 +94,69 @@ impl KeyCluster {
         };
 
         let normal_end = match last.column_type {
-            ColumnType::Normal => columns.len(),
+            ColumnType::Normal => self.columns.len(),
             ColumnType::Side => {
-                let left_neighbor = columns
-                    .get(columns.len() - 2)
+                let left_neighbor = self
+                    .columns
+                    .get(self.columns.len() - 2)
                     .expect("there has to be at least one normal column");
-                let side_column_clearance = Self::side_column_clearance(
-                    left_neighbor,
-                    last,
-                    false,
-                    key_clearance,
-                    support_planes,
-                    mount_size,
-                );
+                let side_column_clearance = self.side_column_clearance(left_neighbor, last, false);
                 clearances.push(side_column_clearance);
 
-                columns.len() - 2
+                self.columns.len() - 2
             }
         };
 
         if normal_start < normal_end {
-            clearances.extend(columns[normal_start..normal_end].iter().map(|column| {
-                Self::normal_column_clearance(column, key_clearance, support_planes, mount_size)
-                    .into()
-            }));
+            clearances.extend(
+                self.columns[normal_start..normal_end]
+                    .iter()
+                    .map(|column| self.normal_column_clearance(column).into()),
+            );
         }
 
         clearances
     }
 
-    fn normal_column_clearance(
-        column: &Column,
-        key_clearance: &DVec2,
-        support_planes: &SupportPlanes,
-        mount_size: &MountSize,
-    ) -> Solid {
-        let points = Self::clearance_points(column, support_planes, mount_size);
+    fn normal_column_clearance(&self, column: &Column) -> Solid {
+        let points = self.clearance_points(column);
         let first = column.first();
         let normal = first.x_axis;
-        let plane = Plane::new(first.translation - key_clearance.x / 2.0 * normal, normal);
+        let plane = Plane::new(
+            first.translation - self.key_clearance.x / 2.0 * normal,
+            normal,
+        );
 
-        project_points_to_plane_and_extrude(points, plane, key_clearance.x)
+        project_points_to_plane_and_extrude(points, plane, self.key_clearance.x)
     }
 
-    fn side_column_clearance(
-        left: &Column,
-        right: &Column,
-        is_left: bool,
-        key_clearance: &DVec2,
-        support_planes: &SupportPlanes,
-        mount_size: &MountSize,
-    ) -> Shape {
+    fn side_column_clearance(&self, left: &Column, right: &Column, is_left: bool) -> Shape {
+        let clearance_x = self.key_clearance.x;
         let (left_offset, right_offset) = if is_left {
-            (2.0 * key_clearance.x, key_clearance.x / 2.0)
+            (2.0 * clearance_x, clearance_x / 2.0)
         } else {
-            (key_clearance.x / 2.0, 2.0 * key_clearance.x)
+            (clearance_x / 2.0, 2.0 * clearance_x)
         };
-        let extrusion_height = 4.0 * key_clearance.x;
+        let extrusion_height = 4.0 * clearance_x;
 
         // Left clearance
         let first = left.first();
         let normal = first.x_axis;
         let plane = Plane::new(first.translation - left_offset * normal, normal);
-        let points = Self::clearance_points(left, support_planes, mount_size);
+        let points = self.clearance_points(left);
         let left_clearance = project_points_to_plane_and_extrude(points, plane, extrusion_height);
 
         // Right clearance
         let first = right.first();
         let normal = first.x_axis;
         let plane = Plane::new(first.translation + right_offset * normal, normal);
-        let points = Self::clearance_points(right, support_planes, mount_size);
+        let points = self.clearance_points(right);
         let right_clearance = project_points_to_plane_and_extrude(points, plane, -extrusion_height);
 
         left_clearance.intersect(&right_clearance).into()
     }
 
-    fn clearance_points(
-        column: &Column,
-        support_planes: &SupportPlanes,
-        mount_size: &MountSize,
-    ) -> Vec<DVec3> {
+    fn clearance_points(&self, column: &Column) -> Vec<DVec3> {
         let first = column.first();
         let last = column.last();
 
@@ -189,15 +175,17 @@ impl KeyCluster {
 
         // Upper and lower support points derived from the first and last entries
         let mut lower_support_points =
-            support_planes.calculate_support_points(first, false, mount_size.width);
+            self.support_planes
+                .calculate_support_points(first, false, self.mount_size.width);
         let upper_support_points =
-            support_planes.calculate_support_points(last, true, mount_size.width);
+            self.support_planes
+                .calculate_support_points(last, true, self.mount_size.width);
 
         // Combine upper and lower support points with clearance points to polygon points
         let lower_clearance_point =
-            *lower_support_points.last().unwrap() + 2.0 * mount_size.height * DVec3::Z;
+            *lower_support_points.last().unwrap() + 2.0 * self.mount_size.height * DVec3::Z;
         let upper_clearance_point =
-            *upper_support_points.last().unwrap() + 2.0 * mount_size.height * DVec3::Z;
+            *upper_support_points.last().unwrap() + 2.0 * self.mount_size.height * DVec3::Z;
         points.extend(upper_support_points);
         points.extend([upper_clearance_point, lower_clearance_point]);
         lower_support_points.reverse();
@@ -219,8 +207,7 @@ struct SupportPlanes {
 }
 
 impl SupportPlanes {
-    fn from_positions(key_positions: &KeyPositions) -> Self {
-        let columns = &key_positions.columns;
+    fn from_columns(columns: &Columns) -> Self {
         let reference_column = columns.get(1).unwrap_or_else(|| columns.first());
         let x_axis = reference_column.first().x_axis;
         let normal = x_axis.cross(DVec3::Y);
@@ -314,7 +301,7 @@ impl Mount {
     const PLATE_X_2: f64 = Self::PLATE_SIZE.x / 2.0;
     const PLATE_Y_2: f64 = Self::PLATE_SIZE.y / 2.0;
 
-    pub fn from_positions(key_positions: &KeyPositions, circumference_distance: f64) -> Self {
+    fn from_positions(key_positions: &KeyPositions, circumference_distance: f64) -> Self {
         let columns = &key_positions.columns;
         let first_column = columns.first();
         let last_column = columns.last();
