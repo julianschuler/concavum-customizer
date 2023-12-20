@@ -214,19 +214,23 @@ impl SupportPlanes {
 
         let mut lower_points: Vec<_> = columns
             .iter()
-            .map(|column| {
-                let position = column.first();
-
-                position.translation - Mount::PLATE_Y_2 * position.y_axis
+            .filter_map(|column| match column.column_type {
+                ColumnType::Normal => {
+                    let position = column.first();
+                    Some(position.translation - Mount::PLATE_Y_2 * position.y_axis)
+                }
+                ColumnType::Side => None,
             })
             .collect();
 
         let mut upper_points: Vec<_> = columns
             .iter()
-            .map(|column| {
-                let position = column.last();
-
-                position.translation + Mount::PLATE_Y_2 * position.y_axis
+            .filter_map(|column| match column.column_type {
+                ColumnType::Normal => {
+                    let position = column.last();
+                    Some(position.translation + Mount::PLATE_Y_2 * position.y_axis)
+                }
+                ColumnType::Side => None,
             })
             .collect();
 
