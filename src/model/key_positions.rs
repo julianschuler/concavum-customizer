@@ -9,11 +9,11 @@ use crate::model::{
 };
 
 pub struct Column {
+    pub column_type: ColumnType,
     entries: Vec<DAffine3>,
-    column_type: ColumnType,
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone)]
 pub enum ColumnType {
     Normal,
     Side,
@@ -43,10 +43,6 @@ impl Column {
             .last()
             .expect("there has to be at least one row")
     }
-
-    pub fn column_type(&self) -> ColumnType {
-        self.column_type
-    }
 }
 
 impl Mul<&Column> for DAffine3 {
@@ -57,7 +53,7 @@ impl Mul<&Column> for DAffine3 {
 
         Column {
             entries,
-            column_type: column.column_type,
+            column_type: column.column_type.clone(),
         }
     }
 }
