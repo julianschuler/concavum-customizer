@@ -5,7 +5,7 @@ use opencascade::primitives::{IntoShape, JoinType, Shape, Solid, Wire};
 use crate::model::{
     config::{Config, PositiveDVec2, EPSILON},
     geometry::{zvec, Line, Plane, Project},
-    key_positions::{Column, KeyPositions},
+    key_positions::{Column, ColumnType, Columns, KeyPositions},
     Component,
 };
 
@@ -16,16 +16,16 @@ pub struct KeyCluster {
 }
 
 impl KeyCluster {
-    pub fn from_config(config: &Config) -> Self {
-        const KEY_CLEARANCE: f64 = 1.0;
+    const KEY_CLEARANCE: f64 = 1.0;
 
+    pub fn from_config(config: &Config) -> Self {
         let key_positions =
             KeyPositions::from_config(&config.finger_cluster).tilt(config.keyboard.tilting_angle);
 
         let key_distance: PositiveDVec2 = (&config.finger_cluster.key_distance).into();
         let key_clearance = dvec2(
-            key_distance.x + KEY_CLEARANCE,
-            key_distance.y + KEY_CLEARANCE,
+            key_distance.x + Self::KEY_CLEARANCE,
+            key_distance.y + Self::KEY_CLEARANCE,
         );
 
         let support_planes = SupportPlanes::from_positions(&key_positions);
@@ -34,11 +34,12 @@ impl KeyCluster {
         let mount_size = mount.size.clone();
         let mut shape = mount.into_shape();
 
-        let clearances = key_positions.columns.iter().map(|column| {
-            Self::column_clearance(column, &key_clearance, &support_planes, &mount_size)
-        });
-
-        for clearance in clearances {
+        for clearance in Self::column_clearances(
+            &key_positions.columns,
+            &key_clearance,
+            &support_planes,
+            &mount_size,
+        ) {
             shape = shape.subtract(&clearance.into()).into();
         }
 
@@ -58,12 +59,118 @@ impl KeyCluster {
             .collect()
     }
 
-    fn column_clearance(
+    fn column_clearances(
+        columns: &Columns,
+        key_clearance: &DVec2,
+        support_planes: &SupportPlanes,
+        mount_size: &MountSize,
+    ) -> Vec<Shape> {
+        let first = columns.first();
+        let last = columns.last();
+
+        let mut clearances = Vec::new();
+
+        let normal_start = match first.column_type {
+            ColumnType::Normal => 0,
+            ColumnType::Side => {
+                let right_neighbor = columns
+                    .get(1)
+                    .expect("there has to be at least one normal column");
+                let side_column_clearance = Self::side_column_clearance(
+                    first,
+                    right_neighbor,
+                    true,
+                    key_clearance,
+                    support_planes,
+                    mount_size,
+                );
+                clearances.push(side_column_clearance);
+
+                2
+            }
+        };
+
+        let normal_end = match last.column_type {
+            ColumnType::Normal => columns.len(),
+            ColumnType::Side => {
+                let left_neighbor = columns
+                    .get(columns.len() - 2)
+                    .expect("there has to be at least one normal column");
+                let side_column_clearance = Self::side_column_clearance(
+                    left_neighbor,
+                    last,
+                    false,
+                    key_clearance,
+                    support_planes,
+                    mount_size,
+                );
+                clearances.push(side_column_clearance);
+
+                columns.len() - 2
+            }
+        };
+
+        if normal_start < normal_end {
+            clearances.extend(columns[normal_start..normal_end].iter().map(|column| {
+                Self::normal_column_clearance(column, key_clearance, support_planes, mount_size)
+                    .into()
+            }));
+        }
+
+        clearances
+    }
+
+    fn normal_column_clearance(
         column: &Column,
         key_clearance: &DVec2,
         support_planes: &SupportPlanes,
         mount_size: &MountSize,
     ) -> Solid {
+        let points = Self::clearance_points(column, support_planes, mount_size);
+        let first = column.first();
+        let normal = first.x_axis;
+        let plane = Plane::new(first.translation - key_clearance.x / 2.0 * normal, normal);
+
+        project_points_to_plane_and_extrude(points, plane, key_clearance.x)
+    }
+
+    fn side_column_clearance(
+        left: &Column,
+        right: &Column,
+        is_left: bool,
+        key_clearance: &DVec2,
+        support_planes: &SupportPlanes,
+        mount_size: &MountSize,
+    ) -> Shape {
+        let (left_offset, right_offset) = if is_left {
+            (2.0 * key_clearance.x, key_clearance.x / 2.0)
+        } else {
+            (key_clearance.x / 2.0, 2.0 * key_clearance.x)
+        };
+        let extrusion_height = 4.0 * key_clearance.x;
+
+        // Left clearance
+        let first = left.first();
+        let normal = first.x_axis;
+        let plane = Plane::new(first.translation - left_offset * normal, normal);
+        let points = Self::clearance_points(left, support_planes, mount_size);
+        let left_clearance = project_points_to_plane_and_extrude(points, plane, extrusion_height);
+
+        // Right clearance
+        let first = right.first();
+        let normal = first.x_axis;
+        let plane = Plane::new(first.translation + right_offset * normal, normal);
+        let points = Self::clearance_points(right, support_planes, mount_size);
+        let right_clearance = project_points_to_plane_and_extrude(points, plane, -extrusion_height);
+
+        left_clearance.intersect(&right_clearance).into()
+    }
+
+    fn clearance_points(
+        column: &Column,
+        support_planes: &SupportPlanes,
+        mount_size: &MountSize,
+    ) -> Vec<DVec3> {
         let first = column.first();
         let last = column.last();
 
@@ -88,21 +195,15 @@ impl KeyCluster {
 
         // Combine upper and lower support points with clearance points to polygon points
         let lower_clearance_point =
-            *lower_support_points.last().unwrap() + mount_size.height * DVec3::Z;
+            *lower_support_points.last().unwrap() + 2.0 * mount_size.height * DVec3::Z;
         let upper_clearance_point =
-            *upper_support_points.last().unwrap() + mount_size.height * DVec3::Z;
+            *upper_support_points.last().unwrap() + 2.0 * mount_size.height * DVec3::Z;
         points.extend(upper_support_points);
         points.extend([upper_clearance_point, lower_clearance_point]);
         lower_support_points.reverse();
         points.extend(lower_support_points);
 
-        // Get polygon points by projecting to plane
-        let normal = first.x_axis;
-        let plane = Plane::new(first.translation - key_clearance.x / 2.0 * normal, normal);
-        let points = points.into_iter().map(|point| point.project_to(&plane));
-
-        let wire = Wire::from_ordered_points(points).unwrap();
-        wire.to_face().extrude(key_clearance.x * normal)
+        points
     }
 }
 
@@ -305,4 +406,15 @@ impl IntoShape for Mount {
     fn into_shape(self) -> Shape {
         self.shape.into_shape()
     }
+}
+
+fn project_points_to_plane_and_extrude(
+    points: impl IntoIterator<Item = DVec3>,
+    plane: Plane,
+    height: f64,
+) -> Solid {
+    let points = points.into_iter().map(|point| point.project_to(&plane));
+    let wire = Wire::from_ordered_points(points).expect("wire is created from more than 2 points");
+
+    wire.to_face().extrude(height * plane.normal())
 }
