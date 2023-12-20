@@ -7,6 +7,7 @@ use serde::{de::Error as DeserializeError, Deserialize, Deserializer};
 pub const EPSILON: f64 = 0.001;
 
 pub type CurvatureAngle = Ranged<-20, 50>;
+pub type SideAngle = Ranged<0, 30>;
 
 #[derive(Deserialize)]
 pub struct Config {
@@ -42,14 +43,14 @@ pub enum Column {
         offset: DVec2,
     },
     Side {
-        side_angle: CurvatureAngle,
+        side_angle: SideAngle,
     },
 }
 
 #[derive(Deserialize)]
 pub struct ThumbCluster {
     pub keys: PositiveInt,
-    pub curvature_angle: Ranged<-20, 45>,
+    pub curvature_angle: CurvatureAngle,
     pub rotation: DVec3,
     pub offset: DVec3,
     pub key_distance: PositiveFloat,
