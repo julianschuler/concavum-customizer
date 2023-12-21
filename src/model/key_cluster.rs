@@ -176,19 +176,14 @@ impl<'a> ClearanceBuilder<'a> {
         // Upper and lower support points derived from the first and last entries
         let mut lower_support_points =
             self.support_planes
-                .calculate_support_points(first, false, self.mount_size.width);
+                .calculate_support_points(first, false, &self.mount_size);
+        lower_support_points.reverse();
         let upper_support_points =
             self.support_planes
-                .calculate_support_points(last, true, self.mount_size.width);
+                .calculate_support_points(last, true, &self.mount_size);
 
         // Combine upper and lower support points with clearance points to polygon points
-        let lower_clearance_point =
-            *lower_support_points.last().unwrap() + 2.0 * self.mount_size.height * DVec3::Z;
-        let upper_clearance_point =
-            *upper_support_points.last().unwrap() + 2.0 * self.mount_size.height * DVec3::Z;
         points.extend(upper_support_points);
-        points.extend([upper_clearance_point, lower_clearance_point]);
-        lower_support_points.reverse();
         points.extend(lower_support_points);
 
         points
@@ -257,7 +252,7 @@ impl SupportPlanes {
         &self,
         position: &DAffine3,
         upper: bool,
-        mount_width: f64,
+        mount_size: &MountSize,
     ) -> Vec<DVec3> {
         let (sign, plane) = if upper {
             (1.0, &self.upper_plane)
@@ -283,8 +278,9 @@ impl SupportPlanes {
             points.push(projected_point);
         }
 
-        let outwards_point = projected_point + sign * mount_width * DVec3::Y;
-        points.push(outwards_point);
+        let outwards_point = projected_point + sign * mount_size.width * DVec3::Y;
+        let upwards_point = projected_point + 2.0 * mount_size.height * DVec3::Z;
+        points.extend([outwards_point, upwards_point]);
         points
     }
 }
