@@ -261,6 +261,8 @@ impl SupportPlanes {
         column_type: &ColumnType,
         mount_size: &MountSize,
     ) -> Vec<DVec3> {
+        const ALLOWED_DEVIATION: f64 = 1.0;
+
         let (sign, plane) = if upper {
             (1.0, &self.upper_plane)
         } else {
@@ -274,13 +276,25 @@ impl SupportPlanes {
 
         let projected_point = match column_type {
             ColumnType::Normal => {
-                if point_is_above == point_direction_is_upwards {
+                let default = if point_is_above == point_direction_is_upwards {
                     let line = Line::new(point, position.z_axis);
 
                     plane.intersection(&line).unwrap()
                 } else {
                     point.project_to(plane)
-                }
+                };
+
+                let line = Line::new(point, position.y_axis);
+                plane
+                    .intersection(&line)
+                    .map(|point| {
+                        if point.abs_diff_eq(default, ALLOWED_DEVIATION) {
+                            point
+                        } else {
+                            default
+                        }
+                    })
+                    .unwrap_or(default)
             }
             ColumnType::Side => point,
         };
