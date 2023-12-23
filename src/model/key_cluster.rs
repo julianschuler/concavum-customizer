@@ -174,13 +174,19 @@ impl<'a> ClearanceBuilder<'a> {
             .collect();
 
         // Upper and lower support points derived from the first and last entries
-        let mut lower_support_points =
-            self.support_planes
-                .calculate_support_points(first, false, &self.mount_size);
+        let mut lower_support_points = self.support_planes.calculate_support_points(
+            first,
+            false,
+            &column.column_type,
+            &self.mount_size,
+        );
         lower_support_points.reverse();
-        let upper_support_points =
-            self.support_planes
-                .calculate_support_points(last, true, &self.mount_size);
+        let upper_support_points = self.support_planes.calculate_support_points(
+            last,
+            true,
+            &column.column_type,
+            &self.mount_size,
+        );
 
         // Combine upper and lower support points with clearance points to polygon points
         points.extend(upper_support_points);
@@ -252,6 +258,7 @@ impl SupportPlanes {
         &self,
         position: &DAffine3,
         upper: bool,
+        column_type: &ColumnType,
         mount_size: &MountSize,
     ) -> Vec<DVec3> {
         let (sign, plane) = if upper {
@@ -265,12 +272,17 @@ impl SupportPlanes {
         let point_is_above = plane.signed_distance_to(point) > 0.0;
         let point_direction_is_upwards = point_direction.dot(plane.normal()) > 0.0;
 
-        let projected_point = if point_is_above == point_direction_is_upwards {
-            let line = Line::new(point, position.z_axis);
+        let projected_point = match column_type {
+            ColumnType::Normal => {
+                if point_is_above == point_direction_is_upwards {
+                    let line = Line::new(point, position.z_axis);
 
-            plane.intersection(&line).unwrap()
-        } else {
-            point.project_to(plane)
+                    plane.intersection(&line).unwrap()
+                } else {
+                    point.project_to(plane)
+                }
+            }
+            ColumnType::Side => point,
         };
 
         let mut points = vec![point];
