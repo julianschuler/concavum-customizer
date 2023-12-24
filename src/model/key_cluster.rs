@@ -86,7 +86,8 @@ impl<'a> ClearanceBuilder<'a> {
                     .columns
                     .get(1)
                     .expect("there has to be at least one normal column");
-                let side_column_clearance = self.side_column_clearance(first, right_neighbor, true);
+                let side_column_clearance =
+                    self.side_column_clearance(first, right_neighbor, false);
                 clearances.push(side_column_clearance);
 
                 2
@@ -100,7 +101,7 @@ impl<'a> ClearanceBuilder<'a> {
                     .columns
                     .get(self.columns.len() - 2)
                     .expect("there has to be at least one normal column");
-                let side_column_clearance = self.side_column_clearance(left_neighbor, last, false);
+                let side_column_clearance = self.side_column_clearance(left_neighbor, last, true);
                 clearances.push(side_column_clearance);
 
                 self.columns.len() - 2
@@ -130,12 +131,12 @@ impl<'a> ClearanceBuilder<'a> {
         project_points_to_plane_and_extrude(points, plane, self.key_clearance.x)
     }
 
-    fn side_column_clearance(&self, left: &Column, right: &Column, is_left: bool) -> Shape {
+    fn side_column_clearance(&self, left: &Column, right: &Column, is_right: bool) -> Shape {
         let clearance_x = self.key_clearance.x;
-        let (left_offset, right_offset) = if is_left {
-            (2.0 * clearance_x, clearance_x / 2.0)
-        } else {
+        let (left_offset, right_offset) = if is_right {
             (clearance_x / 2.0, 2.0 * clearance_x)
+        } else {
+            (2.0 * clearance_x, clearance_x / 2.0)
         };
         let extrusion_height = 4.0 * clearance_x;
 
@@ -305,7 +306,7 @@ impl SupportPlanes {
         }
 
         let outwards_point = projected_point + sign * mount_size.width * DVec3::Y;
-        let upwards_point = projected_point + 2.0 * mount_size.height * DVec3::Z;
+        let upwards_point = outwards_point + 2.0 * mount_size.height * DVec3::Z;
         points.extend([outwards_point, upwards_point]);
         points
     }
