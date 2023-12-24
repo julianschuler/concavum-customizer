@@ -332,33 +332,44 @@ impl Mount {
         let first_column = columns.first();
         let last_column = columns.last();
 
-        let lower_points = columns.windows(2).map(|window| {
+        let bottom_points = columns.windows(2).map(|window| {
             let first_left = window[0].first();
             let first_right = window[1].first();
 
             Self::circumference_point(first_left, first_right, false)
         });
-        let upper_points = key_positions.columns.windows(2).map(|window| {
+        let top_points = columns.windows(2).map(|window| {
             let last_left = window[0].last();
             let last_right = window[1].last();
 
             Self::circumference_point(last_left, last_right, true)
         });
+        let left_points = first_column
+            .windows(2)
+            .filter_map(|window| Self::circumference_point_side(&window[0], &window[1], false));
+        let right_points = last_column
+            .windows(2)
+            .filter_map(|window| Self::circumference_point_side(&window[0], &window[1], true));
 
         let left_bottom_corner = Self::corner_point(first_column.first(), false, false);
         let left_top_corner = Self::corner_point(first_column.last(), false, true);
         let right_bottom_corner = Self::corner_point(last_column.first(), true, false);
         let right_top_corner = Self::corner_point(last_column.last(), true, true);
 
-        let points: Vec<_> = lower_points
-            .chain([right_bottom_corner, right_top_corner])
-            .chain(upper_points.rev())
-            .chain([left_top_corner, left_bottom_corner])
+        let points: Vec<_> = bottom_points
+            .chain([right_bottom_corner])
+            .chain(right_points)
+            .chain([right_top_corner])
+            .chain(top_points.rev())
+            .chain([left_top_corner])
+            .chain(left_points.rev())
+            .chain([left_bottom_corner])
             .map(|point| dvec3(point.x, point.y, 0.0))
             .collect();
 
         let size = Self::calculate_size(key_positions, &points);
-        let wire = Wire::from_ordered_points(points).unwrap();
+        let wire =
+            Wire::from_ordered_points(points).expect("wire is created from more than 2 points");
         let wire = wire.offset(circumference_distance, JoinType::Arc);
         let shape = wire.to_face().extrude(zvec(size.height));
 
@@ -388,6 +399,21 @@ impl Mount {
         } else {
             right_point
         }
+    }
+
+    fn circumference_point_side(bottom: &DAffine3, top: &DAffine3, right: bool) -> Option<DVec3> {
+        let sign = if right { 1.0 } else { -1.0 };
+        let outwards_direction = bottom.x_axis;
+
+        // Get point which is more outward
+        let offset = (top.translation - bottom.translation).dot(outwards_direction);
+        let offset = if offset.signum() == sign { offset } else { 0.0 };
+        let point = bottom.translation + (offset + sign * Self::PLATE_X_2) * outwards_direction;
+
+        let line = Line::new(point, bottom.y_axis);
+        let plane = Plane::new(top.translation, top.z_axis);
+
+        plane.intersection(&line)
     }
 
     fn calculate_size(key_positions: &KeyPositions, points: &[DVec3]) -> MountSize {
