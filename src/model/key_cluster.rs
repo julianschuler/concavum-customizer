@@ -116,6 +116,8 @@ impl<'a> ClearanceBuilder<'a> {
             );
         }
 
+        clearances.push(self.side_clearance(false));
+
         clearances
     }
 
@@ -155,6 +157,27 @@ impl<'a> ClearanceBuilder<'a> {
         let right_clearance = project_points_to_plane_and_extrude(points, plane, -extrusion_height);
 
         left_clearance.intersect(&right_clearance).into()
+    }
+
+    fn side_clearance(&self, is_right: bool) -> Shape {
+        let mut points = Mount::side_circumference_points(self.columns, is_right);
+        let plane = Plane::new(self.mount_size.length * DVec3::NEG_X, DVec3::X);
+
+        let outwards_bottom_point = *points.first().expect("there are at least two points")
+            - self.mount_size.width * DVec3::Y;
+        let outwards_top_point = *points.last().expect("there are at least two points")
+            + self.mount_size.width * DVec3::Y;
+        let upwards_bottom_point = outwards_bottom_point + 2.0 * self.mount_size.height * DVec3::Z;
+        let upwards_top_point = outwards_top_point + 2.0 * self.mount_size.height * DVec3::Z;
+
+        points.extend([
+            outwards_top_point,
+            upwards_top_point,
+            upwards_bottom_point,
+            outwards_bottom_point,
+        ]);
+
+        project_points_to_plane_and_extrude(points, plane, 2.0 * self.mount_size.length).into()
     }
 
     fn clearance_points(&self, column: &Column) -> Vec<DVec3> {
@@ -331,8 +354,6 @@ impl Mount {
 
     fn from_positions(key_positions: &KeyPositions, circumference_distance: f64) -> Self {
         let columns = &key_positions.columns;
-        let first_column = columns.first();
-        let last_column = columns.last();
 
         let bottom_points = columns.windows(2).map(|window| {
             let first_left = window[0].first();
@@ -346,26 +367,13 @@ impl Mount {
 
             Self::circumference_point(last_left, last_right, true)
         });
-        let left_points = first_column
-            .windows(2)
-            .filter_map(|window| Self::circumference_point_side(&window[0], &window[1], false));
-        let right_points = last_column
-            .windows(2)
-            .filter_map(|window| Self::circumference_point_side(&window[0], &window[1], true));
-
-        let left_bottom_corner = Self::corner_point(first_column.first(), false, false);
-        let left_top_corner = Self::corner_point(first_column.last(), false, true);
-        let right_bottom_corner = Self::corner_point(last_column.first(), true, false);
-        let right_top_corner = Self::corner_point(last_column.last(), true, true);
+        let left_points = Self::side_circumference_points(columns, false);
+        let right_points = Self::side_circumference_points(columns, true);
 
         let points: Vec<_> = bottom_points
-            .chain([right_bottom_corner])
             .chain(right_points)
-            .chain([right_top_corner])
             .chain(top_points.rev())
-            .chain([left_top_corner])
-            .chain(left_points.rev())
-            .chain([left_bottom_corner])
+            .chain(left_points.into_iter().rev())
             .map(|point| dvec3(point.x, point.y, 0.0))
             .collect();
 
@@ -376,15 +384,6 @@ impl Mount {
         let shape = wire.to_face().extrude(zvec(size.height));
 
         Self { shape, size }
-    }
-
-    fn corner_point(position: &DAffine3, right: bool, top: bool) -> DVec3 {
-        let sign_x = if right { 1.0 } else { -1.0 };
-        let sign_y = if top { 1.0 } else { -1.0 };
-
-        position.translation
-            + sign_x * Self::PLATE_X_2 * position.x_axis
-            + sign_y * Self::PLATE_Y_2 * position.y_axis
     }
 
     fn circumference_point(left: &DAffine3, right: &DAffine3, top: bool) -> DVec3 {
@@ -403,8 +402,7 @@ impl Mount {
         }
     }
 
-    fn circumference_point_side(bottom: &DAffine3, top: &DAffine3, right: bool) -> Option<DVec3> {
-        let sign = if right { 1.0 } else { -1.0 };
+    fn circumference_point_side(bottom: &DAffine3, top: &DAffine3, sign: f64) -> Option<DVec3> {
         let outwards_direction = bottom.x_axis;
 
         // Get point which is more outward
@@ -416,6 +414,34 @@ impl Mount {
         let plane = Plane::new(top.translation, top.z_axis);
 
         plane.intersection(&line)
+    }
+
+    fn side_circumference_points(columns: &Columns, right: bool) -> Vec<DVec3> {
+        let column = if right {
+            columns.last()
+        } else {
+            columns.first()
+        };
+        let first = column.first();
+        let last = column.last();
+        let sign = if right { 1.0 } else { -1.0 };
+
+        let lower_corner = first.translation + sign * Self::PLATE_X_2 * first.x_axis
+            - Self::PLATE_Y_2 * first.y_axis;
+        let upper_corner =
+            last.translation + sign * Self::PLATE_X_2 * last.x_axis + Self::PLATE_Y_2 * last.y_axis;
+
+        let mut points = vec![lower_corner];
+
+        points.extend(
+            column
+                .windows(2)
+                .filter_map(|window| Self::circumference_point_side(&window[0], &window[1], sign)),
+        );
+
+        points.push(upper_corner);
+
+        points
     }
 
     fn calculate_size(key_positions: &KeyPositions, points: &[DVec3]) -> MountSize {
