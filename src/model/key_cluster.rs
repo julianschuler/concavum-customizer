@@ -315,6 +315,7 @@ impl SupportPlanes {
 struct MountSize {
     height: f64,
     width: f64,
+    length: f64,
 }
 
 struct Mount {
@@ -425,19 +426,35 @@ impl Mount {
             .unwrap_or_default()
             + 20.0;
 
-        let max_y = points
-            .iter()
-            .map(|point| point.y)
-            .max_by(f64::total_cmp)
-            .unwrap_or_default();
         let min_y = points
             .iter()
             .map(|point| point.y)
             .min_by(f64::total_cmp)
             .unwrap_or_default();
+        let max_y = points
+            .iter()
+            .map(|point| point.y)
+            .max_by(f64::total_cmp)
+            .unwrap_or_default();
         let width = max_y - min_y;
 
-        MountSize { height, width }
+        let min_x = points
+            .iter()
+            .map(|point| point.x)
+            .min_by(f64::total_cmp)
+            .unwrap_or_default();
+        let max_x = points
+            .iter()
+            .map(|point| point.x)
+            .max_by(f64::total_cmp)
+            .unwrap_or_default();
+        let length = max_x - min_x;
+
+        MountSize {
+            height,
+            width,
+            length,
+        }
     }
 }
 
