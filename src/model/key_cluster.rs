@@ -77,46 +77,27 @@ impl<'a> ClearanceBuilder<'a> {
         let first = self.columns.first();
         let last = self.columns.last();
 
-        let mut clearances = Vec::new();
-
-        let normal_start = match first.column_type {
-            ColumnType::Normal => 0,
-            ColumnType::Side => {
-                let right_neighbor = self
-                    .columns
-                    .get(1)
-                    .expect("there has to be at least one normal column");
-                let side_column_clearance =
-                    self.side_column_clearance(first, right_neighbor, false);
-                clearances.push(side_column_clearance);
-
-                2
-            }
+        let neighbor = match first.column_type {
+            ColumnType::Normal => None,
+            ColumnType::Side => self.columns.get(1),
         };
+        let left_clearance = self.side_column_clearance(first, neighbor, false);
 
-        let normal_end = match last.column_type {
-            ColumnType::Normal => self.columns.len(),
-            ColumnType::Side => {
-                let left_neighbor = self
-                    .columns
-                    .get(self.columns.len() - 2)
-                    .expect("there has to be at least one normal column");
-                let side_column_clearance = self.side_column_clearance(left_neighbor, last, true);
-                clearances.push(side_column_clearance);
-
-                self.columns.len() - 2
-            }
+        let neighbor = match last.column_type {
+            ColumnType::Normal => None,
+            ColumnType::Side => self.columns.get(self.columns.len() - 2),
         };
+        let right_clearance = self.side_column_clearance(last, neighbor, true);
 
-        if normal_start < normal_end {
+        let mut clearances = vec![left_clearance, right_clearance];
+
+        if let Some(columns) = self.columns.get(1..self.columns.len() - 1) {
             clearances.extend(
-                self.columns[normal_start..normal_end]
+                columns
                     .iter()
                     .map(|column| self.normal_column_clearance(column).into()),
             );
         }
-
-        clearances.push(self.side_clearance(false));
 
         clearances
     }
@@ -133,30 +114,47 @@ impl<'a> ClearanceBuilder<'a> {
         project_points_to_plane_and_extrude(points, plane, self.key_clearance.x)
     }
 
-    fn side_column_clearance(&self, left: &Column, right: &Column, is_right: bool) -> Shape {
+    fn side_column_clearance(
+        &self,
+        column: &Column,
+        neighbor: Option<&Column>,
+        is_right: bool,
+    ) -> Shape {
         let clearance_x = self.key_clearance.x;
-        let (left_offset, right_offset) = if is_right {
-            (clearance_x / 2.0, 2.0 * clearance_x)
-        } else {
-            (2.0 * clearance_x, clearance_x / 2.0)
-        };
+        let sign = if is_right { 1.0 } else { -1.0 };
+        let column_offset = 2.0 * clearance_x;
+        let neighbor_offset = clearance_x / 2.0;
         let extrusion_height = 4.0 * clearance_x;
 
-        // Left clearance
-        let first = left.first();
+        // Column clearance
+        let first = column.first();
         let normal = first.x_axis;
-        let plane = Plane::new(first.translation - left_offset * normal, normal);
-        let points = self.clearance_points(left);
-        let left_clearance = project_points_to_plane_and_extrude(points, plane, extrusion_height);
+        let plane = Plane::new(first.translation + sign * column_offset * normal, normal);
+        let points = self.clearance_points(column);
+        let column_clearance =
+            project_points_to_plane_and_extrude(points, plane, -sign * extrusion_height);
 
-        // Right clearance
-        let first = right.first();
-        let normal = first.x_axis;
-        let plane = Plane::new(first.translation + right_offset * normal, normal);
-        let points = self.clearance_points(right);
-        let right_clearance = project_points_to_plane_and_extrude(points, plane, -extrusion_height);
+        // Combined column and neighbor clearance
+        let combined_clearance = if let Some(neighbor) = neighbor {
+            let first = neighbor.first();
+            let normal = first.x_axis;
+            let plane = Plane::new(first.translation - sign * neighbor_offset * normal, normal);
+            let points = self.clearance_points(neighbor);
+            let neighbor_clearance =
+                project_points_to_plane_and_extrude(points, plane, sign * extrusion_height);
 
-        left_clearance.intersect(&right_clearance).into()
+            column_clearance.intersect(&neighbor_clearance).into_shape()
+        } else {
+            column_clearance.into_shape()
+        };
+
+        // Combined column, side and neighbor clearance
+        let side_clearance = self.side_clearance(is_right);
+        if (column.first().x_axis.z <= 0.0) == is_right {
+            combined_clearance.intersect(&side_clearance).into()
+        } else {
+            combined_clearance.union(&side_clearance).into()
+        }
     }
 
     fn side_clearance(&self, is_right: bool) -> Shape {
@@ -177,7 +175,7 @@ impl<'a> ClearanceBuilder<'a> {
             outwards_bottom_point,
         ]);
 
-        project_points_to_plane_and_extrude(points, plane, 2.0 * self.mount_size.length).into()
+        project_points_to_plane_and_extrude(points, plane, 3.0 * self.mount_size.length).into()
     }
 
     fn clearance_points(&self, column: &Column) -> Vec<DVec3> {
