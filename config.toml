@@ -38,7 +38,7 @@ keys = 3
 # Thumb well curvature as angle between two neighbouring keys
 curvature_angle = 15
 # Rotation of the thumb cluster in relation to the finger cluster
-rotation = [-17.192, -28.879, 18.499]
+rotation = [-17, -29, 18.5]
 # Offset of the thumb cluster in relation to the finger cluster home row
 offset = [-3.05, -48, 10]
 # Distance between two neighbouring keys
