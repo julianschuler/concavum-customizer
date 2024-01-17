@@ -51,7 +51,7 @@ impl KeyCap {
         let top_length = KEYCAP_PITCH * size_u - (KEYCAP_PITCH - TOP_WIDTH);
 
         let bottom = Workplane::xy()
-            .rect(bottom_length, BOTTOM_WIDTH)
+            .rect(BOTTOM_WIDTH, bottom_length)
             .fillet(BOTTOM_FILLET);
 
         let middle = Workplane::xy()
