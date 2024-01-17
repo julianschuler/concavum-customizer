@@ -17,8 +17,7 @@ pub struct KeyCluster {
 
 impl KeyCluster {
     pub fn from_config(config: &Config) -> Self {
-        let key_positions =
-            KeyPositions::from_config(&config.finger_cluster).tilt(config.keyboard.tilting_angle);
+        let key_positions = KeyPositions::from_config(config).tilt(config.keyboard.tilting_angle);
         let mount = Mount::from_positions(&key_positions, *config.keyboard.circumference_distance);
 
         let clearances = ClearanceBuilder::new(config, &key_positions.columns, &mount.size).build();
@@ -35,13 +34,17 @@ impl KeyCluster {
         }
     }
 
-    pub fn key_positions(&self) -> Vec<DAffine3> {
+    pub fn finger_key_positions(&self) -> Vec<DAffine3> {
         self.key_positions
             .columns
             .iter()
             .flat_map(|column| column.iter())
             .copied()
             .collect()
+    }
+
+    pub fn thumb_key_positions(&self) -> Vec<DAffine3> {
+        self.key_positions.thumb_keys.to_owned()
     }
 }
 

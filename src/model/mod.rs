@@ -27,21 +27,29 @@ impl Model {
 
         let mut components = Vec::new();
 
-        let key = Key::new(&config, 1.0);
-        let (mut keycap, mut switch) = key.into();
-
-        let finger_cluster = KeyCluster::from_config(&config);
-        let key_positions = finger_cluster.key_positions();
+        let key_cluster = KeyCluster::from_config(&config);
 
         if config.preview.show_keys {
-            keycap.with_positions(key_positions.clone());
-            switch.with_positions(key_positions);
+            let finger_key = Key::new(&config, 1.0);
+            let thumb_key = Key::new(&config, 1.5);
+            let (mut finger_keycap, mut finger_switch) = finger_key.into();
+            let (mut thumb_keycap, mut thumb_switch) = thumb_key.into();
 
-            components.push(keycap);
-            components.push(switch);
+            let finger_key_positions = key_cluster.finger_key_positions();
+            let thumb_key_positions = key_cluster.thumb_key_positions();
+
+            finger_keycap.with_positions(finger_key_positions.clone());
+            finger_switch.with_positions(finger_key_positions);
+            thumb_keycap.with_positions(thumb_key_positions.clone());
+            thumb_switch.with_positions(thumb_key_positions);
+
+            components.push(finger_keycap);
+            components.push(finger_switch);
+            components.push(thumb_keycap);
+            components.push(thumb_switch);
         }
 
-        components.push(finger_cluster.into());
+        components.push(key_cluster.into());
 
         Ok(Self {
             components,

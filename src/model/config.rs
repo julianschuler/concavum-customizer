@@ -54,6 +54,7 @@ pub struct ThumbCluster {
     pub rotation: DVec3,
     pub offset: DVec3,
     pub key_distance: PositiveFloat,
+    pub resting_key_index: u8,
 }
 
 #[derive(Deserialize)]
