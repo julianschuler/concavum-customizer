@@ -1,6 +1,6 @@
 use std::ops::{Deref, Mul};
 
-use glam::{dvec3, DAffine3, DVec2};
+use glam::{dvec3, DAffine3, DQuat, DVec2, EulerRot};
 
 use crate::model::{
     config::{self, Config, FingerCluster, PositiveDVec2, ThumbCluster},
@@ -192,7 +192,13 @@ impl ThumbKeys {
         const CURVATURE_HEIGHT: f64 = Switch::TOP_HEIGHT;
 
         let curvature_angle = config.curvature_angle.to_radians();
-        let key_transform = DAffine3::from_translation(config.offset);
+        let cluster_rotation = DQuat::from_euler(
+            EulerRot::ZYX,
+            config.rotation.z.to_radians(),
+            config.rotation.y.to_radians(),
+            config.rotation.x.to_radians(),
+        );
+        let key_transform = DAffine3::from_rotation_translation(cluster_rotation, config.offset);
 
         let keys = if curvature_angle == 0.0 {
             (0..*config.keys)
