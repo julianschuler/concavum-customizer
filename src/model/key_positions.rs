@@ -3,7 +3,7 @@ use std::ops::{Deref, Mul};
 use glam::{dvec3, DAffine3, DVec2};
 
 use crate::model::{
-    config::{self, FingerCluster, PositiveDVec2},
+    config::{self, Config, FingerCluster, PositiveDVec2, ThumbCluster},
     geometry::{zvec, Rotate, Translate},
     key::Switch,
 };
@@ -69,35 +69,7 @@ impl Deref for Column {
 pub struct Columns(Vec<Column>);
 
 impl Columns {
-    pub fn first(&self) -> &Column {
-        self.0.first().expect("there has to be at least one column")
-    }
-
-    pub fn last(&self) -> &Column {
-        self.0.last().expect("there has to be at least one column")
-    }
-}
-
-impl Deref for Columns {
-    type Target = [Column];
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-impl FromIterator<Column> for Columns {
-    fn from_iter<T: IntoIterator<Item = Column>>(iter: T) -> Self {
-        Self(iter.into_iter().collect())
-    }
-}
-
-pub struct KeyPositions {
-    pub columns: Columns,
-}
-
-impl KeyPositions {
-    pub fn from_config(config: &FingerCluster) -> Self {
+    fn from_config(config: &FingerCluster) -> Self {
         const CURVATURE_HEIGHT: f64 = Switch::TOP_HEIGHT;
 
         let key_distance: PositiveDVec2 = (&config.key_distance).into();
@@ -187,7 +159,102 @@ impl KeyPositions {
             })
             .collect();
 
-        Self { columns }
+        Self(columns)
+    }
+
+    pub fn first(&self) -> &Column {
+        self.0.first().expect("there has to be at least one column")
+    }
+
+    pub fn last(&self) -> &Column {
+        self.0.last().expect("there has to be at least one column")
+    }
+}
+
+impl Deref for Columns {
+    type Target = [Column];
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl FromIterator<Column> for Columns {
+    fn from_iter<T: IntoIterator<Item = Column>>(iter: T) -> Self {
+        Self(iter.into_iter().collect())
+    }
+}
+
+pub struct ThumbKeys(Vec<DAffine3>);
+
+impl ThumbKeys {
+    fn from_config(config: &ThumbCluster) -> Self {
+        const CURVATURE_HEIGHT: f64 = Switch::TOP_HEIGHT;
+
+        let curvature_angle = config.curvature_angle.to_radians();
+        let key_transform = DAffine3::from_translation(config.offset);
+
+        let keys = if curvature_angle == 0.0 {
+            (0..*config.keys)
+                .map(|j| {
+                    let x =
+                        *config.key_distance * (j as i16 - config.resting_key_index as i16) as f64;
+
+                    key_transform * DAffine3::from_translation(dvec3(x, 0.0, 0.0))
+                })
+                .collect()
+        } else {
+            let curvature_radius =
+                (*config.key_distance / 2.0 / (curvature_angle / 2.0).tan()) + CURVATURE_HEIGHT;
+
+            (0..*config.keys)
+                .map(|i| {
+                    let total_angle =
+                        curvature_angle * (i as i16 - config.resting_key_index as i16) as f64;
+                    let (sin, rcos) = (total_angle.sin(), 1.0 - total_angle.cos());
+
+                    key_transform
+                        * DAffine3::from_rotation_y(-total_angle).translate(dvec3(
+                            curvature_radius * sin,
+                            0.0,
+                            curvature_radius * rcos,
+                        ))
+                })
+                .collect()
+        };
+
+        Self(keys)
+    }
+}
+
+impl Deref for ThumbKeys {
+    type Target = [DAffine3];
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl FromIterator<DAffine3> for ThumbKeys {
+    fn from_iter<T: IntoIterator<Item = DAffine3>>(iter: T) -> Self {
+        Self(iter.into_iter().collect())
+    }
+}
+
+pub struct KeyPositions {
+    pub columns: Columns,
+    pub thumb_keys: ThumbKeys,
+}
+
+impl KeyPositions {
+    pub fn from_config(config: &Config) -> Self {
+        let columns = Columns::from_config(&config.finger_cluster);
+        let thumb_keys = ThumbKeys::from_config(&config.thumb_cluster);
+
+        Self {
+            columns,
+            thumb_keys,
+        }
     }
 
     pub fn tilt(self, tilting_angle: DVec2) -> Self {
@@ -219,7 +286,15 @@ impl Mul<KeyPositions> for DAffine3 {
             .iter()
             .map(|column| self * column)
             .collect();
+        let thumb_keys = key_positions
+            .thumb_keys
+            .iter()
+            .map(|&thumb_key| self * thumb_key)
+            .collect();
 
-        KeyPositions { columns }
+        KeyPositions {
+            columns,
+            thumb_keys,
+        }
     }
 }

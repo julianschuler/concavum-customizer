@@ -39,10 +39,12 @@ keys = 3
 curvature_angle = 15
 # Rotation of the thumb cluster in relation to the finger cluster
 rotation = [30, 15, 80]
-# Offset of the thumb cluster in relation to the finger cluster
+# Offset of the thumb cluster in relation to the finger cluster home row
 offset = [-3.05, -48, 10]
 # Distance between two neighbouring keys
 key_distance = 19.05
+# Index of the key the thumb is naturally resting on (usually the center key)
+resting_key_index = 1
 
 
 [keyboard]
