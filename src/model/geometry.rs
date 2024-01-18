@@ -1,4 +1,6 @@
-use glam::{dvec3, DAffine3, DVec3};
+use std::ops::Deref;
+
+use glam::{dvec3, DAffine3, DVec2, DVec3};
 
 pub fn zvec(z: f64) -> DVec3 {
     dvec3(0.0, 0.0, z)
@@ -113,4 +115,49 @@ impl BoundedPlane {
                 .then_some(point)
         })
     }
+}
+
+pub struct ConvexHull(Vec<DVec2>);
+
+impl ConvexHull {
+    pub fn from_points(points: Vec<DVec2>) -> Self {
+        let mut sorted_points = points;
+        sorted_points.sort_unstable_by(|a, b| a.x.total_cmp(&b.x));
+
+        let mut hull: Vec<DVec2> = Vec::new();
+
+        for point in sorted_points
+            .iter()
+            .skip(1)
+            .chain(sorted_points.iter().rev().skip(1))
+        {
+            while hull.len() >= 2
+                && clockwise_or_colinear(
+                    hull.get(hull.len() - 2)
+                        .expect("hull should have more than two elements"),
+                    hull.last()
+                        .expect("hull should have more than two elements"),
+                    point,
+                )
+            {
+                hull.pop();
+            }
+            hull.push(*point);
+        }
+
+        Self(hull)
+    }
+}
+
+impl Deref for ConvexHull {
+    type Target = Vec<DVec2>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+/// Check whether a triangle given by three points p1, p2 and p2 is clockwise or colinear
+fn clockwise_or_colinear(p1: &DVec2, p2: &DVec2, &p3: &DVec2) -> bool {
+    (p2.x - p1.x) * (p3.y - p1.y) - (p2.y - p1.y) * (p3.x - p1.x) <= 0.0
 }
