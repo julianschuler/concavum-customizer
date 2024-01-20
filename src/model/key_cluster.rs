@@ -20,7 +20,7 @@ impl KeyCluster {
         let key_positions = KeyPositions::from_config(config).tilt(config.keyboard.tilting_angle);
         let mount = Mount::from_positions(&key_positions, *config.keyboard.circumference_distance);
 
-        let clearances = ClearanceBuilder::new(config, &key_positions.columns, &mount.size).build();
+        let clearances = ClearanceBuilder::new(config, &key_positions, &mount.size).build();
 
         let mut shape = mount.into_shape();
         for clearance in clearances {
@@ -49,14 +49,14 @@ impl KeyCluster {
 }
 
 struct ClearanceBuilder<'a> {
-    columns: &'a Columns,
+    key_positions: &'a KeyPositions,
     key_clearance: DVec2,
     support_planes: SupportPlanes,
     mount_size: MountSize,
 }
 
 impl<'a> ClearanceBuilder<'a> {
-    fn new(config: &Config, columns: &'a Columns, mount_size: &MountSize) -> Self {
+    fn new(config: &Config, key_positions: &'a KeyPositions, mount_size: &MountSize) -> Self {
         const KEY_CLEARANCE: f64 = 1.0;
 
         let key_distance: PositiveDVec2 = (&config.finger_cluster.key_distance).into();
@@ -65,11 +65,11 @@ impl<'a> ClearanceBuilder<'a> {
             key_distance.y + KEY_CLEARANCE,
         );
 
-        let support_planes = SupportPlanes::from_columns(columns);
+        let support_planes = SupportPlanes::from_columns(&key_positions.columns);
         let mount_size = mount_size.to_owned();
 
         Self {
-            columns,
+            key_positions,
             key_clearance,
             support_planes,
             mount_size,
@@ -77,24 +77,25 @@ impl<'a> ClearanceBuilder<'a> {
     }
 
     fn build(self) -> Vec<Shape> {
-        let first = self.columns.first();
-        let last = self.columns.last();
+        let columns = &self.key_positions.columns;
+        let first = columns.first();
+        let last = columns.last();
 
         let neighbor = match first.column_type {
             ColumnType::Normal => None,
-            ColumnType::Side => self.columns.get(1),
+            ColumnType::Side => columns.get(1),
         };
         let left_clearance = self.side_column_clearance(first, neighbor, false);
 
         let neighbor = match last.column_type {
             ColumnType::Normal => None,
-            ColumnType::Side => self.columns.get(self.columns.len() - 2),
+            ColumnType::Side => columns.get(columns.len() - 2),
         };
         let right_clearance = self.side_column_clearance(last, neighbor, true);
 
         let mut clearances = vec![left_clearance, right_clearance];
 
-        if let Some(columns) = self.columns.get(1..self.columns.len() - 1) {
+        if let Some(columns) = columns.get(1..columns.len() - 1) {
             clearances.extend(
                 columns
                     .iter()
@@ -161,7 +162,7 @@ impl<'a> ClearanceBuilder<'a> {
     }
 
     fn side_clearance(&self, is_right: bool) -> Shape {
-        let columns = self.columns;
+        let columns = &self.key_positions.columns;
         let column = if is_right {
             columns.last()
         } else {
