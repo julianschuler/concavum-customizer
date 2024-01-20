@@ -1,4 +1,4 @@
-use std::ops::Deref;
+use std::{cmp::Ordering, ops::Deref};
 
 use glam::{dvec3, DAffine3, DVec2, DVec3};
 
@@ -122,15 +122,20 @@ pub struct ConvexHull(Vec<DVec2>);
 impl ConvexHull {
     pub fn from_points(points: Vec<DVec2>) -> Self {
         let mut sorted_points = points;
-        sorted_points.sort_unstable_by(|a, b| a.x.total_cmp(&b.x));
+        sorted_points.sort_by(|a, b| {
+            let cmp = a.x.total_cmp(&b.x);
+
+            if cmp == Ordering::Equal {
+                a.y.total_cmp(&b.y)
+            } else {
+                cmp
+            }
+        });
 
         let mut hull: Vec<DVec2> = Vec::new();
 
-        for point in sorted_points
-            .iter()
-            .skip(1)
-            .chain(sorted_points.iter().rev().skip(1))
-        {
+        // Lower hull
+        for point in sorted_points.iter() {
             while hull.len() >= 2
                 && clockwise_or_colinear(
                     hull.get(hull.len() - 2)
@@ -144,6 +149,26 @@ impl ConvexHull {
             }
             hull.push(*point);
         }
+
+        // Upper hull
+        let lower_hull_size = hull.len();
+        for point in sorted_points.iter().rev().skip(1) {
+            while hull.len() > lower_hull_size
+                && clockwise_or_colinear(
+                    hull.get(hull.len() - 2)
+                        .expect("hull should have more than two elements"),
+                    hull.last()
+                        .expect("hull should have more than two elements"),
+                    point,
+                )
+            {
+                hull.pop();
+            }
+            hull.push(*point);
+        }
+
+        // Last element is the same as the first one, remove it
+        hull.pop();
 
         Self(hull)
     }
