@@ -4,7 +4,7 @@ use opencascade::primitives::{IntoShape, JoinType, Shape, Solid, Wire};
 
 use crate::model::{
     config::{Config, PositiveDVec2, EPSILON},
-    geometry::{zvec, Line, Plane, Project},
+    geometry::{zvec, ConvexHull, Line, Plane, Project},
     key_positions::{Column, ColumnType, Columns, KeyPositions},
     Component,
 };
@@ -354,53 +354,35 @@ impl Mount {
     const PLATE_Y_2: f64 = Self::PLATE_SIZE.y / 2.0;
 
     fn from_positions(key_positions: &KeyPositions, circumference_distance: f64) -> Self {
-        let columns = &key_positions.columns;
+        let points: Vec<_> = key_positions
+            .columns
+            .iter()
+            .flat_map(|column| column.iter())
+            .chain(key_positions.thumb_keys.iter())
+            .flat_map(|position| {
+                let x_offset = Self::PLATE_X_2 * position.x_axis;
+                let y_offset = Self::PLATE_Y_2 * position.y_axis;
 
-        let bottom_points = columns.windows(2).map(|window| {
-            let first_left = window[0].first();
-            let first_right = window[1].first();
-
-            Self::circumference_point(first_left, first_right, false)
-        });
-        let top_points = columns.windows(2).map(|window| {
-            let last_left = window[0].last();
-            let last_right = window[1].last();
-
-            Self::circumference_point(last_left, last_right, true)
-        });
-        let left_points = Self::side_circumference_points(columns, false);
-        let right_points = Self::side_circumference_points(columns, true);
-
-        let points: Vec<_> = bottom_points
-            .chain(right_points)
-            .chain(top_points.rev())
-            .chain(left_points.into_iter().rev())
-            .map(|point| dvec3(point.x, point.y, 0.0))
+                [
+                    position.translation + x_offset + y_offset,
+                    position.translation + x_offset - y_offset,
+                    position.translation - x_offset + y_offset,
+                    position.translation - x_offset - y_offset,
+                ]
+            })
+            .map(|position| dvec2(position.x, position.y))
             .collect();
+
+        let points = ConvexHull::from_points(points);
 
         let size = Self::calculate_size(key_positions, &points);
         let wire =
-            Wire::from_ordered_points(points).expect("wire is created from more than 2 points");
+            Wire::from_ordered_points(points.iter().map(|point| dvec3(point.x, point.y, 0.0)))
+                .expect("wire is created from more than 2 points");
         let wire = wire.offset(circumference_distance, JoinType::Arc);
         let shape = wire.to_face().extrude(zvec(size.height));
 
         Self { shape, size }
-    }
-
-    fn circumference_point(left: &DAffine3, right: &DAffine3, top: bool) -> DVec3 {
-        let sign = if top { 1.0 } else { -1.0 };
-
-        let left_point =
-            left.translation + Self::PLATE_X_2 * left.x_axis + sign * Self::PLATE_Y_2 * left.y_axis;
-        let right_point = right.translation - Self::PLATE_X_2 * right.x_axis
-            + sign * Self::PLATE_Y_2 * right.y_axis;
-
-        // Get point which is more outward
-        if (left_point - right_point).y.signum() == sign {
-            left_point
-        } else {
-            right_point
-        }
     }
 
     fn circumference_point_side(bottom: &DAffine3, top: &DAffine3, sign: f64) -> Option<DVec3> {
@@ -445,7 +427,7 @@ impl Mount {
         points
     }
 
-    fn calculate_size(key_positions: &KeyPositions, points: &[DVec3]) -> MountSize {
+    fn calculate_size(key_positions: &KeyPositions, points: &[DVec2]) -> MountSize {
         let height = key_positions
             .columns
             .iter()
