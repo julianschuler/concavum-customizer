@@ -231,6 +231,18 @@ impl ThumbKeys {
 
         Self(keys)
     }
+
+    pub fn first(&self) -> &DAffine3 {
+        self.0
+            .first()
+            .expect("there has to be at least one thumb key")
+    }
+
+    pub fn last(&self) -> &DAffine3 {
+        self.0
+            .last()
+            .expect("there has to be at least one thumb key")
+    }
 }
 
 impl Deref for ThumbKeys {
