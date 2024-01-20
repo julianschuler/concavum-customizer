@@ -855,6 +855,14 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e2db585e1d738fc771bf08a151420d3ed193d9d895a36df7f6f8a9456b911ddc"
 
 [[package]]
+name = "kicad-parser"
+version = "0.1.0"
+dependencies = [
+ "sexp",
+ "thiserror",
+]
+
+[[package]]
 name = "kqueue"
 version = "1.0.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1172,6 +1180,7 @@ version = "0.2.0"
 dependencies = [
  "cxx",
  "glam",
+ "kicad-parser",
  "opencascade-sys",
  "thiserror",
 ]
@@ -1442,6 +1451,12 @@ checksum = "12022b835073e5b11e90a14f86838ceb1c8fb0325b72416845c487ac0fa95e80"
 dependencies = [
  "serde",
 ]
+
+[[package]]
+name = "sexp"
+version = "1.1.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9c8fa7ac9df84000b0238cf497cb2d3056bac2ff2a7d8cf179d2803b4b58571f"
 
 [[package]]
 name = "simd-adler32"
