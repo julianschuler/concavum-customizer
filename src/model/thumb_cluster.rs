@@ -1,4 +1,4 @@
-use glam::{dvec2, dvec3, DVec3};
+use glam::{dvec3, DVec3};
 use opencascade::primitives::{IntoShape, JoinType, Shape, Wire};
 
 use crate::model::{
@@ -16,6 +16,8 @@ pub struct ThumbCluster {
 
 impl ThumbCluster {
     pub fn new(thumb_keys: &ThumbKeys, circumference_distance: f64) -> Self {
+        let size = MountSize::from_positions(thumb_keys.iter(), circumference_distance);
+
         let first_thumb_key = thumb_keys.first();
         let last_thumb_key = thumb_keys.last();
 
@@ -31,12 +33,6 @@ impl ThumbCluster {
             last_thumb_key.translation + PLATE_X_2 * last_thumb_key.x_axis
                 - PLATE_Y_2 * last_thumb_key.y_axis,
         ];
-
-        let size = MountSize::from_points_and_positions(
-            points.iter().map(|point| dvec2(point.x, point.y)),
-            thumb_keys.iter(),
-            circumference_distance,
-        );
 
         let wire =
             Wire::from_ordered_points(points.iter().map(|point| dvec3(point.x, point.y, 0.0)))
