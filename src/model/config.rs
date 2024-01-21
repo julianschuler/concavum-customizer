@@ -1,10 +1,13 @@
 use std::{fs::read_to_string, io, ops::Deref, path::Path};
 
-use glam::{DVec2, DVec3};
+use glam::{dvec2, DVec2, DVec3};
 use hex_color::HexColor;
 use serde::{de::Error as DeserializeError, Deserialize, Deserializer};
 
 pub const EPSILON: f64 = 0.001;
+pub const PLATE_SIZE: DVec2 = dvec2(17.0, 18.0);
+pub const PLATE_X_2: f64 = PLATE_SIZE.x / 2.0;
+pub const PLATE_Y_2: f64 = PLATE_SIZE.y / 2.0;
 
 pub type CurvatureAngle = Ranged<-20, 50>;
 pub type SideAngle = Ranged<0, 30>;
