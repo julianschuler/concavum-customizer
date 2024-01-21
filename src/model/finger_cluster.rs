@@ -1,9 +1,9 @@
-use glam::{dvec2, dvec3, DAffine3, DVec2, DVec3};
+use glam::{dvec3, DAffine3, DVec2, DVec3};
 use opencascade::primitives::{IntoShape, JoinType, Shape, Solid, Wire};
 
 use crate::model::{
     config::{Config, EPSILON, PLATE_X_2, PLATE_Y_2},
-    geometry::{zvec, ConvexHull, Line, Plane, Project},
+    geometry::{zvec, Line, Plane, Project},
     key_positions::{Column, ColumnType, Columns},
     util::MountSize,
 };
@@ -335,29 +335,32 @@ struct Mount {
 
 impl Mount {
     fn from_columns(columns: &Columns, circumference_distance: f64) -> Self {
-        let points: Vec<_> = columns
-            .iter()
-            .flat_map(|column| column.iter())
-            .flat_map(|position| {
-                let x_offset = PLATE_X_2 * position.x_axis;
-                let y_offset = PLATE_Y_2 * position.y_axis;
-
-                [
-                    position.translation + x_offset + y_offset,
-                    position.translation + x_offset - y_offset,
-                    position.translation - x_offset + y_offset,
-                    position.translation - x_offset - y_offset,
-                ]
-            })
-            .map(|position| dvec2(position.x, position.y))
-            .collect();
-
-        let points = ConvexHull::from_points(points);
-        let size = MountSize::from_points_and_positions(
-            points.iter().copied(),
+        let size = MountSize::from_positions(
             columns.iter().flat_map(|column| column.iter()),
             circumference_distance,
         );
+
+        let bottom_points = columns.windows(2).map(|window| {
+            let first_left = window[0].first();
+            let first_right = window[1].first();
+
+            Self::circumference_point(first_left, first_right, false)
+        });
+        let top_points = columns.windows(2).map(|window| {
+            let last_left = window[0].last();
+            let last_right = window[1].last();
+
+            Self::circumference_point(last_left, last_right, true)
+        });
+        let left_points = Self::side_circumference_points(columns, false);
+        let right_points = Self::side_circumference_points(columns, true);
+
+        let points: Vec<_> = bottom_points
+            .chain(right_points)
+            .chain(top_points.rev())
+            .chain(left_points.into_iter().rev())
+            .map(|point| dvec3(point.x, point.y, 0.0))
+            .collect();
 
         let wire =
             Wire::from_ordered_points(points.iter().map(|point| dvec3(point.x, point.y, 0.0)))
@@ -366,6 +369,64 @@ impl Mount {
         let shape = wire.to_face().extrude(zvec(size.height)).into();
 
         Self { shape, size }
+    }
+
+    fn circumference_point(left: &DAffine3, right: &DAffine3, top: bool) -> DVec3 {
+        let sign = if top { 1.0 } else { -1.0 };
+
+        let left_point =
+            left.translation + PLATE_X_2 * left.x_axis + sign * PLATE_Y_2 * left.y_axis;
+        let right_point =
+            right.translation - PLATE_X_2 * right.x_axis + sign * PLATE_Y_2 * right.y_axis;
+
+        // Get point which is more outward
+        if (left_point - right_point).y.signum() == sign {
+            left_point
+        } else {
+            right_point
+        }
+    }
+
+    fn side_circumference_points(columns: &Columns, right: bool) -> Vec<DVec3> {
+        let column = if right {
+            columns.last()
+        } else {
+            columns.first()
+        };
+        let first = column.first();
+        let last = column.last();
+        let sign = if right { 1.0 } else { -1.0 };
+
+        let lower_corner =
+            first.translation + sign * PLATE_X_2 * first.x_axis - PLATE_Y_2 * first.y_axis;
+        let upper_corner =
+            last.translation + sign * PLATE_X_2 * last.x_axis + PLATE_Y_2 * last.y_axis;
+
+        let mut points = vec![lower_corner];
+
+        points.extend(
+            column
+                .windows(2)
+                .filter_map(|window| Self::side_circumference_point(&window[0], &window[1], sign)),
+        );
+
+        points.push(upper_corner);
+
+        points
+    }
+
+    fn side_circumference_point(bottom: &DAffine3, top: &DAffine3, sign: f64) -> Option<DVec3> {
+        let outwards_direction = bottom.x_axis;
+
+        // Get point which is more outward
+        let offset = (top.translation - bottom.translation).dot(outwards_direction);
+        let offset = if offset.signum() == sign { offset } else { 0.0 };
+        let point = bottom.translation + (offset + sign * PLATE_X_2) * outwards_direction;
+
+        let line = Line::new(point, bottom.y_axis);
+        let plane = Plane::new(top.translation, top.z_axis);
+
+        plane.intersection(&line)
     }
 }
 
