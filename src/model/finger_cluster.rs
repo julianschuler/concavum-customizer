@@ -131,7 +131,21 @@ impl<'a> ClearanceBuilder<'a> {
         if (column.first().x_axis.z <= 0.0) == is_right {
             combined_clearance.intersect(&side_clearance).into()
         } else {
-            combined_clearance.union(&side_clearance).into()
+            // Bound side clearance since it is combined by union and can interfere with other columns
+            let plane = Plane::new(translation - normal_offset * normal, normal);
+            let points = [
+                dvec3(0.0, -self.mount_size.length, 0.0),
+                dvec3(0.0, self.mount_size.length, 0.0),
+                dvec3(0.0, self.mount_size.length, 2.0 * self.mount_size.height),
+                dvec3(0.0, -self.mount_size.length, 2.0 * self.mount_size.height),
+            ];
+            let side_bounding_shape =
+                project_points_to_plane_and_extrude(points, plane, extrusion_height);
+
+            side_clearance
+                .intersect(&side_bounding_shape.into())
+                .union(&combined_clearance)
+                .into()
         }
     }
 
