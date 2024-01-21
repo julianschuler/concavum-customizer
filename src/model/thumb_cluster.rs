@@ -51,8 +51,8 @@ impl ThumbCluster {
 
         let first_point = first.translation - PLATE_X_2 * first.x_axis;
         let last_point = last.translation + PLATE_X_2 * last.x_axis;
-        let first_outwards_point = first_point + mount_size.length * DVec3::NEG_X;
-        let last_outwards_point = last_point + mount_size.length * DVec3::X;
+        let first_outwards_point = first_point + mount_size.width * DVec3::NEG_X;
+        let last_outwards_point = last_point + mount_size.width * DVec3::X;
         let first_upwards_point = first_outwards_point + 2.0 * mount_size.height * DVec3::Z;
         let last_upwards_point = last_outwards_point + 2.0 * mount_size.height * DVec3::Z;
 
@@ -84,7 +84,7 @@ impl ThumbCluster {
         let face = wire.to_face();
         let center_clearance = face.extrude(2.0 * PLATE_Y_2 * first.y_axis);
 
-        face.extrude(mount_size.width * DVec3::NEG_Y)
+        face.extrude(mount_size.length * DVec3::NEG_Y)
             .union(&center_clearance)
             .into()
     }
