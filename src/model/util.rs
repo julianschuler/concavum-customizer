@@ -1,4 +1,4 @@
-use glam::{DVec2, DVec3};
+use glam::{DAffine3, DVec2};
 
 use crate::model::config::{PLATE_X_2, PLATE_Y_2};
 
@@ -9,71 +9,40 @@ pub struct MountSize {
 }
 
 impl MountSize {
-    pub fn from_2d_points(points: &[DVec2], height: f64, circumference_distance: f64) -> Self {
-        let height = height + f64::max(PLATE_X_2, PLATE_Y_2);
-
-        let min_x = points
-            .iter()
-            .map(|point| point.x)
-            .min_by(f64::total_cmp)
-            .unwrap_or_default();
-        let max_x = points
-            .iter()
-            .map(|point| point.x)
-            .max_by(f64::total_cmp)
-            .unwrap_or_default();
-        let width = max_x - min_x + 2.0 * circumference_distance;
-
-        let min_y = points
-            .iter()
-            .map(|point| point.y)
-            .min_by(f64::total_cmp)
-            .unwrap_or_default();
-        let max_y = points
-            .iter()
-            .map(|point| point.y)
-            .max_by(f64::total_cmp)
-            .unwrap_or_default();
-        let length = max_y - min_y + 2.0 * circumference_distance;
-
-        Self {
-            width,
-            length,
-            height,
-        }
-    }
-
-    pub fn from_3d_points(points: &[DVec3], circumference_distance: f64) -> Self {
-        let height = points
-            .iter()
-            .map(|point| point.z)
+    fn calculate_height<'a>(points: impl IntoIterator<Item = &'a DAffine3>) -> f64 {
+        points
+            .into_iter()
+            .map(|position| position.translation.z)
             .max_by(f64::total_cmp)
             .unwrap_or_default()
-            + f64::max(PLATE_X_2, PLATE_Y_2);
+            + f64::max(PLATE_X_2, PLATE_Y_2)
+    }
 
-        let min_x = points
-            .iter()
-            .map(|point| point.x)
-            .min_by(f64::total_cmp)
-            .unwrap_or_default();
-        let max_x = points
-            .iter()
-            .map(|point| point.x)
-            .max_by(f64::total_cmp)
-            .unwrap_or_default();
+    pub fn from_points_and_positions<'a>(
+        points: impl IntoIterator<Item = DVec2>,
+        positions: impl IntoIterator<Item = &'a DAffine3>,
+        circumference_distance: f64,
+    ) -> Self {
+        let (min_x, min_y, max_x, max_y) = points.into_iter().fold(
+            (
+                f64::INFINITY,
+                f64::INFINITY,
+                f64::NEG_INFINITY,
+                f64::NEG_INFINITY,
+            ),
+            |(min_x, min_y, max_x, max_y), point| {
+                (
+                    min_x.min(point.x),
+                    min_y.min(point.y),
+                    max_x.max(point.x),
+                    max_y.max(point.y),
+                )
+            },
+        );
+
         let width = max_x - min_x + 2.0 * circumference_distance;
-
-        let min_y = points
-            .iter()
-            .map(|point| point.y)
-            .min_by(f64::total_cmp)
-            .unwrap_or_default();
-        let max_y = points
-            .iter()
-            .map(|point| point.y)
-            .max_by(f64::total_cmp)
-            .unwrap_or_default();
         let length = max_y - min_y + 2.0 * circumference_distance;
+        let height = Self::calculate_height(positions);
 
         Self {
             width,
