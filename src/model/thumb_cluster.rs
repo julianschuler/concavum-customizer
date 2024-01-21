@@ -60,9 +60,10 @@ impl ThumbCluster {
         let last_outwards_point = last_point + mount_size.width * DVec3::X;
         let first_upwards_point = first_outwards_point + 2.0 * mount_size.height * DVec3::Z;
         let last_upwards_point = last_outwards_point + 2.0 * mount_size.height * DVec3::Z;
+        let plane = Plane::new(first.translation, first.y_axis);
 
         // All points in the center, if any
-        let points = thumb_keys
+        let points: Vec<_> = thumb_keys
             .windows(2)
             .filter_map(|window| {
                 let position = window[0];
@@ -79,18 +80,23 @@ impl ThumbCluster {
                 first_upwards_point,
                 first_outwards_point,
                 first_point,
-            ]);
+            ])
+            .map(|point| point.project_to(&plane))
+            .collect();
 
-        let plane = Plane::new(first.translation - PLATE_Y_2 * first.y_axis, first.y_axis);
+        let lower_face =
+            Wire::from_ordered_points(points.iter().map(|&point| point - PLATE_Y_2 * first.y_axis))
+                .expect("wire is created from more than 2 points")
+                .to_face();
+        let upper_face =
+            Wire::from_ordered_points(points.iter().map(|&point| point + PLATE_Y_2 * first.y_axis))
+                .expect("wire is created from more than 2 points")
+                .to_face();
 
-        let projected_points = points.into_iter().map(|point| point.project_to(&plane));
-        let wire = Wire::from_ordered_points(projected_points)
-            .expect("wire is created from more than 2 points");
-        let face = wire.to_face();
-        let center_clearance = face.extrude(2.0 * PLATE_Y_2 * first.y_axis);
-
-        face.extrude(mount_size.length * DVec3::NEG_Y)
-            .union(&center_clearance)
+        lower_face
+            .extrude(2.0 * PLATE_Y_2 * first.y_axis)
+            .union(&lower_face.extrude(mount_size.length * DVec3::NEG_Y))
+            .union(&upper_face.extrude(mount_size.length * DVec3::Y).into())
             .into()
     }
 }
