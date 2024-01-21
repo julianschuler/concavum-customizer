@@ -1,8 +1,11 @@
 mod config;
+mod finger_cluster;
 mod geometry;
 mod key;
 mod key_cluster;
 mod key_positions;
+mod thumb_cluster;
+mod util;
 
 use std::path::Path;
 
