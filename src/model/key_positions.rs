@@ -49,7 +49,7 @@ impl Mul<&Column> for DAffine3 {
     type Output = Column;
 
     fn mul(self, column: &Column) -> Self::Output {
-        let entries = column.entries.iter().map(|entry| self * *entry).collect();
+        let entries = column.entries.iter().map(|&entry| self * entry).collect();
 
         Column {
             entries,
