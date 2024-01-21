@@ -144,8 +144,8 @@ impl<'a> ClearanceBuilder<'a> {
             first.translation + sign * PLATE_X_2 * first.x_axis - PLATE_Y_2 * first.y_axis;
         let upper_corner =
             last.translation + sign * PLATE_X_2 * last.x_axis + PLATE_Y_2 * last.y_axis;
-        let outwards_bottom_point = lower_corner - self.mount_size.width * DVec3::Y;
-        let outwards_top_point = upper_corner + self.mount_size.width * DVec3::Y;
+        let outwards_bottom_point = lower_corner - self.mount_size.length * DVec3::Y;
+        let outwards_top_point = upper_corner + self.mount_size.length * DVec3::Y;
         let upwards_bottom_point = outwards_bottom_point + 2.0 * self.mount_size.height * DVec3::Z;
         let upwards_top_point = outwards_top_point + 2.0 * self.mount_size.height * DVec3::Z;
 
@@ -161,8 +161,8 @@ impl<'a> ClearanceBuilder<'a> {
                 lower_corner,
             ]);
 
-        let plane = Plane::new(self.mount_size.length * DVec3::NEG_X, DVec3::X);
-        project_points_to_plane_and_extrude(points, plane, 3.0 * self.mount_size.length).into()
+        let plane = Plane::new(self.mount_size.width * DVec3::NEG_X, DVec3::X);
+        project_points_to_plane_and_extrude(points, plane, 3.0 * self.mount_size.width).into()
     }
 
     fn side_point(bottom: &DAffine3, top: &DAffine3, sign: f64) -> Option<DVec3> {
@@ -321,7 +321,7 @@ impl SupportPlanes {
             points.push(projected_point);
         }
 
-        let outwards_point = projected_point + sign * mount_size.width * DVec3::Y;
+        let outwards_point = projected_point + sign * mount_size.length * DVec3::Y;
         let upwards_point = outwards_point + 2.0 * mount_size.height * DVec3::Z;
         points.extend([outwards_point, upwards_point]);
         points
