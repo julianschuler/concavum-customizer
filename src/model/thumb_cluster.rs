@@ -1,11 +1,11 @@
-use glam::{dvec3, DVec3};
-use opencascade::primitives::{IntoShape, JoinType, Shape, Wire};
+use glam::DVec3;
+use opencascade::primitives::{IntoShape, JoinType, Shape};
 
 use crate::model::{
     config::{self, PLATE_X_2},
-    geometry::{zvec, Line, Plane, Project},
+    geometry::{zvec, Line, Plane},
     key_positions::ThumbKeys,
-    util::MountSize,
+    util::{wire_from_points, MountSize},
 };
 
 const PLATE_Y_2: f64 = 1.5 * config::PLATE_Y_2;
@@ -34,11 +34,9 @@ impl ThumbCluster {
                 - PLATE_Y_2 * last_thumb_key.y_axis,
         ];
 
-        let wire =
-            Wire::from_ordered_points(points.iter().map(|point| dvec3(point.x, point.y, 0.0)))
-                .expect("wire is created from more than 2 points");
-        let wire = wire.offset(circumference_distance, JoinType::Arc);
-        let mount = wire.to_face().extrude(zvec(size.height)).into_shape();
+        let wire = wire_from_points(points, Plane::new(DVec3::ZERO, DVec3::Z));
+        let face = wire.offset(circumference_distance, JoinType::Arc).to_face();
+        let mount = face.extrude(zvec(size.height)).into_shape();
 
         let clearance = Self::clearance(thumb_keys, size);
         let shape = mount.subtract(&clearance).into();
@@ -56,10 +54,9 @@ impl ThumbCluster {
         let last_outwards_point = last_point + mount_size.width * DVec3::X;
         let first_upwards_point = first_outwards_point + 2.0 * mount_size.height * DVec3::Z;
         let last_upwards_point = last_outwards_point + 2.0 * mount_size.height * DVec3::Z;
-        let plane = Plane::new(first.translation, first.y_axis);
 
         // All points in the center, if any
-        let points: Vec<_> = thumb_keys
+        let points = thumb_keys
             .windows(2)
             .filter_map(|window| {
                 let position = window[0];
@@ -76,18 +73,13 @@ impl ThumbCluster {
                 first_upwards_point,
                 first_outwards_point,
                 first_point,
-            ])
-            .map(|point| point.project_to(&plane))
-            .collect();
+            ]);
 
-        let lower_face =
-            Wire::from_ordered_points(points.iter().map(|&point| point - PLATE_Y_2 * first.y_axis))
-                .expect("wire is created from more than 2 points")
-                .to_face();
-        let upper_face =
-            Wire::from_ordered_points(points.iter().map(|&point| point + PLATE_Y_2 * first.y_axis))
-                .expect("wire is created from more than 2 points")
-                .to_face();
+        let lower_plane = Plane::new(first.translation - PLATE_Y_2 * first.y_axis, first.y_axis);
+        let upper_plane = Plane::new(first.translation + PLATE_Y_2 * first.y_axis, first.y_axis);
+
+        let lower_face = wire_from_points(points.clone(), lower_plane).to_face();
+        let upper_face = wire_from_points(points, upper_plane).to_face();
 
         lower_face
             .extrude(2.0 * PLATE_Y_2 * first.y_axis)

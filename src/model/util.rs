@@ -1,6 +1,10 @@
-use glam::{dvec3, DAffine3};
+use glam::{dvec3, DAffine3, DVec3};
+use opencascade::primitives::{Solid, Wire};
 
-use crate::model::config::{PLATE_X_2, PLATE_Y_2};
+use crate::model::{
+    config::{PLATE_X_2, PLATE_Y_2},
+    geometry::{Plane, Project},
+};
 
 /// Upper bound for the size of a mount
 pub struct MountSize {
@@ -34,4 +38,19 @@ impl MountSize {
             height,
         }
     }
+}
+
+pub fn wire_from_points(points: impl IntoIterator<Item = DVec3>, plane: Plane) -> Wire {
+    let points = points.into_iter().map(|point| point.project_to(&plane));
+    Wire::from_ordered_points(points).expect("wire is created from more than 2 points")
+}
+
+pub fn project_points_to_plane_and_extrude(
+    points: impl IntoIterator<Item = DVec3>,
+    plane: Plane,
+    height: f64,
+) -> Solid {
+    let direction = height * plane.normal();
+
+    wire_from_points(points, plane).to_face().extrude(direction)
 }

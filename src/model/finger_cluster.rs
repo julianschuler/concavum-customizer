@@ -1,11 +1,11 @@
 use glam::{dvec3, DAffine3, DVec2, DVec3};
-use opencascade::primitives::{IntoShape, JoinType, Shape, Solid, Wire};
+use opencascade::primitives::{IntoShape, JoinType, Shape, Solid};
 
 use crate::model::{
     config::{Config, EPSILON, PLATE_X_2, PLATE_Y_2},
     geometry::{zvec, Line, Plane, Project},
     key_positions::{Column, ColumnType, Columns},
-    util::MountSize,
+    util::{project_points_to_plane_and_extrude, wire_from_points, MountSize},
 };
 
 pub struct FingerCluster {
@@ -162,7 +162,7 @@ impl<'a> ClearanceBuilder<'a> {
             ]);
 
         let plane = Plane::new(self.mount_size.width * DVec3::NEG_X, DVec3::X);
-        project_points_to_plane_and_extrude(points, plane, 3.0 * self.mount_size.width).into()
+        project_points_to_plane_and_extrude(points, plane, 2.0 * self.mount_size.width).into()
     }
 
     fn side_point(bottom: &DAffine3, top: &DAffine3, sign: f64) -> Option<DVec3> {
@@ -362,11 +362,9 @@ impl Mount {
             .map(|point| dvec3(point.x, point.y, 0.0))
             .collect();
 
-        let wire =
-            Wire::from_ordered_points(points.iter().map(|point| dvec3(point.x, point.y, 0.0)))
-                .expect("wire is created from more than 2 points");
-        let wire = wire.offset(circumference_distance, JoinType::Arc);
-        let shape = wire.to_face().extrude(zvec(size.height)).into();
+        let wire = wire_from_points(points, Plane::new(DVec3::ZERO, DVec3::Z));
+        let face = wire.offset(circumference_distance, JoinType::Arc).to_face();
+        let shape = face.extrude(zvec(size.height)).into();
 
         Self { shape, size }
     }
@@ -428,15 +426,4 @@ impl Mount {
 
         plane.intersection(&line)
     }
-}
-
-fn project_points_to_plane_and_extrude(
-    points: impl IntoIterator<Item = DVec3>,
-    plane: Plane,
-    height: f64,
-) -> Solid {
-    let points = points.into_iter().map(|point| point.project_to(&plane));
-    let wire = Wire::from_ordered_points(points).expect("wire is created from more than 2 points");
-
-    wire.to_face().extrude(height * plane.normal())
 }
