@@ -15,7 +15,8 @@ impl MountSize {
             .map(|position| position.translation.z)
             .max_by(f64::total_cmp)
             .unwrap_or_default()
-            + f64::max(PLATE_X_2, PLATE_Y_2)
+            + PLATE_X_2
+            + PLATE_Y_2
     }
 
     pub fn from_points_and_positions<'a>(
