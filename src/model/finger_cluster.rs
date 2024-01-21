@@ -335,7 +335,6 @@ struct Mount {
 
 impl Mount {
     fn from_columns(columns: &Columns, circumference_distance: f64) -> Self {
-        // Finger cluster mount
         let points: Vec<_> = columns
             .iter()
             .flat_map(|column| column.iter())
@@ -354,12 +353,11 @@ impl Mount {
             .collect();
 
         let points = ConvexHull::from_points(points);
-        let height = columns
-            .iter()
-            .flat_map(|column| column.iter().map(|position| position.translation.z))
-            .max_by(f64::total_cmp)
-            .unwrap_or_default();
-        let size = MountSize::from_2d_points(&points, height, circumference_distance);
+        let size = MountSize::from_points_and_positions(
+            points.iter().copied(),
+            columns.iter().flat_map(|column| column.iter()),
+            circumference_distance,
+        );
 
         let wire =
             Wire::from_ordered_points(points.iter().map(|point| dvec3(point.x, point.y, 0.0)))
