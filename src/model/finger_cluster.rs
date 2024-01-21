@@ -95,29 +95,34 @@ impl<'a> ClearanceBuilder<'a> {
     ) -> Shape {
         let clearance_x = self.key_clearance.x;
         let sign = if is_right { 1.0 } else { -1.0 };
-        let column_offset = 2.0 * clearance_x;
-        let neighbor_offset = clearance_x / 2.0;
+        let side_offset = 2.0 * clearance_x;
+        let normal_offset = clearance_x / 2.0;
         let extrusion_height = 4.0 * clearance_x;
 
-        // Column clearance
-        let first = column.first();
-        let normal = first.x_axis;
-        let plane = Plane::new(first.translation + sign * column_offset * normal, normal);
+        // Column clearance parameters
+        let translation = column.first().translation;
+        let normal = sign * column.first().x_axis;
         let points = self.clearance_points(column);
-        let column_clearance =
-            project_points_to_plane_and_extrude(points, plane, -sign * extrusion_height);
 
         // Combined column and neighbor clearance
         let combined_clearance = if let Some(neighbor) = neighbor {
-            let first = neighbor.first();
-            let normal = first.x_axis;
-            let plane = Plane::new(first.translation - sign * neighbor_offset * normal, normal);
+            let plane = Plane::new(translation - side_offset * normal, normal);
+            let column_clearance =
+                project_points_to_plane_and_extrude(points, plane, extrusion_height);
+
+            let translation = neighbor.first().translation;
+            let normal = sign * neighbor.first().x_axis;
+            let plane = Plane::new(translation - normal_offset * normal, normal);
             let points = self.clearance_points(neighbor);
             let neighbor_clearance =
-                project_points_to_plane_and_extrude(points, plane, sign * extrusion_height);
+                project_points_to_plane_and_extrude(points, plane, extrusion_height);
 
             column_clearance.intersect(&neighbor_clearance).into_shape()
         } else {
+            let plane = Plane::new(translation - normal_offset * normal, normal);
+            let column_clearance =
+                project_points_to_plane_and_extrude(points, plane, extrusion_height);
+
             column_clearance.into_shape()
         };
 
