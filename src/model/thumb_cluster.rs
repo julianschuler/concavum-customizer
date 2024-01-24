@@ -1,55 +1,57 @@
-use glam::DVec3;
+use glam::{dvec2, DVec2, DVec3};
 use opencascade::primitives::{IntoShape, JoinType, Shape};
 
 use crate::model::{
-    config::{self, PLATE_X_2},
+    config::{PositiveDVec2, KEY_CLEARANCE},
     geometry::{zvec, Line, Plane},
     key_positions::ThumbKeys,
-    util::{wire_from_points, MountSize},
+    util::{corner_point, side_point, wire_from_points, MountSize, Side, SideX, SideY},
 };
-
-const PLATE_Y_2: f64 = 1.5 * config::PLATE_Y_2;
 
 pub struct ThumbCluster {
     pub shape: Shape,
 }
 
 impl ThumbCluster {
-    pub fn new(thumb_keys: &ThumbKeys, circumference_distance: f64) -> Self {
-        let size = MountSize::from_positions(thumb_keys.iter(), circumference_distance);
+    pub fn new(
+        thumb_keys: &ThumbKeys,
+        key_distance: &PositiveDVec2,
+        circumference_distance: f64,
+    ) -> Self {
+        let key_clearance = dvec2(
+            key_distance.x + KEY_CLEARANCE,
+            1.5 * key_distance.y + KEY_CLEARANCE,
+        );
+
+        let size =
+            MountSize::from_positions(thumb_keys.iter(), &key_clearance, circumference_distance);
 
         let first_thumb_key = thumb_keys.first();
         let last_thumb_key = thumb_keys.last();
 
         let points = [
-            first_thumb_key.translation
-                - PLATE_X_2 * first_thumb_key.x_axis
-                - PLATE_Y_2 * first_thumb_key.y_axis,
-            first_thumb_key.translation - PLATE_X_2 * first_thumb_key.x_axis
-                + PLATE_Y_2 * first_thumb_key.y_axis,
-            last_thumb_key.translation
-                + PLATE_X_2 * last_thumb_key.x_axis
-                + PLATE_Y_2 * last_thumb_key.y_axis,
-            last_thumb_key.translation + PLATE_X_2 * last_thumb_key.x_axis
-                - PLATE_Y_2 * last_thumb_key.y_axis,
+            corner_point(first_thumb_key, SideX::Left, SideY::Bottom, &key_clearance),
+            corner_point(first_thumb_key, SideX::Left, SideY::Top, &key_clearance),
+            corner_point(last_thumb_key, SideX::Right, SideY::Top, &key_clearance),
+            corner_point(last_thumb_key, SideX::Right, SideY::Bottom, &key_clearance),
         ];
 
         let wire = wire_from_points(points, Plane::new(DVec3::ZERO, DVec3::Z));
         let face = wire.offset(circumference_distance, JoinType::Arc).to_face();
         let mount = face.extrude(zvec(size.height)).into_shape();
 
-        let clearance = Self::clearance(thumb_keys, size);
+        let clearance = Self::clearance(thumb_keys, &key_clearance, &size);
         let shape = mount.subtract(&clearance).into();
 
         Self { shape }
     }
 
-    fn clearance(thumb_keys: &ThumbKeys, mount_size: MountSize) -> Shape {
+    fn clearance(thumb_keys: &ThumbKeys, key_clearance: &DVec2, mount_size: &MountSize) -> Shape {
         let first = thumb_keys.first();
         let last = thumb_keys.last();
 
-        let first_point = first.translation - PLATE_X_2 * first.x_axis;
-        let last_point = last.translation + PLATE_X_2 * last.x_axis;
+        let first_point = side_point(first, Side::Left, key_clearance);
+        let last_point = side_point(last, Side::Right, key_clearance);
         let first_outwards_point = first_point + mount_size.width * DVec3::NEG_X;
         let last_outwards_point = last_point + mount_size.width * DVec3::X;
         let first_upwards_point = first_outwards_point + 2.0 * mount_size.height * DVec3::Z;
@@ -75,14 +77,14 @@ impl ThumbCluster {
                 first_point,
             ]);
 
-        let lower_plane = Plane::new(first.translation - PLATE_Y_2 * first.y_axis, first.y_axis);
-        let upper_plane = Plane::new(first.translation + PLATE_Y_2 * first.y_axis, first.y_axis);
+        let lower_plane = Plane::new(side_point(first, Side::Bottom, key_clearance), first.y_axis);
+        let upper_plane = Plane::new(side_point(first, Side::Top, key_clearance), first.y_axis);
 
         let lower_face = wire_from_points(points.clone(), lower_plane).to_face();
         let upper_face = wire_from_points(points, upper_plane).to_face();
 
         lower_face
-            .extrude(2.0 * PLATE_Y_2 * first.y_axis)
+            .extrude(key_clearance.y * first.y_axis)
             .union(&lower_face.extrude(mount_size.length * DVec3::NEG_Y))
             .union(&upper_face.extrude(mount_size.length * DVec3::Y).into())
             .into()
