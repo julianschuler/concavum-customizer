@@ -20,7 +20,7 @@ impl FingerCluster {
         let key_clearance = dvec2(
             key_distance.x + KEY_CLEARANCE,
             key_distance.y + KEY_CLEARANCE,
-        );
+        ) / 2.0;
 
         let mount = Mount::from_columns(
             columns,
@@ -95,7 +95,7 @@ impl<'a> ClearanceBuilder<'a> {
             first.x_axis,
         );
 
-        project_points_to_plane_and_extrude(points, plane, self.key_clearance.x)
+        project_points_to_plane_and_extrude(points, plane, 2.0 * self.key_clearance.x)
     }
 
     fn side_column_clearance(
@@ -104,10 +104,9 @@ impl<'a> ClearanceBuilder<'a> {
         neighbor: Option<&Column>,
         side_x: SideX,
     ) -> Shape {
-        let clearance_x = self.key_clearance.x;
-        let side_offset = 2.0 * clearance_x;
-        let normal_offset = clearance_x / 2.0;
-        let extrusion_height = 4.0 * clearance_x;
+        let normal_offset = self.key_clearance.x;
+        let side_offset = 4.0 * self.key_clearance.x;
+        let extrusion_height = 8.0 * self.key_clearance.x;
 
         // Column clearance parameters
         let translation = column.first().translation;
@@ -457,7 +456,7 @@ impl Mount {
             0.0
         };
         let point = bottom.translation
-            + (offset + side_x.direction() * key_clearance.x / 2.0) * outwards_direction;
+            + (offset + side_x.direction() * key_clearance.x) * outwards_direction;
 
         let line = Line::new(point, bottom.y_axis);
         let plane = Plane::new(top.translation, top.z_axis);

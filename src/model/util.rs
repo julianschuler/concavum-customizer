@@ -100,16 +100,16 @@ pub fn corner_point(
     key_clearance: &DVec2,
 ) -> DVec3 {
     position.translation
-        + side_x.direction() * key_clearance.x / 2.0 * position.x_axis
-        + side_y.direction() * key_clearance.y / 2.0 * position.y_axis
+        + side_x.direction() * key_clearance.x * position.x_axis
+        + side_y.direction() * key_clearance.y * position.y_axis
 }
 
 pub fn side_point(position: &DAffine3, side: Side, key_clearance: &DVec2) -> DVec3 {
     match side {
-        Side::Left => position.translation - key_clearance.x / 2.0 * position.x_axis,
-        Side::Right => position.translation + key_clearance.x / 2.0 * position.x_axis,
-        Side::Bottom => position.translation - key_clearance.y / 2.0 * position.y_axis,
-        Side::Top => position.translation + key_clearance.y / 2.0 * position.y_axis,
+        Side::Left => position.translation - key_clearance.x * position.x_axis,
+        Side::Right => position.translation + key_clearance.x * position.x_axis,
+        Side::Bottom => position.translation - key_clearance.y * position.y_axis,
+        Side::Top => position.translation + key_clearance.y * position.y_axis,
     }
 }
 
