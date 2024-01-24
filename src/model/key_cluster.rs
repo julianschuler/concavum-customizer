@@ -1,4 +1,4 @@
-use glam::{dvec2, DAffine3};
+use glam::DAffine3;
 use hex_color::HexColor;
 use opencascade::primitives::Shape;
 
@@ -18,19 +18,14 @@ pub struct KeyCluster {
 
 impl KeyCluster {
     pub fn from_config(config: &Config) -> Self {
-        const KEY_CLEARANCE: f64 = 1.0;
-
         let key_distance: PositiveDVec2 = (&config.finger_cluster.key_distance).into();
-        let key_clearance = dvec2(
-            key_distance.x + KEY_CLEARANCE,
-            key_distance.y + KEY_CLEARANCE,
-        );
 
         let key_positions = KeyPositions::from_config(config).tilt(config.keyboard.tilting_angle);
 
-        let finger_cluster = FingerCluster::new(&key_positions.columns, &key_clearance, config);
+        let finger_cluster = FingerCluster::new(&key_positions.columns, &key_distance, config);
         let thumb_cluster = ThumbCluster::new(
             &key_positions.thumb_keys,
+            &key_distance,
             *config.keyboard.circumference_distance,
         );
 
