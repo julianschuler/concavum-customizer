@@ -21,7 +21,7 @@ impl ThumbCluster {
         let key_clearance = dvec2(
             key_distance.x + KEY_CLEARANCE,
             1.5 * key_distance.y + KEY_CLEARANCE,
-        );
+        ) / 2.0;
 
         let size =
             MountSize::from_positions(thumb_keys.iter(), &key_clearance, circumference_distance);
@@ -84,7 +84,7 @@ impl ThumbCluster {
         let upper_face = wire_from_points(points, upper_plane).to_face();
 
         lower_face
-            .extrude(key_clearance.y * first.y_axis)
+            .extrude(2.0 * key_clearance.y * first.y_axis)
             .union(&lower_face.extrude(mount_size.length * DVec3::NEG_Y))
             .union(&upper_face.extrude(mount_size.length * DVec3::Y).into())
             .into()
