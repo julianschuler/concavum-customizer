@@ -27,12 +27,9 @@ impl FingerCluster {
             &key_clearance,
             *config.keyboard.circumference_distance,
         );
-        let mut shape = mount.shape;
 
-        let clearances = ClearanceBuilder::new(columns, &key_clearance, &mount.size).build();
-        for clearance in clearances {
-            shape = shape.subtract(&clearance).into();
-        }
+        let clearance = ClearanceBuilder::new(columns, &key_clearance, &mount.size).build();
+        let shape = mount.shape.subtract(&clearance).into();
 
         Self { shape }
     }
@@ -57,7 +54,7 @@ impl<'a> ClearanceBuilder<'a> {
         }
     }
 
-    fn build(self) -> Vec<Shape> {
+    fn build(self) -> Shape {
         let columns = self.columns;
         let first = columns.first();
         let last = columns.last();
@@ -74,17 +71,15 @@ impl<'a> ClearanceBuilder<'a> {
         };
         let right_clearance = self.side_column_clearance(last, neighbor, SideX::Right);
 
-        let mut clearances = vec![left_clearance, right_clearance];
+        let mut clearance = left_clearance.union(&right_clearance);
 
         if let Some(columns) = columns.get(1..columns.len() - 1) {
-            clearances.extend(
-                columns
-                    .iter()
-                    .map(|column| self.normal_column_clearance(column).into()),
-            );
+            for column in columns {
+                clearance = clearance.union(&self.normal_column_clearance(column).into())
+            }
         }
 
-        clearances
+        clearance.into()
     }
 
     fn normal_column_clearance(&self, column: &Column) -> Solid {
