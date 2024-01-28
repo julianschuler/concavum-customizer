@@ -29,11 +29,10 @@ impl KeyCluster {
             *config.keyboard.circumference_distance,
         );
 
-        let shape = finger_cluster
-            .shape
-            .union(&thumb_cluster.mount)
-            .subtract(&thumb_cluster.key_clearance)
-            .into();
+        let finger_cluster = finger_cluster.shape.subtract(&thumb_cluster.key_clearance);
+        let thumb_cluster = thumb_cluster.mount;
+
+        let shape = finger_cluster.union(&thumb_cluster).into();
 
         Self {
             shape,
