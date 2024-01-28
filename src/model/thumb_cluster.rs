@@ -1,5 +1,5 @@
 use glam::{dvec2, DVec2, DVec3};
-use opencascade::primitives::{IntoShape, JoinType, Shape};
+use opencascade::primitives::{IntoShape, JoinType, Shape, Wire};
 
 use crate::model::{
     config::{PositiveDVec2, KEY_CLEARANCE},
@@ -27,6 +27,25 @@ impl ThumbCluster {
         let size =
             MountSize::from_positions(thumb_keys.iter(), &key_clearance, circumference_distance);
 
+        let mount_clearance = Self::mount_clearance(thumb_keys, &key_clearance, &size);
+        let mount_outline = Self::mount_outline(thumb_keys, &key_clearance);
+        let mount = mount_outline
+            .offset(circumference_distance, JoinType::Arc)
+            .to_face()
+            .extrude(zvec(size.height))
+            .into_shape()
+            .subtract(&mount_clearance)
+            .into();
+
+        let key_clearance = mount_outline.to_face().extrude(zvec(size.height)).into();
+
+        Self {
+            mount,
+            key_clearance,
+        }
+    }
+
+    fn mount_outline(thumb_keys: &ThumbKeys, key_clearance: &DVec2) -> Wire {
         let first_thumb_key = thumb_keys.first();
         let last_thumb_key = thumb_keys.last();
 
@@ -37,19 +56,7 @@ impl ThumbCluster {
             corner_point(last_thumb_key, SideX::Right, SideY::Bottom, &key_clearance),
         ];
 
-        let wire = wire_from_points(points, Plane::new(DVec3::ZERO, DVec3::Z));
-        let face = wire.offset(circumference_distance, JoinType::Arc).to_face();
-        let mount = face.extrude(zvec(size.height)).into_shape();
-
-        let mount_clearance = Self::mount_clearance(thumb_keys, &key_clearance, &size);
-        let mount = mount.subtract(&mount_clearance).into();
-
-        let key_clearance = wire.to_face().extrude(zvec(size.height)).into();
-
-        Self {
-            mount,
-            key_clearance,
-        }
+        wire_from_points(points, Plane::new(DVec3::ZERO, DVec3::Z))
     }
 
     fn mount_clearance(
