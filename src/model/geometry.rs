@@ -39,7 +39,6 @@ pub struct Line {
     direction: DVec3,
 }
 
-#[allow(unused)]
 impl Line {
     pub fn new(point: DVec3, direction: DVec3) -> Self {
         let direction = direction.normalize();
@@ -48,10 +47,6 @@ impl Line {
 
     pub fn parametric_point(&self, parameter: f64) -> DVec3 {
         self.point + parameter * self.direction
-    }
-
-    pub fn direction(&self) -> DVec3 {
-        self.direction
     }
 }
 
