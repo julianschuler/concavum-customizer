@@ -13,6 +13,7 @@ use crate::model::{
 
 pub struct FingerCluster {
     pub mount: Shape,
+    pub key_clearance: Shape,
 }
 
 impl FingerCluster {
@@ -42,7 +43,12 @@ impl FingerCluster {
             .subtract(&mount_clearance)
             .into();
 
-        Self { mount }
+        let key_clearance = mount_outline.to_face().extrude(zvec(size.height)).into();
+
+        Self {
+            mount,
+            key_clearance,
+        }
     }
 
     fn mount_outline(columns: &Columns, key_clearance: &DVec2) -> Wire {

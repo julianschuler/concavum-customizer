@@ -35,7 +35,7 @@ impl KeyCluster {
         );
 
         let finger_mount = finger_cluster.mount.subtract(&thumb_cluster.key_clearance);
-        let thumb_mount = thumb_cluster.mount;
+        let thumb_mount = thumb_cluster.mount.subtract(&finger_cluster.key_clearance);
 
         let shape = finger_mount.union(&thumb_mount).into();
 
