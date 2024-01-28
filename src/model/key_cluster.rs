@@ -19,20 +19,25 @@ pub struct KeyCluster {
 impl KeyCluster {
     pub fn from_config(config: &Config) -> Self {
         let key_distance: PositiveDVec2 = (&config.finger_cluster.key_distance).into();
+        let circumference_distance = *config.keyboard.circumference_distance;
 
         let key_positions = KeyPositions::from_config(config).tilt(config.keyboard.tilting_angle);
 
-        let finger_cluster = FingerCluster::new(&key_positions.columns, &key_distance, config);
+        let finger_cluster = FingerCluster::new(
+            &key_positions.columns,
+            &key_distance,
+            circumference_distance,
+        );
         let thumb_cluster = ThumbCluster::new(
             &key_positions.thumb_keys,
             &key_distance,
-            *config.keyboard.circumference_distance,
+            circumference_distance,
         );
 
-        let finger_cluster = finger_cluster.shape.subtract(&thumb_cluster.key_clearance);
-        let thumb_cluster = thumb_cluster.mount;
+        let finger_mount = finger_cluster.mount.subtract(&thumb_cluster.key_clearance);
+        let thumb_mount = thumb_cluster.mount;
 
-        let shape = finger_cluster.union(&thumb_cluster).into();
+        let shape = finger_mount.union(&thumb_mount).into();
 
         Self {
             shape,
