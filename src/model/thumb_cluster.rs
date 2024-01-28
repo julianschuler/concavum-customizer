@@ -37,7 +37,7 @@ impl ThumbCluster {
             .subtract(&mount_clearance)
             .into();
 
-        let key_clearance = mount_outline.to_face().extrude(zvec(size.height)).into();
+        let key_clearance = Self::key_clearance(thumb_keys, &key_clearance, &size);
 
         Self {
             mount,
@@ -104,6 +104,42 @@ impl ThumbCluster {
             .extrude(2.0 * key_clearance.y * first.y_axis)
             .union(&lower_face.extrude(mount_size.length * DVec3::NEG_Y))
             .union(&upper_face.extrude(mount_size.length * DVec3::Y).into())
+            .into()
+    }
+
+    fn key_clearance(
+        thumb_keys: &ThumbKeys,
+        key_clearance: &DVec2,
+        mount_size: &MountSize,
+    ) -> Shape {
+        let first = thumb_keys.first();
+        let last = thumb_keys.last();
+
+        let first_point = side_point(first, Side::Left, key_clearance);
+        let last_point = side_point(last, Side::Right, key_clearance);
+
+        let points = thumb_keys
+            .windows(2)
+            .filter_map(|window| {
+                let position = window[0];
+                let next_position = window[1];
+                let line = Line::new(position.translation, position.x_axis);
+                let plane = Plane::new(next_position.translation, next_position.z_axis);
+
+                plane.intersection(&line)
+            })
+            .chain([
+                last_point,
+                last_point + 2.0 * mount_size.height * DVec3::Z,
+                first_point + 2.0 * mount_size.height * DVec3::Z,
+                first_point,
+            ]);
+
+        let plane = Plane::new(side_point(first, Side::Bottom, key_clearance), first.y_axis);
+
+        wire_from_points(points, plane)
+            .to_face()
+            .extrude(2.0 * key_clearance.y * first.y_axis)
             .into()
     }
 }
