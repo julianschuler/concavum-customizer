@@ -50,10 +50,10 @@ impl ThumbCluster {
         let last_thumb_key = thumb_keys.last();
 
         let points = [
-            corner_point(first_thumb_key, SideX::Left, SideY::Bottom, &key_clearance),
-            corner_point(first_thumb_key, SideX::Left, SideY::Top, &key_clearance),
-            corner_point(last_thumb_key, SideX::Right, SideY::Top, &key_clearance),
-            corner_point(last_thumb_key, SideX::Right, SideY::Bottom, &key_clearance),
+            corner_point(first_thumb_key, SideX::Left, SideY::Bottom, key_clearance),
+            corner_point(first_thumb_key, SideX::Left, SideY::Top, key_clearance),
+            corner_point(last_thumb_key, SideX::Right, SideY::Top, key_clearance),
+            corner_point(last_thumb_key, SideX::Right, SideY::Bottom, key_clearance),
         ];
 
         wire_from_points(points, Plane::new(DVec3::ZERO, DVec3::Z))
