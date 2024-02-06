@@ -207,7 +207,7 @@ impl<'de, const LOWER: i8, const UPPER: i8> Deserialize<'de> for Ranged<LOWER, U
     {
         let inner = f64::deserialize(deserializer)?;
 
-        if inner >= LOWER as f64 && inner <= UPPER as f64 {
+        if inner >= f64::from(LOWER) && inner <= f64::from(UPPER) {
             Ok(Self(inner))
         } else {
             Err(D::Error::custom(format!(

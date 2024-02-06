@@ -45,7 +45,7 @@ pub enum SideX {
 }
 
 impl SideX {
-    pub fn direction(&self) -> f64 {
+    pub fn direction(self) -> f64 {
         match self {
             SideX::Left => -1.0,
             SideX::Right => 1.0,
@@ -60,7 +60,7 @@ pub enum SideY {
 }
 
 impl SideY {
-    pub fn direction(&self) -> f64 {
+    pub fn direction(self) -> f64 {
         match self {
             SideY::Bottom => -1.0,
             SideY::Top => 1.0,
@@ -68,6 +68,7 @@ impl SideY {
     }
 }
 
+#[derive(Clone, Copy)]
 pub enum Side {
     Left,
     Right,
@@ -113,14 +114,14 @@ pub fn side_point(position: &DAffine3, side: Side, key_clearance: &DVec2) -> DVe
     }
 }
 
-pub fn wire_from_points(points: impl IntoIterator<Item = DVec3>, plane: Plane) -> Wire {
-    let points = points.into_iter().map(|point| point.project_to(&plane));
+pub fn wire_from_points(points: impl IntoIterator<Item = DVec3>, plane: &Plane) -> Wire {
+    let points = points.into_iter().map(|point| point.project_to(plane));
     Wire::from_ordered_points(points).expect("wire is created from more than 2 points")
 }
 
 pub fn project_points_to_plane_and_extrude(
     points: impl IntoIterator<Item = DVec3>,
-    plane: Plane,
+    plane: &Plane,
     height: f64,
 ) -> Solid {
     let direction = height * plane.normal();

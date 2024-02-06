@@ -74,7 +74,7 @@ impl FingerCluster {
             .map(|point| dvec3(point.x, point.y, 0.0))
             .collect();
 
-        wire_from_points(points, Plane::new(DVec3::ZERO, DVec3::Z))
+        wire_from_points(points, &Plane::new(DVec3::ZERO, DVec3::Z))
     }
 
     fn circumference_point(
@@ -87,6 +87,7 @@ impl FingerCluster {
         let right_point = corner_point(right, SideX::Left, side_y, key_clearance);
 
         // Get point which is more outward
+        #[allow(clippy::float_cmp)]
         if (left_point - right_point).y.signum() == side_y.direction() {
             left_point
         } else {
@@ -130,6 +131,7 @@ impl FingerCluster {
 
         // Get point which is more outward
         let offset = (top.translation - bottom.translation).dot(outwards_direction);
+        #[allow(clippy::float_cmp)]
         let offset = if offset.signum() == side_x.direction() {
             offset
         } else {
@@ -185,7 +187,7 @@ impl<'a> ClearanceBuilder<'a> {
 
         if let Some(columns) = columns.get(1..columns.len() - 1) {
             for column in columns {
-                clearance = clearance.union(&self.normal_column_clearance(column).into())
+                clearance = clearance.union(&self.normal_column_clearance(column).into());
             }
         }
 
@@ -200,7 +202,7 @@ impl<'a> ClearanceBuilder<'a> {
             first.x_axis,
         );
 
-        project_points_to_plane_and_extrude(points, plane, 2.0 * self.key_clearance.x)
+        project_points_to_plane_and_extrude(points, &plane, 2.0 * self.key_clearance.x)
     }
 
     fn side_column_clearance(
@@ -222,26 +224,28 @@ impl<'a> ClearanceBuilder<'a> {
         let combined_clearance = if let Some(neighbor) = neighbor {
             let plane = Plane::new(translation - side_offset * normal, normal);
             let column_clearance =
-                project_points_to_plane_and_extrude(points, plane, extrusion_height);
+                project_points_to_plane_and_extrude(points, &plane, extrusion_height);
 
             let translation = neighbor.first().translation;
             let normal = side_x.direction() * neighbor.first().x_axis;
             let plane = Plane::new(translation - normal_offset * normal, normal);
             let points = self.clearance_points(neighbor);
             let neighbor_clearance =
-                project_points_to_plane_and_extrude(points, plane, extrusion_height);
+                project_points_to_plane_and_extrude(points, &plane, extrusion_height);
 
             column_clearance.intersect(&neighbor_clearance).into_shape()
         } else {
             let plane = Plane::new(translation - normal_offset * normal, normal);
             let column_clearance =
-                project_points_to_plane_and_extrude(points, plane, extrusion_height);
+                project_points_to_plane_and_extrude(points, &plane, extrusion_height);
 
             column_clearance.into_shape()
         };
 
         // Combined column, side and neighbor clearance
         let side_clearance = self.side_clearance(side_x);
+        #[allow(clippy::if_not_else)]
+        #[allow(clippy::float_cmp)]
         if column.first().x_axis.z.signum() != side_x.direction() {
             combined_clearance.intersect(&side_clearance).into()
         } else {
@@ -254,7 +258,7 @@ impl<'a> ClearanceBuilder<'a> {
                 dvec3(0.0, -self.mount_size.length, 2.0 * self.mount_size.height),
             ];
             let side_bounding_shape =
-                project_points_to_plane_and_extrude(points, plane, extrusion_height);
+                project_points_to_plane_and_extrude(points, &plane, extrusion_height);
 
             side_clearance
                 .intersect(&side_bounding_shape.into())
@@ -292,7 +296,7 @@ impl<'a> ClearanceBuilder<'a> {
             ]);
 
         let plane = Plane::new(self.mount_size.width * DVec3::NEG_X, DVec3::X);
-        project_points_to_plane_and_extrude(points, plane, 2.0 * self.mount_size.width).into()
+        project_points_to_plane_and_extrude(points, &plane, 2.0 * self.mount_size.width).into()
     }
 
     fn side_point(&self, bottom: &DAffine3, top: &DAffine3, side_x: SideX) -> Option<DVec3> {
@@ -300,6 +304,7 @@ impl<'a> ClearanceBuilder<'a> {
 
         // Get point which is more outward
         let offset = (top.translation - bottom.translation).dot(outwards_direction);
+        #[allow(clippy::float_cmp)]
         let offset = if offset.signum() == side_x.direction() {
             offset
         } else {
@@ -434,16 +439,13 @@ impl SupportPlanes {
                 };
 
                 let line = Line::new(point, position.y_axis);
-                plane
-                    .intersection(&line)
-                    .map(|point| {
-                        if point.abs_diff_eq(default, ALLOWED_DEVIATION) {
-                            point
-                        } else {
-                            default
-                        }
-                    })
-                    .unwrap_or(default)
+                plane.intersection(&line).map_or(default, |point| {
+                    if point.abs_diff_eq(default, ALLOWED_DEVIATION) {
+                        point
+                    } else {
+                        default
+                    }
+                })
             }
             ColumnType::Side => point,
         };

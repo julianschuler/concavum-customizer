@@ -1,6 +1,6 @@
 use glam::{DAffine3, DMat4, DVec3};
 use hex_color::HexColor;
-use opencascade::{mesh::Mesh, primitives::Shape};
+use opencascade::primitives::Shape;
 use three_d::{CpuMesh, Indices, Mat4, Positions, Srgba, Vec3};
 
 pub struct Component {
@@ -23,7 +23,7 @@ impl Component {
     }
 
     fn mesh(&self, triangulation_tolerance: f64) -> Result<CpuMesh, Error> {
-        let Mesh {
+        let opencascade::mesh::Mesh {
             vertices, indices, ..
         } = self.shape.mesh_with_tolerance(triangulation_tolerance)?;
 
@@ -47,13 +47,13 @@ impl Component {
     }
 }
 
-pub trait ViewableModel {
+pub trait Viewable {
     fn components(self) -> Vec<Component>;
     fn light_positions(&self) -> Vec<DVec3>;
     fn background_color(&self) -> HexColor;
     fn triangulation_tolerance(&self) -> f64;
 
-    fn into_mesh_model(self) -> MeshModel
+    fn into_mesh(self) -> Mesh
     where
         Self: Sized,
     {
@@ -95,7 +95,7 @@ pub trait ViewableModel {
             }
         }
 
-        MeshModel {
+        Mesh {
             objects,
             light_positions,
             background_color,
@@ -111,7 +111,7 @@ pub struct CpuObject {
 }
 
 #[derive(Clone)]
-pub struct MeshModel {
+pub struct Mesh {
     pub objects: Vec<CpuObject>,
     pub light_positions: Vec<Vec3>,
     pub background_color: Srgba,

@@ -27,8 +27,8 @@ impl Column {
         };
 
         Self {
-            entries,
             column_type,
+            entries,
         }
     }
 
@@ -91,28 +91,29 @@ impl Columns {
                             (-1.0, config.columns.get(config.columns.len() - 2))
                         };
 
-                        let (curvature_angle, offset) =
-                            match column.expect("there has to be at least one normal column") {
-                                config::Column::Normal {
-                                    curvature_angle,
-                                    offset,
-                                } => (curvature_angle, offset),
-                                _ => panic!("there has to be at least one normal column"),
-                            };
-
-                        (curvature_angle, offset, **side_angle, side)
+                        if let config::Column::Normal {
+                            curvature_angle,
+                            offset,
+                        } = column.expect("there has to be at least one normal column")
+                        {
+                            (curvature_angle, offset, **side_angle, side)
+                        } else {
+                            panic!("there has to be at least one normal column")
+                        }
                     }
                 };
                 let side_angle = side_angle.to_radians();
                 let side_angle_tan = side_angle.tan();
 
                 let (x, z_offset) = if side_angle == 0.0 {
+                    #[allow(clippy::cast_precision_loss)]
                     (key_distance.x * i as f64, 0.0)
                 } else {
                     let (sin, cos) = (side_angle.sin(), side_angle.cos());
                     let side_radius =
                         key_distance.x / 2.0 / (side_angle / 2.0).tan() + CURVATURE_HEIGHT;
 
+                    #[allow(clippy::cast_precision_loss)]
                     (
                         key_distance.x * (i as f64 + side) - side * side_radius * sin,
                         side_radius * (1.0 - cos),
@@ -127,8 +128,8 @@ impl Columns {
                 let entries = if curvature_angle == 0.0 {
                     (0..*config.rows)
                         .map(|j| {
-                            let y =
-                                key_distance.y * (j as i16 - config.home_row_index as i16) as f64;
+                            let y = key_distance.y
+                                * f64::from(i16::from(j) - i16::from(config.home_row_index));
                             column_transform * DAffine3::from_translation(dvec3(0.0, y, 0.0))
                         })
                         .collect()
@@ -138,8 +139,8 @@ impl Columns {
 
                     (0..*config.rows)
                         .map(|j| {
-                            let total_angle =
-                                curvature_angle * (j as i16 - config.home_row_index as i16) as f64;
+                            let total_angle = curvature_angle
+                                * f64::from(i16::from(j) - i16::from(config.home_row_index));
                             let (sin, rcos) = (total_angle.sin(), 1.0 - total_angle.cos());
 
                             let x = -side
@@ -203,8 +204,8 @@ impl ThumbKeys {
         let keys = if curvature_angle == 0.0 {
             (0..*config.keys)
                 .map(|j| {
-                    let x =
-                        *config.key_distance * (j as i16 - config.resting_key_index as i16) as f64;
+                    let x = *config.key_distance
+                        * f64::from(i16::from(j) - i16::from(config.resting_key_index));
 
                     key_transform * DAffine3::from_translation(dvec3(x, 0.0, 0.0))
                 })
@@ -215,8 +216,8 @@ impl ThumbKeys {
 
             (0..*config.keys)
                 .map(|i| {
-                    let total_angle =
-                        curvature_angle * (i as i16 - config.resting_key_index as i16) as f64;
+                    let total_angle = curvature_angle
+                        * f64::from(i16::from(i) - i16::from(config.resting_key_index));
                     let (sin, rcos) = (total_angle.sin(), 1.0 - total_angle.cos());
 
                     key_transform

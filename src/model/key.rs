@@ -31,6 +31,7 @@ impl From<Key> for (Component, Component) {
     }
 }
 
+#[allow(clippy::module_name_repetitions)]
 pub struct KeyCap {
     shape: Shape,
     color: HexColor,

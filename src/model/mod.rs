@@ -12,7 +12,7 @@ use std::path::Path;
 use glam::DVec3;
 use hex_color::HexColor;
 
-pub use crate::viewer::model::{Component, ViewableModel};
+pub use crate::viewer::model::{Component, Viewable};
 use config::Config;
 use key::Key;
 use key_cluster::KeyCluster;
@@ -63,7 +63,7 @@ impl Model {
     }
 }
 
-impl ViewableModel for Model {
+impl Viewable for Model {
     fn components(self) -> Vec<Component> {
         self.components
     }

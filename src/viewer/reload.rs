@@ -13,7 +13,7 @@ use notify::{
 use winit::event_loop::EventLoopProxy;
 
 use crate::{
-    model::{self, ViewableModel},
+    model::{self, Viewable},
     viewer::window::ModelUpdate,
 };
 
@@ -57,7 +57,7 @@ impl ModelReloader {
 
     fn update_model(&self) {
         let model_update = match model::Model::try_from_config(&self.config_path) {
-            Ok(model) => Ok(model.into_mesh_model()),
+            Ok(model) => Ok(model.into_mesh()),
             Err(error) => Err(Arc::new(error)),
         };
         let _ = self.event_loop_proxy.send_event(model_update);
