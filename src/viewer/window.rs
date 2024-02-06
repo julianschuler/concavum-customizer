@@ -3,7 +3,7 @@ use std::sync::Arc;
 use color_eyre::Report;
 use three_d::{
     degrees, vec3, AmbientLight, Attenuation, Camera, ClearState, Context, CpuMaterial, Degrees,
-    FrameInputGenerator, Gm, InnerSpace, InstancedMesh, Instances, Light, Mesh, MouseButton,
+    FrameInputGenerator, Gm, InnerSpace, InstancedMesh, Instances, Light, MouseButton,
     OrbitControl, PhysicalMaterial, PointLight, RenderTarget, Srgba, SurfaceSettings, Vec3,
     Viewport, WindowError, WindowedContext,
 };
@@ -13,27 +13,27 @@ use winit::{
     window::WindowBuilder,
 };
 
-use crate::{model::Error, viewer::model::MeshModel};
+use crate::{model::Error, viewer::model::Mesh};
 
-pub type ModelUpdate = Result<MeshModel, Arc<Error>>;
+pub type ModelUpdate = Result<Mesh, Arc<Error>>;
 
 pub struct Window {
     event_loop: EventLoop<ModelUpdate>,
-    window: winit::window::Window,
+    inner: winit::window::Window,
     context: WindowedContext,
 }
 
 impl Window {
     pub fn try_new() -> Result<Self, WindowError> {
         let event_loop = EventLoopBuilder::with_user_event().build();
-        let window = WindowBuilder::new()
+        let inner = WindowBuilder::new()
             .with_title("Concavum customizer")
             .build(&event_loop)?;
-        let context = WindowedContext::from_winit_window(&window, SurfaceSettings::default())?;
+        let context = WindowedContext::from_winit_window(&inner, SurfaceSettings::default())?;
 
         Ok(Self {
             event_loop,
-            window,
+            inner,
             context,
         })
     }
@@ -43,22 +43,22 @@ impl Window {
     }
 
     pub fn run_render_loop(self) {
-        let frame_input_generator = FrameInputGenerator::from_winit_window(&self.window);
-        let (width, height): (u32, u32) = self.window.inner_size().into();
+        let frame_input_generator = FrameInputGenerator::from_winit_window(&self.inner);
+        let (width, height): (u32, u32) = self.inner.inner_size().into();
         let viewport = Viewport::new_at_origo(width, height);
         let mut application = Application::new(frame_input_generator, viewport);
 
         self.event_loop
             .run(move |event, _, control_flow| match event {
                 Event::MainEventsCleared => {
-                    self.window.request_redraw();
+                    self.inner.request_redraw();
                 }
                 Event::RedrawRequested(_) => {
                     application.handle_redraw(&self.context);
 
                     self.context.swap_buffers().unwrap();
                     control_flow.set_poll();
-                    self.window.request_redraw();
+                    self.inner.request_redraw();
                 }
                 Event::WindowEvent { ref event, .. } => {
                     application.handle_window_event(event, &self.context, control_flow);
@@ -110,11 +110,22 @@ impl Application {
         self.control
             .handle_events(&mut self.camera, &mut frame_input.events);
         self.camera.set_viewport(frame_input.viewport);
-        self.scene
-            .handle_events(&mut self.camera, &mut frame_input.events);
 
-        let screen = frame_input.screen();
-        self.scene.render(&self.camera, &screen);
+        // Allow translating the camera sideways when holding right mouse button
+        for event in &mut frame_input.events {
+            if let three_d::Event::MouseMotion { button, delta, .. } = event {
+                if *button == Some(MouseButton::Right) {
+                    let right = self.camera.right_direction().normalize();
+                    let up = right.cross(self.camera.view_direction());
+                    let translation = -delta.0 * right + delta.1 * up;
+                    let speed = 0.001 * self.camera.position().magnitude();
+
+                    self.camera.translate(&(speed * translation));
+                }
+            }
+        }
+
+        self.scene.render(&self.camera, &frame_input.screen());
     }
 
     fn handle_window_event(
@@ -140,15 +151,15 @@ impl Application {
 
     fn handle_model_update(&mut self, model_update: ModelUpdate, context: &WindowedContext) {
         match model_update {
-            Ok(model) => self.scene = Scene::from_mesh_model(&model, context),
-            Err(err) => eprintln!("Error:{:?}", Report::from(err.to_owned())),
+            Ok(model) => self.scene = Scene::from_mesh(&model, context),
+            Err(err) => eprintln!("Error:{:?}", Report::from(err.clone())),
         }
     }
 }
 
 #[derive(Default)]
 struct Scene {
-    objects: Vec<Gm<Mesh, PhysicalMaterial>>,
+    objects: Vec<Gm<three_d::Mesh, PhysicalMaterial>>,
     instanced_objects: Vec<Gm<InstancedMesh, PhysicalMaterial>>,
     lights: Vec<PointLight>,
     ambient: AmbientLight,
@@ -156,11 +167,11 @@ struct Scene {
 }
 
 impl Scene {
-    fn from_mesh_model(model: &MeshModel, context: &Context) -> Scene {
+    fn from_mesh(model: &Mesh, context: &Context) -> Scene {
         let mut objects = Vec::new();
         let mut instanced_objects = Vec::new();
 
-        for object in model.objects.iter() {
+        for object in &model.objects {
             let material = CpuMaterial {
                 albedo: object.color,
                 ..Default::default()
@@ -178,7 +189,7 @@ impl Scene {
                 );
                 instanced_objects.push(Gm::new(mesh, material));
             } else {
-                let mesh = Mesh::new(context, &object.mesh);
+                let mesh = three_d::Mesh::new(context, &object.mesh);
                 objects.push(Gm::new(mesh, material));
             }
         }
@@ -207,21 +218,6 @@ impl Scene {
         }
     }
 
-    fn handle_events(&mut self, camera: &mut Camera, events: &mut [three_d::Event]) {
-        for event in events {
-            if let three_d::Event::MouseMotion { button, delta, .. } = event {
-                if *button == Some(MouseButton::Right) {
-                    let right = camera.right_direction().normalize();
-                    let up = right.cross(camera.view_direction());
-                    let translation = -delta.0 * right + delta.1 * up;
-                    let speed = 0.001 * camera.position().magnitude();
-
-                    camera.translate(&(speed * translation));
-                }
-            }
-        }
-    }
-
     fn render(&self, camera: &Camera, screen: &RenderTarget) {
         let Srgba { r, g, b, a } = self.background_color;
 
@@ -234,10 +230,10 @@ impl Scene {
 
         screen
             .clear(ClearState::color_and_depth(
-                r as f32 / 255.0,
-                g as f32 / 255.0,
-                b as f32 / 255.0,
-                a as f32 / 255.0,
+                f32::from(r) / 255.0,
+                f32::from(g) / 255.0,
+                f32::from(b) / 255.0,
+                f32::from(a) / 255.0,
                 1.0,
             ))
             .render(camera, &self.objects, &lights)

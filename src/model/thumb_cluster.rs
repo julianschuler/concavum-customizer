@@ -50,13 +50,13 @@ impl ThumbCluster {
         let last_thumb_key = thumb_keys.last();
 
         let points = [
-            corner_point(first_thumb_key, SideX::Left, SideY::Bottom, &key_clearance),
-            corner_point(first_thumb_key, SideX::Left, SideY::Top, &key_clearance),
-            corner_point(last_thumb_key, SideX::Right, SideY::Top, &key_clearance),
-            corner_point(last_thumb_key, SideX::Right, SideY::Bottom, &key_clearance),
+            corner_point(first_thumb_key, SideX::Left, SideY::Bottom, key_clearance),
+            corner_point(first_thumb_key, SideX::Left, SideY::Top, key_clearance),
+            corner_point(last_thumb_key, SideX::Right, SideY::Top, key_clearance),
+            corner_point(last_thumb_key, SideX::Right, SideY::Bottom, key_clearance),
         ];
 
-        wire_from_points(points, Plane::new(DVec3::ZERO, DVec3::Z))
+        wire_from_points(points, &Plane::new(DVec3::ZERO, DVec3::Z))
     }
 
     fn mount_clearance(
@@ -97,8 +97,8 @@ impl ThumbCluster {
         let lower_plane = Plane::new(side_point(first, Side::Bottom, key_clearance), first.y_axis);
         let upper_plane = Plane::new(side_point(first, Side::Top, key_clearance), first.y_axis);
 
-        let lower_face = wire_from_points(points.clone(), lower_plane).to_face();
-        let upper_face = wire_from_points(points, upper_plane).to_face();
+        let lower_face = wire_from_points(points.clone(), &lower_plane).to_face();
+        let upper_face = wire_from_points(points, &upper_plane).to_face();
 
         lower_face
             .extrude(2.0 * key_clearance.y * first.y_axis)
@@ -137,7 +137,7 @@ impl ThumbCluster {
 
         let plane = Plane::new(side_point(first, Side::Bottom, key_clearance), first.y_axis);
 
-        wire_from_points(points, plane)
+        wire_from_points(points, &plane)
             .to_face()
             .extrude(2.0 * key_clearance.y * first.y_axis)
             .into()
