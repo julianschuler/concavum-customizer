@@ -62,6 +62,6 @@ impl KeyCluster {
 
 impl From<KeyCluster> for Component {
     fn from(cluster: KeyCluster) -> Self {
-        Component::new(cluster.shape, cluster.color)
+        Component::new(todo!(), todo!(), cluster.color)
     }
 }

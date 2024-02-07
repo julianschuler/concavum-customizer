@@ -78,7 +78,7 @@ impl KeyCap {
 
 impl From<KeyCap> for Component {
     fn from(keycap: KeyCap) -> Self {
-        Component::new(keycap.shape, keycap.color)
+        Component::new(todo!(), todo!(), keycap.color)
     }
 }
 
@@ -119,6 +119,6 @@ impl Switch {
 
 impl From<Switch> for Component {
     fn from(switch: Switch) -> Self {
-        Component::new(switch.shape, switch.color)
+        Component::new(todo!(), todo!(), switch.color)
     }
 }

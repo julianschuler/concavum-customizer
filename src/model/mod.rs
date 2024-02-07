@@ -9,6 +9,11 @@ mod util;
 
 use std::path::Path;
 
+use fidget::{
+    eval::types::Interval,
+    mesh::{CellBounds, Settings},
+    Context,
+};
 use glam::DVec3;
 use hex_color::HexColor;
 
@@ -19,46 +24,34 @@ use key_cluster::KeyCluster;
 
 pub struct Model {
     components: Vec<Component>,
+    settings: Settings,
     light_positions: Vec<DVec3>,
     background_color: HexColor,
-    triangulation_tolerance: f64,
 }
 
 impl Model {
     pub fn try_from_config(config_path: &Path) -> Result<Self, Error> {
+        const BOUND: f32 = 60.0;
+
         let config = Config::try_from_path(config_path)?;
 
-        let mut components = Vec::new();
+        let components = vec![];
 
-        let key_cluster = KeyCluster::from_config(&config);
+        let interval = Interval::new(-BOUND, BOUND);
+        let bounds = CellBounds::new(interval, interval, interval);
 
-        if config.preview.show_keys {
-            let finger_key = Key::new(&config, 1.0);
-            let thumb_key = Key::new(&config, 1.5);
-            let (mut finger_keycap, mut finger_switch) = finger_key.into();
-            let (mut thumb_keycap, mut thumb_switch) = thumb_key.into();
-
-            let finger_key_positions = key_cluster.finger_key_positions();
-            let thumb_key_positions = key_cluster.thumb_key_positions();
-
-            finger_keycap.with_positions(finger_key_positions.clone());
-            finger_switch.with_positions(finger_key_positions);
-            thumb_keycap.with_positions(thumb_key_positions.clone());
-            thumb_switch.with_positions(thumb_key_positions);
-
-            components.push(finger_keycap);
-            components.push(finger_switch);
-            components.push(thumb_keycap);
-            components.push(thumb_switch);
-        }
-
-        components.push(key_cluster.into());
+        let settings = Settings {
+            threads: 12,
+            min_depth: 5,
+            max_depth: 12,
+            bounds,
+        };
 
         Ok(Self {
             components,
+            settings,
             light_positions: config.preview.light_positions,
             background_color: config.colors.background,
-            triangulation_tolerance: *config.preview.triangulation_tolerance,
         })
     }
 }
@@ -68,16 +61,16 @@ impl Viewable for Model {
         self.components
     }
 
+    fn settings(&self) -> Settings {
+        self.settings
+    }
+
     fn light_positions(&self) -> Vec<DVec3> {
         self.light_positions.clone()
     }
 
     fn background_color(&self) -> HexColor {
         self.background_color
-    }
-
-    fn triangulation_tolerance(&self) -> f64 {
-        self.triangulation_tolerance
     }
 }
 
@@ -86,4 +79,7 @@ pub enum Error {
     /// Failed to parse config
     #[error("failed to parse config")]
     ParseConfig(#[from] config::Error),
+    /// Failed to create model
+    #[error("failed to create model")]
+    CreateModel(#[from] fidget::Error),
 }
