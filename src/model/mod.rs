@@ -4,12 +4,14 @@ mod geometry;
 mod key;
 mod key_cluster;
 mod key_positions;
+mod primitives;
 mod thumb_cluster;
 mod util;
 
 use std::path::Path;
 
 use fidget::{
+    context::IntoNode,
     eval::types::Interval,
     mesh::{CellBounds, Settings},
     Context,
@@ -21,6 +23,7 @@ pub use crate::viewer::model::{Component, Viewable};
 use config::Config;
 use key::Key;
 use key_cluster::KeyCluster;
+use primitives::Sphere;
 
 pub struct Model {
     components: Vec<Component>,
@@ -32,10 +35,13 @@ pub struct Model {
 impl Model {
     pub fn try_from_config(config_path: &Path) -> Result<Self, Error> {
         const BOUND: f32 = 60.0;
+        const RADIUS: f32 = 50.0;
 
         let config = Config::try_from_path(config_path)?;
 
-        let components = vec![];
+        let mut context = Context::new();
+        let sphere = Sphere::new(RADIUS).into_node(&mut context)?;
+        let components = vec![Component::new(context, sphere, config.colors.keyboard)];
 
         let interval = Interval::new(-BOUND, BOUND);
         let bounds = CellBounds::new(interval, interval, interval);
