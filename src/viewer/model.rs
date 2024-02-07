@@ -1,18 +1,25 @@
+use fidget::{
+    context::Node,
+    jit::Eval,
+    mesh::{Octree, Settings},
+    Context, Error,
+};
 use glam::{DAffine3, DMat4, DVec3};
 use hex_color::HexColor;
-use opencascade::primitives::Shape;
 use three_d::{CpuMesh, Indices, Mat4, Positions, Srgba, Vec3};
 
 pub struct Component {
-    shape: Shape,
+    context: Context,
+    root: Node,
     color: HexColor,
     positions: Option<Vec<DAffine3>>,
 }
 
 impl Component {
-    pub fn new(shape: Shape, color: HexColor) -> Self {
+    pub fn new(context: Context, root: Node, color: HexColor) -> Self {
         Self {
-            shape,
+            context,
+            root,
             color,
             positions: None,
         }
@@ -22,18 +29,26 @@ impl Component {
         self.positions = Some(positions);
     }
 
-    fn mesh(&self, triangulation_tolerance: f64) -> Result<CpuMesh, Error> {
-        let opencascade::mesh::Mesh {
-            vertices, indices, ..
-        } = self.shape.mesh_with_tolerance(triangulation_tolerance)?;
+    fn mesh(&self, settings: Settings) -> Result<CpuMesh, Error> {
+        let tape = self.context.get_tape::<Eval>(self.root)?;
+        let mesh = Octree::build(&tape, settings).walk_dual(settings);
 
-        let vertices = vertices
+        let vertices = mesh
+            .vertices
             .iter()
-            .map(|vertex| vertex.as_vec3().to_array().into())
+            .map(|vertex| {
+                let slice: [_; 3] = vertex.as_slice().try_into().unwrap();
+                slice.into()
+            })
             .collect();
-        let indices = indices
+        let indices = mesh
+            .triangles
             .iter()
-            .map(|&index| index.try_into().expect("index does not fit in u32"))
+            .flat_map(|triangle| {
+                triangle
+                    .iter()
+                    .map(|&index| index.try_into().expect("index should fit in u32"))
+            })
             .collect();
 
         let mut mesh = CpuMesh {
@@ -49,15 +64,15 @@ impl Component {
 
 pub trait Viewable {
     fn components(self) -> Vec<Component>;
+    fn settings(&self) -> Settings;
     fn light_positions(&self) -> Vec<DVec3>;
     fn background_color(&self) -> HexColor;
-    fn triangulation_tolerance(&self) -> f64;
 
     fn into_mesh(self) -> Mesh
     where
         Self: Sized,
     {
-        let triangulation_tolerance = self.triangulation_tolerance();
+        let settings = self.settings();
         let light_positions = self
             .light_positions()
             .iter()
@@ -69,7 +84,7 @@ pub trait Viewable {
         let mut objects = Vec::new();
 
         for component in self.components() {
-            match component.mesh(triangulation_tolerance) {
+            match component.mesh(settings) {
                 Ok(mesh) => {
                     let HexColor { r, g, b, a } = component.color;
                     let color = Srgba::new(r, g, b, a);
@@ -115,11 +130,4 @@ pub struct Mesh {
     pub objects: Vec<CpuObject>,
     pub light_positions: Vec<Vec3>,
     pub background_color: Srgba,
-}
-
-#[derive(Debug, thiserror::Error)]
-pub enum Error {
-    /// Triangulation failed
-    #[error("triangulation failed")]
-    Triangulation(#[from] opencascade::Error),
 }
