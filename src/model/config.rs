@@ -24,7 +24,7 @@ pub struct Preview {
     pub show_keys: bool,
     pub show_interface_pcb: bool,
     pub show_bottom_plate: bool,
-    pub triangulation_tolerance: PositiveFloat,
+    pub mesh_resolution: PositiveFloat,
     pub light_positions: Vec<DVec3>,
 }
 

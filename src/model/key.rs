@@ -27,7 +27,7 @@ impl Key {
 
 impl From<Key> for (Component, Component) {
     fn from(key: Key) -> Self {
-        (key.keycap.into(), key.switch.into())
+        todo!()
     }
 }
 
@@ -78,7 +78,7 @@ impl KeyCap {
 
 impl From<KeyCap> for Component {
     fn from(keycap: KeyCap) -> Self {
-        Component::new(keycap.shape, keycap.color)
+        todo!()
     }
 }
 
@@ -119,6 +119,6 @@ impl Switch {
 
 impl From<Switch> for Component {
     fn from(switch: Switch) -> Self {
-        Component::new(switch.shape, switch.color)
+        todo!()
     }
 }

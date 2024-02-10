@@ -21,7 +21,7 @@ pub struct Model {
     components: Vec<Component>,
     light_positions: Vec<DVec3>,
     background_color: HexColor,
-    triangulation_tolerance: f64,
+    mesh_resolution: f32,
 }
 
 impl Model {
@@ -58,7 +58,7 @@ impl Model {
             components,
             light_positions: config.preview.light_positions,
             background_color: config.colors.background,
-            triangulation_tolerance: *config.preview.triangulation_tolerance,
+            mesh_resolution: *config.preview.mesh_resolution as f32,
         })
     }
 }
@@ -76,8 +76,8 @@ impl Viewable for Model {
         self.background_color
     }
 
-    fn triangulation_tolerance(&self) -> f64 {
-        self.triangulation_tolerance
+    fn mesh_resolution(&self) -> f32 {
+        self.mesh_resolution
     }
 }
 
