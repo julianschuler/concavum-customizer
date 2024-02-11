@@ -1,13 +1,9 @@
-use glam::{dvec2, dvec3, DVec2};
 use hex_color::HexColor;
-use opencascade::{
-    primitives::{Shape, Solid},
-    workplane::Workplane,
-};
+use libfive::{Region3, Tree};
 
 use crate::model::{
-    config::{Config, EPSILON},
-    geometry::zvec,
+    config::{Colors, EPSILON},
+    util::{centered_cubic_region, vec2, vec3},
     Component,
 };
 
@@ -17,9 +13,9 @@ pub struct Key {
 }
 
 impl Key {
-    pub fn new(config: &Config, size_u: f64) -> Key {
-        let switch = Switch::new(config);
-        let keycap = KeyCap::new(config, size_u);
+    pub fn new(colors: &Colors, size_u: f32) -> Key {
+        let switch = Switch::new(colors.switch);
+        let keycap = KeyCap::new(colors.keycap, size_u);
 
         Self { switch, keycap }
     }
@@ -27,98 +23,89 @@ impl Key {
 
 impl From<Key> for (Component, Component) {
     fn from(key: Key) -> Self {
-        todo!()
+        (key.keycap.into(), key.switch.into())
     }
 }
 
 #[allow(clippy::module_name_repetitions)]
 pub struct KeyCap {
-    shape: Shape,
+    tree: Tree,
+    region: Region3,
     color: HexColor,
 }
 
 impl KeyCap {
-    pub fn new(config: &Config, size_u: f64) -> KeyCap {
-        const KEYCAP_PITCH: f64 = 19.05;
-        const BOTTOM_WIDTH: f64 = 18.2;
-        const BOTTOM_FILLET: f64 = 0.5;
-        const MIDDLE_WIDTH: f64 = 15.8;
-        const TOP_WIDTH: f64 = 12.0;
-        const TOP_FILLET: f64 = 2.0;
-        const HEIGHT: f64 = 7.0;
+    pub fn new(color: HexColor, size_u: f32) -> KeyCap {
+        const KEYCAP_PITCH: f32 = 19.05;
+        const BOTTOM_WIDTH: f32 = 18.2;
+        const TOP_WIDTH: f32 = 12.0;
+        const HEIGHT: f32 = 7.0;
 
         let bottom_length = KEYCAP_PITCH * size_u - (KEYCAP_PITCH - BOTTOM_WIDTH);
-        let mid_length = KEYCAP_PITCH * size_u - (KEYCAP_PITCH - MIDDLE_WIDTH);
         let top_length = KEYCAP_PITCH * size_u - (KEYCAP_PITCH - TOP_WIDTH);
 
-        let bottom = Workplane::xy()
-            .rect(BOTTOM_WIDTH, bottom_length)
-            .fillet(BOTTOM_FILLET);
+        let bottom =
+            Tree::rectangle_centered_exact(vec2(BOTTOM_WIDTH, bottom_length), vec2(0.0, 0.0));
+        let top = Tree::rectangle_centered_exact(vec2(TOP_WIDTH, top_length), vec2(0.0, 0.0));
 
-        let middle = Workplane::xy()
-            .translated(zvec(HEIGHT / 2.0))
-            .rect(MIDDLE_WIDTH, mid_length)
-            .fillet((TOP_FILLET + BOTTOM_FILLET) / 2.0);
+        let tree =
+            bottom
+                .loft(top, 0.0.into(), HEIGHT.into())
+                .moveit(vec3(0.0, 0.0, Switch::TOP_HEIGHT));
 
-        let top = Workplane::xy()
-            .translated(zvec(HEIGHT))
-            .rect(TOP_WIDTH, top_length)
-            .fillet(TOP_FILLET);
-
-        let mut shape: Shape = Solid::loft([&bottom, &middle, &top]).into();
-
-        shape.set_global_translation(zvec(Switch::TOP_HEIGHT));
+        let region = centered_cubic_region(2.0 * HEIGHT + Switch::TOP_HEIGHT);
 
         Self {
-            color: config.colors.keycap,
-            shape,
+            tree,
+            region,
+            color,
         }
     }
 }
 
 impl From<KeyCap> for Component {
     fn from(keycap: KeyCap) -> Self {
-        todo!()
+        Component::new(keycap.tree, keycap.region, keycap.color)
     }
 }
 
 pub struct Switch {
-    shape: Shape,
+    tree: Tree,
+    region: Region3,
     color: HexColor,
 }
 
 impl Switch {
-    pub const TOP_HEIGHT: f64 = 6.6;
+    pub const TOP_HEIGHT: f32 = 6.6;
 
-    pub fn new(config: &Config) -> Switch {
-        const BOTTOM_WIDTH: f64 = 14.0;
-        const BOTTOM_HEIGHT: f64 = 5.5;
-        const TOP_WIDTH: f64 = 15.6;
-        const TOP_SIZE: DVec2 = dvec2(11.0, 10.0);
-        const TOP_OFFSET: f64 = 1.5;
+    pub fn new(color: HexColor) -> Switch {
+        const BOTTOM_WIDTH: f32 = 14.0;
+        const BOTTOM_HEIGHT: f32 = 5.5;
+        const MIDDLE_WIDTH: f32 = 15.6;
+        const TOP_WIDTH: f32 = 10.0;
 
-        let bottom_rect = Workplane::xy()
-            .translated(zvec(-BOTTOM_HEIGHT))
-            .rect(BOTTOM_WIDTH, BOTTOM_WIDTH);
-        let bottom = bottom_rect.to_face().extrude(zvec(BOTTOM_HEIGHT + EPSILON));
+        let bottom = Tree::box_exact_centered(
+            vec3(BOTTOM_WIDTH, BOTTOM_WIDTH, BOTTOM_HEIGHT + EPSILON),
+            vec3(0.0, 0.0, (EPSILON - BOTTOM_HEIGHT) / 2.0),
+        );
 
-        let top_lower_rect = Workplane::xy().rect(TOP_WIDTH, TOP_WIDTH);
-        let top_upper_rect = Workplane::xy()
-            .translated(dvec3(0.0, TOP_OFFSET, Self::TOP_HEIGHT))
-            .rect(TOP_SIZE.x, TOP_SIZE.y);
+        let top_rect = Tree::rectangle_centered_exact(vec2(TOP_WIDTH, TOP_WIDTH), vec2(0.0, 0.0));
+        let top = Tree::rectangle_centered_exact(vec2(MIDDLE_WIDTH, MIDDLE_WIDTH), vec2(0.0, 0.0))
+            .loft(top_rect, 0.0.into(), Self::TOP_HEIGHT.into());
 
-        let shape: Shape = Solid::loft([&top_lower_rect, &top_upper_rect]).into();
-        let shape = shape.union(&bottom.into()).into();
+        let tree = top.union(bottom);
+        let region = centered_cubic_region(BOTTOM_HEIGHT + Self::TOP_HEIGHT);
 
         Self {
-            color: config.colors.switch,
-            shape,
+            tree,
+            region,
+            color,
         }
     }
 }
 
 impl From<Switch> for Component {
     fn from(switch: Switch) -> Self {
-        todo!()
+        Component::new(switch.tree, switch.region, switch.color)
     }
 }

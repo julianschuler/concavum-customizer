@@ -451,7 +451,7 @@ impl SupportPlanes {
         };
 
         let mut points = vec![point];
-        if !point.abs_diff_eq(projected_point, EPSILON) {
+        if !point.abs_diff_eq(projected_point, EPSILON as f64) {
             points.push(projected_point);
         }
 

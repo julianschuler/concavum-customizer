@@ -1,7 +1,23 @@
 use glam::{dvec3, DAffine3, DVec2, DVec3};
+use libfive::{Region3, TreeVec2, TreeVec3};
 use opencascade::primitives::{Solid, Wire};
 
 use crate::model::geometry::{Plane, Project};
+
+#[inline]
+pub fn vec2(x: f32, y: f32) -> TreeVec2 {
+    TreeVec2::new(x, y)
+}
+
+#[inline]
+pub fn vec3(x: f32, y: f32, z: f32) -> TreeVec3 {
+    TreeVec3::new(x, y, z)
+}
+
+#[inline]
+pub fn centered_cubic_region(size: f32) -> Region3 {
+    Region3::new(-size, size, -size, size, -size, size)
+}
 
 /// Upper bound for the size of a mount
 pub struct MountSize {

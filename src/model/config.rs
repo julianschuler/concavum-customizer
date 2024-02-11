@@ -4,7 +4,7 @@ use glam::{DVec2, DVec3};
 use hex_color::HexColor;
 use serde::{de::Error as DeserializeError, Deserialize, Deserializer};
 
-pub const EPSILON: f64 = 0.001;
+pub const EPSILON: f32 = 0.001;
 pub const KEY_CLEARANCE: f64 = 1.0;
 
 pub type CurvatureAngle = Ranged<-20, 50>;

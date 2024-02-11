@@ -33,8 +33,8 @@ impl Model {
         let key_cluster = KeyCluster::from_config(&config);
 
         if config.preview.show_keys {
-            let finger_key = Key::new(&config, 1.0);
-            let thumb_key = Key::new(&config, 1.5);
+            let finger_key = Key::new(&config.colors, 1.0);
+            let thumb_key = Key::new(&config.colors, 1.5);
             let (mut finger_keycap, mut finger_switch) = finger_key.into();
             let (mut thumb_keycap, mut thumb_switch) = thumb_key.into();
 
