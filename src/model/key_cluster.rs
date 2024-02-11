@@ -1,4 +1,4 @@
-use glam::DAffine3;
+use glam::Affine3A;
 use hex_color::HexColor;
 use opencascade::primitives::Shape;
 
@@ -46,7 +46,7 @@ impl KeyCluster {
         }
     }
 
-    pub fn finger_key_positions(&self) -> Vec<DAffine3> {
+    pub fn finger_key_positions(&self) -> Vec<Affine3A> {
         self.key_positions
             .columns
             .iter()
@@ -55,7 +55,7 @@ impl KeyCluster {
             .collect()
     }
 
-    pub fn thumb_key_positions(&self) -> Vec<DAffine3> {
+    pub fn thumb_key_positions(&self) -> Vec<Affine3A> {
         self.key_positions.thumb_keys.to_owned()
     }
 }

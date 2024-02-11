@@ -1,11 +1,11 @@
 use std::{fs::read_to_string, io, ops::Deref, path::Path};
 
-use glam::{DVec2, DVec3};
+use glam::{Vec2, Vec3A};
 use hex_color::HexColor;
 use serde::{de::Error as DeserializeError, Deserialize, Deserializer};
 
 pub const EPSILON: f32 = 0.001;
-pub const KEY_CLEARANCE: f64 = 1.0;
+pub const KEY_CLEARANCE: f32 = 1.0;
 
 pub type CurvatureAngle = Ranged<-20, 50>;
 pub type SideAngle = Ranged<0, 30>;
@@ -25,7 +25,7 @@ pub struct Preview {
     pub show_interface_pcb: bool,
     pub show_bottom_plate: bool,
     pub mesh_resolution: PositiveFloat,
-    pub light_positions: Vec<DVec3>,
+    pub light_positions: Vec<Vec3A>,
 }
 
 #[derive(Deserialize)]
@@ -41,7 +41,7 @@ pub struct FingerCluster {
 pub enum Column {
     Normal {
         curvature_angle: CurvatureAngle,
-        offset: DVec2,
+        offset: Vec2,
     },
     Side {
         side_angle: SideAngle,
@@ -52,15 +52,15 @@ pub enum Column {
 pub struct ThumbCluster {
     pub keys: PositiveInt,
     pub curvature_angle: CurvatureAngle,
-    pub rotation: DVec3,
-    pub offset: DVec3,
+    pub rotation: Vec3A,
+    pub offset: Vec3A,
     pub key_distance: PositiveFloat,
     pub resting_key_index: u8,
 }
 
 #[derive(Deserialize)]
 pub struct Keyboard {
-    pub tilting_angle: DVec2,
+    pub tilting_angle: Vec2,
     pub circumference_distance: PositiveFloat,
     pub shell_thickness: PositiveFloat,
     pub bottom_plate_thickness: PositiveFloat,
@@ -150,10 +150,10 @@ impl<'de> Deserialize<'de> for PositiveInt {
 
 /// Strictly positive 64-bit floating point type.
 #[derive(Copy, Clone)]
-pub struct PositiveFloat(f64);
+pub struct PositiveFloat(f32);
 
 impl Deref for PositiveFloat {
-    type Target = f64;
+    type Target = f32;
 
     fn deref(&self) -> &Self::Target {
         &self.0
@@ -165,7 +165,7 @@ impl<'de> Deserialize<'de> for PositiveFloat {
     where
         D: Deserializer<'de>,
     {
-        let inner = f64::deserialize(deserializer)?;
+        let inner = f32::deserialize(deserializer)?;
 
         if inner > 0.0 {
             Ok(Self(inner))
@@ -178,8 +178,8 @@ impl<'de> Deserialize<'de> for PositiveFloat {
 }
 
 pub struct PositiveDVec2 {
-    pub x: f64,
-    pub y: f64,
+    pub x: f32,
+    pub y: f32,
 }
 
 impl From<&[PositiveFloat; 2]> for PositiveDVec2 {
@@ -190,10 +190,10 @@ impl From<&[PositiveFloat; 2]> for PositiveDVec2 {
 }
 
 #[derive(Copy, Clone)]
-pub struct Ranged<const LOWER: i8, const UPPER: i8>(f64);
+pub struct Ranged<const LOWER: i8, const UPPER: i8>(f32);
 
 impl<const LOWER: i8, const UPPER: i8> Deref for Ranged<LOWER, UPPER> {
-    type Target = f64;
+    type Target = f32;
 
     fn deref(&self) -> &Self::Target {
         &self.0
@@ -205,9 +205,9 @@ impl<'de, const LOWER: i8, const UPPER: i8> Deserialize<'de> for Ranged<LOWER, U
     where
         D: Deserializer<'de>,
     {
-        let inner = f64::deserialize(deserializer)?;
+        let inner = f32::deserialize(deserializer)?;
 
-        if inner >= f64::from(LOWER) && inner <= f64::from(UPPER) {
+        if inner >= f32::from(LOWER) && inner <= f32::from(UPPER) {
             Ok(Self(inner))
         } else {
             Err(D::Error::custom(format!(

@@ -9,7 +9,7 @@ mod util;
 
 use std::path::Path;
 
-use glam::DVec3;
+use glam::Vec3A;
 use hex_color::HexColor;
 
 pub use crate::viewer::model::{Component, Viewable};
@@ -19,7 +19,7 @@ use key_cluster::KeyCluster;
 
 pub struct Model {
     components: Vec<Component>,
-    light_positions: Vec<DVec3>,
+    light_positions: Vec<Vec3A>,
     background_color: HexColor,
     mesh_resolution: f32,
 }
@@ -68,7 +68,7 @@ impl Viewable for Model {
         self.components
     }
 
-    fn light_positions(&self) -> Vec<DVec3> {
+    fn light_positions(&self) -> Vec<Vec3A> {
         self.light_positions.clone()
     }
 

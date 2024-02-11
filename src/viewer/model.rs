@@ -1,13 +1,13 @@
-use glam::{DAffine3, DMat4, DVec3};
+use glam::{Affine3A, Mat4, Vec3A};
 use hex_color::HexColor;
 use libfive::{Point3, Region3, Tree, TriangleMesh};
-use three_d::{CpuMesh, Indices, Mat4, Positions, Srgba, Vec3};
+use three_d::{CpuMesh, Indices, Positions, Srgba, Vec3};
 
 pub struct Component {
     tree: Tree,
     region: Region3,
     color: HexColor,
-    positions: Option<Vec<DAffine3>>,
+    positions: Option<Vec<Affine3A>>,
 }
 
 impl Component {
@@ -20,7 +20,7 @@ impl Component {
         }
     }
 
-    pub fn with_positions(&mut self, positions: Vec<DAffine3>) {
+    pub fn with_positions(&mut self, positions: Vec<Affine3A>) {
         self.positions = Some(positions);
     }
 
@@ -44,7 +44,7 @@ impl Component {
 
 pub trait Viewable {
     fn components(self) -> Vec<Component>;
-    fn light_positions(&self) -> Vec<DVec3>;
+    fn light_positions(&self) -> Vec<Vec3A>;
     fn background_color(&self) -> HexColor;
     fn mesh_resolution(&self) -> f32;
 
@@ -56,7 +56,7 @@ pub trait Viewable {
         let light_positions = self
             .light_positions()
             .iter()
-            .map(|position| position.as_vec3().to_array().into())
+            .map(|position| position.to_array().into())
             .collect();
         let HexColor { r, g, b, a } = self.background_color();
         let background_color = Srgba::new(r, g, b, a);
@@ -72,8 +72,8 @@ pub trait Viewable {
                         positions
                             .into_iter()
                             .map(|position| {
-                                let matrix: DMat4 = position.into();
-                                matrix.as_mat4().to_cols_array_2d().into()
+                                let matrix: Mat4 = position.into();
+                                matrix.to_cols_array_2d().into()
                             })
                             .collect()
                     });
@@ -102,13 +102,13 @@ pub trait Viewable {
 pub struct CpuObject {
     pub mesh: CpuMesh,
     pub color: Srgba,
-    pub transformations: Option<Vec<Mat4>>,
+    pub transformations: Option<Vec<three_d::Mat4>>,
 }
 
 #[derive(Clone)]
 pub struct Mesh {
     pub objects: Vec<CpuObject>,
-    pub light_positions: Vec<Vec3>,
+    pub light_positions: Vec<three_d::Vec3>,
     pub background_color: Srgba,
 }
 

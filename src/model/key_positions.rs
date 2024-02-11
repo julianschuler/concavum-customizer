@@ -1,6 +1,6 @@
 use std::ops::{Deref, Mul};
 
-use glam::{dvec3, DAffine3, DQuat, DVec2, EulerRot};
+use glam::{vec3, vec3a, Affine3A, EulerRot, Quat, Vec2};
 
 use crate::model::{
     config::{self, Config, FingerCluster, PositiveDVec2, ThumbCluster},
@@ -10,7 +10,7 @@ use crate::model::{
 
 pub struct Column {
     pub column_type: ColumnType,
-    entries: Vec<DAffine3>,
+    entries: Vec<Affine3A>,
 }
 
 #[derive(Clone)]
@@ -20,7 +20,7 @@ pub enum ColumnType {
 }
 
 impl Column {
-    pub fn new(entries: Vec<DAffine3>, column_type: &config::Column) -> Self {
+    pub fn new(entries: Vec<Affine3A>, column_type: &config::Column) -> Self {
         let column_type = match column_type {
             config::Column::Normal { .. } => ColumnType::Normal,
             config::Column::Side { .. } => ColumnType::Side,
@@ -32,20 +32,20 @@ impl Column {
         }
     }
 
-    pub fn first(&self) -> &DAffine3 {
+    pub fn first(&self) -> &Affine3A {
         self.entries
             .first()
             .expect("there has to be at least one row")
     }
 
-    pub fn last(&self) -> &DAffine3 {
+    pub fn last(&self) -> &Affine3A {
         self.entries
             .last()
             .expect("there has to be at least one row")
     }
 }
 
-impl Mul<&Column> for DAffine3 {
+impl Mul<&Column> for Affine3A {
     type Output = Column;
 
     fn mul(self, column: &Column) -> Self::Output {
@@ -59,7 +59,7 @@ impl Mul<&Column> for DAffine3 {
 }
 
 impl Deref for Column {
-    type Target = [DAffine3];
+    type Target = [Affine3A];
 
     fn deref(&self) -> &Self::Target {
         &self.entries
@@ -70,7 +70,7 @@ pub struct Columns(Vec<Column>);
 
 impl Columns {
     fn from_config(config: &FingerCluster) -> Self {
-        const CURVATURE_HEIGHT: f64 = Switch::TOP_HEIGHT as f64;
+        const CURVATURE_HEIGHT: f32 = Switch::TOP_HEIGHT as f32;
 
         let key_distance: PositiveDVec2 = (&config.key_distance).into();
 
@@ -107,7 +107,7 @@ impl Columns {
 
                 let (x, z_offset) = if side_angle == 0.0 {
                     #[allow(clippy::cast_precision_loss)]
-                    (key_distance.x * i as f64, 0.0)
+                    (key_distance.x * i as f32, 0.0)
                 } else {
                     let (sin, cos) = (side_angle.sin(), side_angle.cos());
                     let side_radius =
@@ -115,22 +115,22 @@ impl Columns {
 
                     #[allow(clippy::cast_precision_loss)]
                     (
-                        key_distance.x * (i as f64 + side) - side * side_radius * sin,
+                        key_distance.x * (i as f32 + side) - side * side_radius * sin,
                         side_radius * (1.0 - cos),
                     )
                 };
 
-                let translation = dvec3(x, offset.x, offset.y + z_offset);
+                let translation = vec3a(x, offset.x, offset.y + z_offset);
                 let column_transform =
-                    DAffine3::from_rotation_y(side * side_angle).translate(translation);
+                    Affine3A::from_rotation_y(side * side_angle).translate(translation);
 
                 let curvature_angle = curvature_angle.to_radians();
                 let entries = if curvature_angle == 0.0 {
                     (0..*config.rows)
                         .map(|j| {
                             let y = key_distance.y
-                                * f64::from(i16::from(j) - i16::from(config.home_row_index));
-                            column_transform * DAffine3::from_translation(dvec3(0.0, y, 0.0))
+                                * f32::from(i16::from(j) - i16::from(config.home_row_index));
+                            column_transform * Affine3A::from_translation(vec3(0.0, y, 0.0))
                         })
                         .collect()
                 } else {
@@ -140,7 +140,7 @@ impl Columns {
                     (0..*config.rows)
                         .map(|j| {
                             let total_angle = curvature_angle
-                                * f64::from(i16::from(j) - i16::from(config.home_row_index));
+                                * f32::from(i16::from(j) - i16::from(config.home_row_index));
                             let (sin, rcos) = (total_angle.sin(), 1.0 - total_angle.cos());
 
                             let x = -side
@@ -151,7 +151,7 @@ impl Columns {
                             let z = curvature_radius * rcos;
 
                             column_transform
-                                * DAffine3::from_rotation_x(total_angle).translate(dvec3(x, y, z))
+                                * Affine3A::from_rotation_x(total_angle).translate(vec3a(x, y, z))
                         })
                         .collect()
                 };
@@ -186,28 +186,29 @@ impl FromIterator<Column> for Columns {
     }
 }
 
-pub struct ThumbKeys(Vec<DAffine3>);
+pub struct ThumbKeys(Vec<Affine3A>);
 
 impl ThumbKeys {
     fn from_config(config: &ThumbCluster) -> Self {
-        const CURVATURE_HEIGHT: f64 = Switch::TOP_HEIGHT as f64;
+        const CURVATURE_HEIGHT: f32 = Switch::TOP_HEIGHT as f32;
 
         let curvature_angle = config.curvature_angle.to_radians();
-        let cluster_rotation = DQuat::from_euler(
+        let cluster_rotation = Quat::from_euler(
             EulerRot::ZYX,
             config.rotation.z.to_radians(),
             config.rotation.y.to_radians(),
             config.rotation.x.to_radians(),
         );
-        let key_transform = DAffine3::from_rotation_translation(cluster_rotation, config.offset);
+        let key_transform =
+            Affine3A::from_rotation_translation(cluster_rotation, config.offset.into());
 
         let keys = if curvature_angle == 0.0 {
             (0..*config.keys)
                 .map(|j| {
                     let x = *config.key_distance
-                        * f64::from(i16::from(j) - i16::from(config.resting_key_index));
+                        * f32::from(i16::from(j) - i16::from(config.resting_key_index));
 
-                    key_transform * DAffine3::from_translation(dvec3(x, 0.0, 0.0))
+                    key_transform * Affine3A::from_translation(vec3(x, 0.0, 0.0))
                 })
                 .collect()
         } else {
@@ -217,11 +218,11 @@ impl ThumbKeys {
             (0..*config.keys)
                 .map(|i| {
                     let total_angle = curvature_angle
-                        * f64::from(i16::from(i) - i16::from(config.resting_key_index));
+                        * f32::from(i16::from(i) - i16::from(config.resting_key_index));
                     let (sin, rcos) = (total_angle.sin(), 1.0 - total_angle.cos());
 
                     key_transform
-                        * DAffine3::from_rotation_y(-total_angle).translate(dvec3(
+                        * Affine3A::from_rotation_y(-total_angle).translate(vec3a(
                             curvature_radius * sin,
                             0.0,
                             curvature_radius * rcos,
@@ -233,13 +234,13 @@ impl ThumbKeys {
         Self(keys)
     }
 
-    pub fn first(&self) -> &DAffine3 {
+    pub fn first(&self) -> &Affine3A {
         self.0
             .first()
             .expect("there has to be at least one thumb key")
     }
 
-    pub fn last(&self) -> &DAffine3 {
+    pub fn last(&self) -> &Affine3A {
         self.0
             .last()
             .expect("there has to be at least one thumb key")
@@ -247,15 +248,15 @@ impl ThumbKeys {
 }
 
 impl Deref for ThumbKeys {
-    type Target = [DAffine3];
+    type Target = [Affine3A];
 
     fn deref(&self) -> &Self::Target {
         &self.0
     }
 }
 
-impl FromIterator<DAffine3> for ThumbKeys {
-    fn from_iter<T: IntoIterator<Item = DAffine3>>(iter: T) -> Self {
+impl FromIterator<Affine3A> for ThumbKeys {
+    fn from_iter<T: IntoIterator<Item = Affine3A>>(iter: T) -> Self {
         Self(iter.into_iter().collect())
     }
 }
@@ -276,11 +277,11 @@ impl KeyPositions {
         }
     }
 
-    pub fn tilt(self, tilting_angle: DVec2) -> Self {
-        const Z_OFFSET: f64 = 12.0;
+    pub fn tilt(self, tilting_angle: Vec2) -> Self {
+        const Z_OFFSET: f32 = 12.0;
 
         let (tilting_x, tilting_y) = (tilting_angle.x.to_radians(), tilting_angle.y.to_radians());
-        let tilting_transform = DAffine3::from_rotation_x(tilting_x).rotate_y(tilting_y);
+        let tilting_transform = Affine3A::from_rotation_x(tilting_x).rotate_y(tilting_y);
 
         let tilted_positions = tilting_transform * self;
 
@@ -289,14 +290,14 @@ impl KeyPositions {
                 .columns
                 .iter()
                 .flat_map(|column| column.iter().map(|position| position.translation.z))
-                .min_by(f64::total_cmp)
+                .min_by(f32::total_cmp)
                 .unwrap_or_default();
 
-        DAffine3::from_translation(zvec(z_offset)) * tilted_positions
+        Affine3A::from_translation(zvec(z_offset).into()) * tilted_positions
     }
 }
 
-impl Mul<KeyPositions> for DAffine3 {
+impl Mul<KeyPositions> for Affine3A {
     type Output = KeyPositions;
 
     fn mul(self, key_positions: KeyPositions) -> Self::Output {

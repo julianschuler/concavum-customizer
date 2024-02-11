@@ -1,4 +1,4 @@
-use glam::{dvec2, DVec2, DVec3};
+use glam::{vec2, Vec2, Vec3A};
 use opencascade::primitives::{IntoShape, JoinType, Shape, Wire};
 
 use crate::model::{
@@ -17,9 +17,9 @@ impl ThumbCluster {
     pub fn new(
         thumb_keys: &ThumbKeys,
         key_distance: &PositiveDVec2,
-        circumference_distance: f64,
+        circumference_distance: f32,
     ) -> Self {
-        let key_clearance = dvec2(
+        let key_clearance = vec2(
             key_distance.x + KEY_CLEARANCE,
             1.5 * key_distance.y + KEY_CLEARANCE,
         ) / 2.0;
@@ -30,9 +30,9 @@ impl ThumbCluster {
         let mount_clearance = Self::mount_clearance(thumb_keys, &key_clearance, &size);
         let mount_outline = Self::mount_outline(thumb_keys, &key_clearance);
         let mount = mount_outline
-            .offset(circumference_distance, JoinType::Arc)
+            .offset(circumference_distance as f64, JoinType::Arc)
             .to_face()
-            .extrude(zvec(size.height))
+            .extrude(zvec(size.height).as_dvec3())
             .into_shape()
             .subtract(&mount_clearance)
             .into();
@@ -45,7 +45,7 @@ impl ThumbCluster {
         }
     }
 
-    fn mount_outline(thumb_keys: &ThumbKeys, key_clearance: &DVec2) -> Wire {
+    fn mount_outline(thumb_keys: &ThumbKeys, key_clearance: &Vec2) -> Wire {
         let first_thumb_key = thumb_keys.first();
         let last_thumb_key = thumb_keys.last();
 
@@ -56,12 +56,12 @@ impl ThumbCluster {
             corner_point(last_thumb_key, SideX::Right, SideY::Bottom, key_clearance),
         ];
 
-        wire_from_points(points, &Plane::new(DVec3::ZERO, DVec3::Z))
+        wire_from_points(points, &Plane::new(Vec3A::ZERO, Vec3A::Z))
     }
 
     fn mount_clearance(
         thumb_keys: &ThumbKeys,
-        key_clearance: &DVec2,
+        key_clearance: &Vec2,
         mount_size: &MountSize,
     ) -> Shape {
         let first = thumb_keys.first();
@@ -69,10 +69,10 @@ impl ThumbCluster {
 
         let first_point = side_point(first, Side::Left, key_clearance);
         let last_point = side_point(last, Side::Right, key_clearance);
-        let first_outwards_point = first_point + mount_size.width * DVec3::NEG_X;
-        let last_outwards_point = last_point + mount_size.width * DVec3::X;
-        let first_upwards_point = first_outwards_point + 2.0 * mount_size.height * DVec3::Z;
-        let last_upwards_point = last_outwards_point + 2.0 * mount_size.height * DVec3::Z;
+        let first_outwards_point = first_point + mount_size.width * Vec3A::NEG_X;
+        let last_outwards_point = last_point + mount_size.width * Vec3A::X;
+        let first_upwards_point = first_outwards_point + 2.0 * mount_size.height * Vec3A::Z;
+        let last_upwards_point = last_outwards_point + 2.0 * mount_size.height * Vec3A::Z;
 
         // All points in the center, if any
         let points = thumb_keys
@@ -101,15 +101,19 @@ impl ThumbCluster {
         let upper_face = wire_from_points(points, &upper_plane).to_face();
 
         lower_face
-            .extrude(2.0 * key_clearance.y * first.y_axis)
-            .union(&lower_face.extrude(mount_size.length * DVec3::NEG_Y))
-            .union(&upper_face.extrude(mount_size.length * DVec3::Y).into())
+            .extrude((2.0 * key_clearance.y * first.y_axis).as_dvec3())
+            .union(&lower_face.extrude((mount_size.length * Vec3A::NEG_Y).as_dvec3()))
+            .union(
+                &upper_face
+                    .extrude((mount_size.length * Vec3A::Y).as_dvec3())
+                    .into(),
+            )
             .into()
     }
 
     fn key_clearance(
         thumb_keys: &ThumbKeys,
-        key_clearance: &DVec2,
+        key_clearance: &Vec2,
         mount_size: &MountSize,
     ) -> Shape {
         let first = thumb_keys.first();
@@ -130,8 +134,8 @@ impl ThumbCluster {
             })
             .chain([
                 last_point,
-                last_point + 2.0 * mount_size.height * DVec3::Z,
-                first_point + 2.0 * mount_size.height * DVec3::Z,
+                last_point + 2.0 * mount_size.height * Vec3A::Z,
+                first_point + 2.0 * mount_size.height * Vec3A::Z,
                 first_point,
             ]);
 
@@ -139,7 +143,7 @@ impl ThumbCluster {
 
         wire_from_points(points, &plane)
             .to_face()
-            .extrude(2.0 * key_clearance.y * first.y_axis)
+            .extrude((2.0 * key_clearance.y * first.y_axis).as_dvec3())
             .into()
     }
 }

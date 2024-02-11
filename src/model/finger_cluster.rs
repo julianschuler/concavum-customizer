@@ -1,9 +1,9 @@
-use glam::{dvec2, dvec3, DAffine3, DVec2, DVec3};
+use glam::{dvec3, vec2, vec3a, Affine3A, Vec2, Vec3A};
 use opencascade::primitives::{IntoShape, JoinType, Shape, Solid, Wire};
 
 use crate::model::{
     config::{PositiveDVec2, EPSILON, KEY_CLEARANCE},
-    geometry::{zvec, Line, Plane, Project},
+    geometry::{Line, Plane, Project},
     key_positions::{Column, ColumnType, Columns},
     util::{
         corner_point, project_points_to_plane_and_extrude, side_point, wire_from_points, MountSize,
@@ -20,9 +20,9 @@ impl FingerCluster {
     pub fn new(
         columns: &Columns,
         key_distance: &PositiveDVec2,
-        circumference_distance: f64,
+        circumference_distance: f32,
     ) -> Self {
-        let key_clearance = dvec2(
+        let key_clearance = vec2(
             key_distance.x + KEY_CLEARANCE,
             key_distance.y + KEY_CLEARANCE,
         ) / 2.0;
@@ -36,14 +36,17 @@ impl FingerCluster {
         let mount_outline = Self::mount_outline(columns, &key_clearance);
         let mount_clearance = ClearanceBuilder::new(columns, &key_clearance, &size).build();
         let mount = mount_outline
-            .offset(circumference_distance, JoinType::Arc)
+            .offset(circumference_distance as f64, JoinType::Arc)
             .to_face()
-            .extrude(zvec(size.height))
+            .extrude(dvec3(0.0, 0.0, size.height as f64))
             .into_shape()
             .subtract(&mount_clearance)
             .into();
 
-        let key_clearance = mount_outline.to_face().extrude(zvec(size.height)).into();
+        let key_clearance = mount_outline
+            .to_face()
+            .extrude(dvec3(0.0, 0.0, size.height as f64))
+            .into();
 
         Self {
             mount,
@@ -51,7 +54,7 @@ impl FingerCluster {
         }
     }
 
-    fn mount_outline(columns: &Columns, key_clearance: &DVec2) -> Wire {
+    fn mount_outline(columns: &Columns, key_clearance: &Vec2) -> Wire {
         let bottom_points = columns.windows(2).map(|window| {
             let first_left = window[0].first();
             let first_right = window[1].first();
@@ -71,18 +74,18 @@ impl FingerCluster {
             .chain(right_points)
             .chain(top_points.rev())
             .chain(left_points.into_iter().rev())
-            .map(|point| dvec3(point.x, point.y, 0.0))
+            .map(|point| vec3a(point.x, point.y, 0.0))
             .collect();
 
-        wire_from_points(points, &Plane::new(DVec3::ZERO, DVec3::Z))
+        wire_from_points(points, &Plane::new(Vec3A::ZERO, Vec3A::Z))
     }
 
     fn circumference_point(
-        left: &DAffine3,
-        right: &DAffine3,
+        left: &Affine3A,
+        right: &Affine3A,
         side_y: SideY,
-        key_clearance: &DVec2,
-    ) -> DVec3 {
+        key_clearance: &Vec2,
+    ) -> Vec3A {
         let left_point = corner_point(left, SideX::Right, side_y, key_clearance);
         let right_point = corner_point(right, SideX::Left, side_y, key_clearance);
 
@@ -98,8 +101,8 @@ impl FingerCluster {
     fn side_circumference_points(
         columns: &Columns,
         side_x: SideX,
-        key_clearance: &DVec2,
-    ) -> Vec<DVec3> {
+        key_clearance: &Vec2,
+    ) -> Vec<Vec3A> {
         let column = match side_x {
             SideX::Left => columns.first(),
             SideX::Right => columns.last(),
@@ -122,11 +125,11 @@ impl FingerCluster {
     }
 
     fn side_circumference_point(
-        bottom: &DAffine3,
-        top: &DAffine3,
+        bottom: &Affine3A,
+        top: &Affine3A,
         side_x: SideX,
-        key_clearance: &DVec2,
-    ) -> Option<DVec3> {
+        key_clearance: &Vec2,
+    ) -> Option<Vec3A> {
         let outwards_direction = bottom.x_axis;
 
         // Get point which is more outward
@@ -149,13 +152,13 @@ impl FingerCluster {
 
 struct ClearanceBuilder<'a> {
     columns: &'a Columns,
-    key_clearance: &'a DVec2,
+    key_clearance: &'a Vec2,
     mount_size: &'a MountSize,
     support_planes: SupportPlanes,
 }
 
 impl<'a> ClearanceBuilder<'a> {
-    fn new(columns: &'a Columns, key_clearance: &'a DVec2, mount_size: &'a MountSize) -> Self {
+    fn new(columns: &'a Columns, key_clearance: &'a Vec2, mount_size: &'a MountSize) -> Self {
         let support_planes = SupportPlanes::from_columns(columns, key_clearance);
 
         Self {
@@ -252,10 +255,10 @@ impl<'a> ClearanceBuilder<'a> {
             // Bound side clearance since it is combined by union and can interfere with other columns
             let plane = Plane::new(translation - normal_offset * normal, normal);
             let points = [
-                dvec3(0.0, -self.mount_size.length, 0.0),
-                dvec3(0.0, self.mount_size.length, 0.0),
-                dvec3(0.0, self.mount_size.length, 2.0 * self.mount_size.height),
-                dvec3(0.0, -self.mount_size.length, 2.0 * self.mount_size.height),
+                vec3a(0.0, -self.mount_size.length, 0.0),
+                vec3a(0.0, self.mount_size.length, 0.0),
+                vec3a(0.0, self.mount_size.length, 2.0 * self.mount_size.height),
+                vec3a(0.0, -self.mount_size.length, 2.0 * self.mount_size.height),
             ];
             let side_bounding_shape =
                 project_points_to_plane_and_extrude(points, &plane, extrusion_height);
@@ -278,10 +281,10 @@ impl<'a> ClearanceBuilder<'a> {
 
         let lower_corner = corner_point(first, side_x, SideY::Bottom, self.key_clearance);
         let upper_corner = corner_point(last, side_x, SideY::Top, self.key_clearance);
-        let outwards_bottom_point = lower_corner - self.mount_size.length * DVec3::Y;
-        let outwards_top_point = upper_corner + self.mount_size.length * DVec3::Y;
-        let upwards_bottom_point = outwards_bottom_point + 2.0 * self.mount_size.height * DVec3::Z;
-        let upwards_top_point = outwards_top_point + 2.0 * self.mount_size.height * DVec3::Z;
+        let outwards_bottom_point = lower_corner - self.mount_size.length * Vec3A::Y;
+        let outwards_top_point = upper_corner + self.mount_size.length * Vec3A::Y;
+        let upwards_bottom_point = outwards_bottom_point + 2.0 * self.mount_size.height * Vec3A::Z;
+        let upwards_top_point = outwards_top_point + 2.0 * self.mount_size.height * Vec3A::Z;
 
         let points = column
             .windows(2)
@@ -295,11 +298,11 @@ impl<'a> ClearanceBuilder<'a> {
                 lower_corner,
             ]);
 
-        let plane = Plane::new(self.mount_size.width * DVec3::NEG_X, DVec3::X);
+        let plane = Plane::new(self.mount_size.width * Vec3A::NEG_X, Vec3A::X);
         project_points_to_plane_and_extrude(points, &plane, 2.0 * self.mount_size.width).into()
     }
 
-    fn side_point(&self, bottom: &DAffine3, top: &DAffine3, side_x: SideX) -> Option<DVec3> {
+    fn side_point(&self, bottom: &Affine3A, top: &Affine3A, side_x: SideX) -> Option<Vec3A> {
         let outwards_direction = bottom.x_axis;
 
         // Get point which is more outward
@@ -319,7 +322,7 @@ impl<'a> ClearanceBuilder<'a> {
         plane.intersection(&line)
     }
 
-    fn clearance_points(&self, column: &Column) -> Vec<DVec3> {
+    fn clearance_points(&self, column: &Column) -> Vec<Vec3A> {
         let first = column.first();
         let last = column.last();
 
@@ -367,10 +370,10 @@ struct SupportPlanes {
 }
 
 impl SupportPlanes {
-    fn from_columns(columns: &Columns, key_clearance: &DVec2) -> Self {
+    fn from_columns(columns: &Columns, key_clearance: &Vec2) -> Self {
         let reference_column = columns.get(1).unwrap_or_else(|| columns.first());
         let x_axis = reference_column.first().x_axis;
-        let normal = x_axis.cross(DVec3::Y);
+        let normal = x_axis.cross(Vec3A::Y);
 
         let mut lower_points: Vec<_> = columns
             .iter()
@@ -397,7 +400,7 @@ impl SupportPlanes {
         }
     }
 
-    fn calculate_median_plane(normal: DVec3, points: &mut Vec<DVec3>) -> Plane {
+    fn calculate_median_plane(normal: Vec3A, points: &mut Vec<Vec3A>) -> Plane {
         let n = points.len() / 2;
         let (_, &mut median_point, _) = points
             .select_nth_unstable_by(n, |&position1, &position2| {
@@ -409,13 +412,13 @@ impl SupportPlanes {
 
     fn calculate_support_points(
         &self,
-        position: &DAffine3,
+        position: &Affine3A,
         side: Side,
         column_type: &ColumnType,
-        key_clearance: &DVec2,
+        key_clearance: &Vec2,
         mount_size: &MountSize,
-    ) -> Vec<DVec3> {
-        const ALLOWED_DEVIATION: f64 = 1.0;
+    ) -> Vec<Vec3A> {
+        const ALLOWED_DEVIATION: f32 = 1.0;
 
         let (sign, plane) = if matches!(side, Side::Top) {
             (1.0, &self.upper_plane)
@@ -451,12 +454,12 @@ impl SupportPlanes {
         };
 
         let mut points = vec![point];
-        if !point.abs_diff_eq(projected_point, EPSILON as f64) {
+        if !point.abs_diff_eq(projected_point, EPSILON) {
             points.push(projected_point);
         }
 
-        let outwards_point = projected_point + sign * mount_size.length * DVec3::Y;
-        let upwards_point = outwards_point + 2.0 * mount_size.height * DVec3::Z;
+        let outwards_point = projected_point + sign * mount_size.length * Vec3A::Y;
+        let upwards_point = outwards_point + 2.0 * mount_size.height * Vec3A::Z;
         points.extend([outwards_point, upwards_point]);
 
         points

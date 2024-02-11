@@ -1,4 +1,4 @@
-use glam::{dvec3, DAffine3, DVec2, DVec3};
+use glam::{Affine3A, Vec2, Vec3A};
 use libfive::{Region3, TreeVec2, TreeVec3};
 use opencascade::primitives::{Solid, Wire};
 
@@ -21,23 +21,23 @@ pub fn centered_cubic_region(size: f32) -> Region3 {
 
 /// Upper bound for the size of a mount
 pub struct MountSize {
-    pub width: f64,
-    pub length: f64,
-    pub height: f64,
+    pub width: f32,
+    pub length: f32,
+    pub height: f32,
 }
 
 impl MountSize {
     pub fn from_positions<'a>(
-        positions: impl IntoIterator<Item = &'a DAffine3>,
-        key_clearance: &DVec2,
-        circumference_distance: f64,
+        positions: impl IntoIterator<Item = &'a Affine3A>,
+        key_clearance: &Vec2,
+        circumference_distance: f32,
     ) -> Self {
         let padding = key_clearance.x + key_clearance.y;
 
         let (min, max) = positions.into_iter().fold(
             (
-                dvec3(f64::INFINITY, f64::INFINITY, f64::INFINITY),
-                dvec3(f64::NEG_INFINITY, f64::NEG_INFINITY, f64::NEG_INFINITY),
+                glam::vec3a(f32::INFINITY, f32::INFINITY, f32::INFINITY),
+                glam::vec3a(f32::NEG_INFINITY, f32::NEG_INFINITY, f32::NEG_INFINITY),
             ),
             |(min, max), point| (min.min(point.translation), max.max(point.translation)),
         );
@@ -61,7 +61,7 @@ pub enum SideX {
 }
 
 impl SideX {
-    pub fn direction(self) -> f64 {
+    pub fn direction(self) -> f32 {
         match self {
             SideX::Left => -1.0,
             SideX::Right => 1.0,
@@ -76,7 +76,7 @@ pub enum SideY {
 }
 
 impl SideY {
-    pub fn direction(self) -> f64 {
+    pub fn direction(self) -> f32 {
         match self {
             SideY::Bottom => -1.0,
             SideY::Top => 1.0,
@@ -111,36 +111,42 @@ impl From<SideY> for Side {
 }
 
 pub fn corner_point(
-    position: &DAffine3,
+    position: &Affine3A,
     side_x: SideX,
     side_y: SideY,
-    key_clearance: &DVec2,
-) -> DVec3 {
-    position.translation
+    key_clearance: &Vec2,
+) -> Vec3A {
+    (position.translation
         + side_x.direction() * key_clearance.x * position.x_axis
-        + side_y.direction() * key_clearance.y * position.y_axis
+        + side_y.direction() * key_clearance.y * position.y_axis)
+        .into()
 }
 
-pub fn side_point(position: &DAffine3, side: Side, key_clearance: &DVec2) -> DVec3 {
+pub fn side_point(position: &Affine3A, side: Side, key_clearance: &Vec2) -> Vec3A {
     match side {
         Side::Left => position.translation - key_clearance.x * position.x_axis,
         Side::Right => position.translation + key_clearance.x * position.x_axis,
         Side::Bottom => position.translation - key_clearance.y * position.y_axis,
         Side::Top => position.translation + key_clearance.y * position.y_axis,
     }
+    .into()
 }
 
-pub fn wire_from_points(points: impl IntoIterator<Item = DVec3>, plane: &Plane) -> Wire {
-    let points = points.into_iter().map(|point| point.project_to(plane));
+pub fn wire_from_points(points: impl IntoIterator<Item = Vec3A>, plane: &Plane) -> Wire {
+    let points = points
+        .into_iter()
+        .map(|point| point.project_to(plane).as_dvec3());
     Wire::from_ordered_points(points).expect("wire is created from more than 2 points")
 }
 
 pub fn project_points_to_plane_and_extrude(
-    points: impl IntoIterator<Item = DVec3>,
+    points: impl IntoIterator<Item = Vec3A>,
     plane: &Plane,
-    height: f64,
+    height: f32,
 ) -> Solid {
     let direction = height * plane.normal();
 
-    wire_from_points(points, plane).to_face().extrude(direction)
+    wire_from_points(points, plane)
+        .to_face()
+        .extrude(direction.as_dvec3())
 }
