@@ -993,7 +993,8 @@ checksum = "9c198f91728a82281a64e1f4f9eeb25d82cb32a5de251c6bd1b5154d63a8e7bd"
 [[package]]
 name = "libfive"
 version = "0.2.0"
-source = "git+https://github.com/julianschuler/libfive-rs.git#42a048ba21aa7cfa505315d03c08c9816882d81e"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "de76bfb0d4638728ae534a6a6bba46b1682cbd5bce5d636069d5b0bf20a3d176"
 dependencies = [
  "ahash",
  "libfive-sys",
@@ -1002,7 +1003,8 @@ dependencies = [
 [[package]]
 name = "libfive-sys"
 version = "0.2.0"
-source = "git+https://github.com/julianschuler/libfive-rs.git#42a048ba21aa7cfa505315d03c08c9816882d81e"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e7335d095a1b6d1bcf0a8d8c09aaf39662f03082f3d2cb82287a476392841260"
 dependencies = [
  "bindgen",
  "cmake",

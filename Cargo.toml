@@ -8,7 +8,7 @@ color-eyre = { version = "0.6", default-features = false }
 futures = "0.3"
 glam = { version = "0.24", features = ["serde"] }
 hex_color = { version = "3.0", features = ["serde"] }
-libfive = { git = "https://github.com/julianschuler/libfive-rs.git" }
+libfive = "0.2.0"
 notify = "6.1"
 opencascade = { path = "../opencascade-rs/crates/opencascade", default-features = false }
 serde = { version = "1.0", features = ["derive"] }
