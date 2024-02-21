@@ -2,10 +2,10 @@ use std::sync::Arc;
 
 use color_eyre::Report;
 use three_d::{
-    degrees, vec3, AmbientLight, Attenuation, Camera, ClearState, Context, CpuMaterial, Degrees,
+    degrees, vec3, AmbientLight, Attenuation, Camera, ClearState, Context, Degrees,
     FrameInputGenerator, Gm, InnerSpace, InstancedMesh, Instances, Light, MouseButton,
-    OrbitControl, PhysicalMaterial, PointLight, RenderTarget, Srgba, SurfaceSettings, Vec3,
-    Viewport, WindowError, WindowedContext,
+    OrbitControl, PointLight, RenderTarget, Srgba, SurfaceSettings, Vec3, Viewport, WindowError,
+    WindowedContext,
 };
 use winit::{
     event::{Event, WindowEvent},
@@ -13,7 +13,10 @@ use winit::{
     window::WindowBuilder,
 };
 
-use crate::{model::Error, viewer::model::Mesh};
+use crate::{
+    model::Error,
+    viewer::{material::Physical, model::Mesh},
+};
 
 pub type ModelUpdate = Result<Mesh, Arc<Error>>;
 
@@ -159,8 +162,10 @@ impl Application {
 
 #[derive(Default)]
 struct Scene {
-    objects: Vec<Gm<three_d::Mesh, PhysicalMaterial>>,
-    instanced_objects: Vec<Gm<InstancedMesh, PhysicalMaterial>>,
+    // objects: Vec<Gm<three_d::Mesh, PhysicalMaterial>>,
+    objects: Vec<Gm<three_d::Mesh, Physical>>,
+    instanced_objects: Vec<Gm<InstancedMesh, Physical>>,
+    // instanced_objects: Vec<Gm<InstancedMesh, PhysicalMaterial>>,
     lights: Vec<PointLight>,
     ambient: AmbientLight,
     background_color: Srgba,
@@ -172,11 +177,7 @@ impl Scene {
         let mut instanced_objects = Vec::new();
 
         for object in &model.objects {
-            let material = CpuMaterial {
-                albedo: object.color,
-                ..Default::default()
-            };
-            let material = PhysicalMaterial::new(context, &material);
+            let material = Physical::new(object.color);
 
             if let Some(transformations) = &object.transformations {
                 let mesh = InstancedMesh::new(
