@@ -13,7 +13,10 @@ use winit::{
     window::WindowBuilder,
 };
 
-use crate::{model::Error, viewer::model::Mesh};
+use crate::{
+    model::Error,
+    viewer::{material::Physical, model::Mesh},
+};
 
 pub type ModelUpdate = Result<Mesh, Arc<Error>>;
 
@@ -159,8 +162,10 @@ impl Application {
 
 #[derive(Default)]
 struct Scene {
-    objects: Vec<Gm<three_d::Mesh, PhysicalMaterial>>,
-    instanced_objects: Vec<Gm<InstancedMesh, PhysicalMaterial>>,
+    // objects: Vec<Gm<three_d::Mesh, PhysicalMaterial>>,
+    objects: Vec<Gm<three_d::Mesh, Physical>>,
+    instanced_objects: Vec<Gm<InstancedMesh, Physical>>,
+    // instanced_objects: Vec<Gm<InstancedMesh, PhysicalMaterial>>,
     lights: Vec<PointLight>,
     ambient: AmbientLight,
     background_color: Srgba,
@@ -172,11 +177,7 @@ impl Scene {
         let mut instanced_objects = Vec::new();
 
         for object in &model.objects {
-            let material = CpuMaterial {
-                albedo: object.color,
-                ..Default::default()
-            };
-            let material = PhysicalMaterial::new(context, &material);
+            let material = Physical::new(object.color);
 
             if let Some(transformations) = &object.transformations {
                 let mesh = InstancedMesh::new(
