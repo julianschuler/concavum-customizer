@@ -397,7 +397,7 @@ impl SupportPlanes {
         }
     }
 
-    fn calculate_median_plane(normal: DVec3, points: &mut Vec<DVec3>) -> Plane {
+    fn calculate_median_plane(normal: DVec3, points: &mut [DVec3]) -> Plane {
         let n = points.len() / 2;
         let (_, &mut median_point, _) = points
             .select_nth_unstable_by(n, |&position1, &position2| {

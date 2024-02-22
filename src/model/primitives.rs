@@ -91,17 +91,17 @@ impl Vec {
 
 trait VecOperations {
     /// Apply a unary function element-wise
-    fn map_unary<F>(&mut self, f: F, a: Vec) -> Result<Vec>
+    fn map_unary<F>(&mut self, f: F, vec: Vec) -> Result<Vec>
     where
         F: Fn(&mut Context, Node) -> Result<Node>;
 
-    /// Apply a unary function element-wise
-    fn map_binary<F>(&mut self, f: F, a: Vec, b: Vec) -> Result<Vec>
+    /// Apply a binary function element-wise
+    fn map_binary<F>(&mut self, f: F, vec_a: Vec, vec_b: Vec) -> Result<Vec>
     where
         F: Fn(&mut Context, Node, Node) -> Result<Node>;
 
     /// Fold all Vec elements using a binary function
-    fn fold<F>(&mut self, f: F, a: Vec) -> Result<Node>
+    fn fold<F>(&mut self, f: F, vec: Vec) -> Result<Node>
     where
         F: Fn(&mut Context, Node, Node) -> Result<Node>;
 
@@ -134,24 +134,24 @@ trait VecOperations {
 }
 
 impl VecOperations for Context {
-    fn map_unary<F>(&mut self, f: F, a: Vec) -> Result<Vec>
+    fn map_unary<F>(&mut self, f: F, vec: Vec) -> Result<Vec>
     where
         F: Fn(&mut Context, Node) -> Result<Node>,
     {
-        let x = f(self, a.x)?;
-        let y = f(self, a.y)?;
-        let z = f(self, a.z)?;
+        let x = f(self, vec.x)?;
+        let y = f(self, vec.y)?;
+        let z = f(self, vec.z)?;
 
         Ok(Vec { x, y, z })
     }
 
-    fn map_binary<F>(&mut self, f: F, a: Vec, b: Vec) -> Result<Vec>
+    fn map_binary<F>(&mut self, f: F, vec_a: Vec, vec_b: Vec) -> Result<Vec>
     where
         F: Fn(&mut Context, Node, Node) -> Result<Node>,
     {
-        let x = f(self, a.x, b.x)?;
-        let y = f(self, a.y, b.y)?;
-        let z = f(self, a.z, b.z)?;
+        let x = f(self, vec_a.x, vec_b.x)?;
+        let y = f(self, vec_a.y, vec_b.y)?;
+        let z = f(self, vec_a.z, vec_b.z)?;
 
         Ok(Vec { x, y, z })
     }
