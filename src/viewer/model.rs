@@ -1,6 +1,7 @@
 use fidget::{
     context::Node,
-    jit::Eval,
+    eval::MathShape,
+    jit::JitShape,
     mesh::{Octree, Settings},
     Context, Error,
 };
@@ -30,8 +31,8 @@ impl Component {
     }
 
     fn mesh(&self, settings: Settings) -> Result<CpuMesh, Error> {
-        let tape = self.context.get_tape::<Eval>(self.root)?;
-        let mesh = Octree::build(&tape, settings).walk_dual(settings);
+        let shape = JitShape::new(&self.context, self.root)?;
+        let mesh = Octree::build(&shape, settings).walk_dual(settings);
 
         let vertices = mesh
             .vertices
