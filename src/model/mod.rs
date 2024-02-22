@@ -10,20 +10,13 @@ mod util;
 
 use std::path::Path;
 
-use fidget::{
-    context::IntoNode,
-    eval::types::Interval,
-    mesh::{CellBounds, Settings},
-    Context,
-};
-use glam::DVec3;
+use fidget::{context::IntoNode, mesh::Settings, Context};
+use glam::{dvec3, DVec3};
 use hex_color::HexColor;
 
 pub use crate::viewer::model::{Component, Viewable};
 use config::Config;
-use key::Key;
-use key_cluster::KeyCluster;
-use primitives::Sphere;
+use primitives::BoxShape;
 
 pub struct Model {
     components: Vec<Component>,
@@ -34,23 +27,17 @@ pub struct Model {
 
 impl Model {
     pub fn try_from_config(config_path: &Path) -> Result<Self, Error> {
-        const BOUND: f32 = 60.0;
-        const RADIUS: f32 = 50.0;
-
         let config = Config::try_from_path(config_path)?;
+        let size = 0.5;
 
         let mut context = Context::new();
-        let sphere = Sphere::new(RADIUS).into_node(&mut context)?;
-        let components = vec![Component::new(context, sphere, config.colors.keyboard)];
-
-        let interval = Interval::new(-BOUND, BOUND);
-        let bounds = CellBounds::new(interval, interval, interval);
+        let box_shape = BoxShape::new(dvec3(size, size, size)).into_node(&mut context)?;
+        let components = vec![Component::new(context, box_shape, config.colors.keyboard)];
 
         let settings = Settings {
             threads: 12,
             min_depth: 5,
             max_depth: 12,
-            bounds,
         };
 
         Ok(Self {
