@@ -7,11 +7,12 @@ use glam::DVec3;
 type Result<T> = std::result::Result<T, Error>;
 
 pub struct Sphere {
-    radius: f32,
+    radius: f64,
 }
 
+#[allow(unused)]
 impl Sphere {
-    pub fn new(radius: f32) -> Self {
+    pub fn new(radius: f64) -> Self {
         Self { radius }
     }
 }
@@ -22,6 +23,34 @@ impl IntoNode for Sphere {
         let length = context.vec_length(point)?;
 
         context.sub(length, self.radius)
+    }
+}
+
+pub struct BoxShape {
+    size: DVec3,
+}
+
+impl BoxShape {
+    pub fn new(size: DVec3) -> Self {
+        Self { size }
+    }
+}
+
+impl IntoNode for BoxShape {
+    fn into_node(self, context: &mut Context) -> Result<Node> {
+        let point = Vec::point(context);
+        let size = Vec::from_parameter(context, self.size);
+        let abs = context.vec_abs(point)?;
+        let q = context.vec_sub(abs, size)?;
+
+        let zero = Vec::from_node(context, 0.0)?;
+        let max = context.vec_max(q, zero)?;
+        let outer = context.vec_length(max)?;
+
+        let max_elem = context.vec_max_elem(q)?;
+        let inner = context.min(max_elem, 0.0)?;
+
+        context.add(outer, inner)
     }
 }
 
