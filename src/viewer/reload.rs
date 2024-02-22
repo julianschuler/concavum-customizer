@@ -2,6 +2,7 @@ use std::{
     io,
     path::{Path, PathBuf},
     sync::Arc,
+    time::Instant,
 };
 
 use notify::{
@@ -56,8 +57,14 @@ impl ModelReloader {
     }
 
     fn update_model(&self) {
+        let start = Instant::now();
         let model_update = match model::Model::try_from_config(&self.config_path) {
-            Ok(model) => Ok(model.into_mesh()),
+            Ok(model) => {
+                let mesh = model.into_mesh();
+                eprintln!("Reloaded model in {:?}", start.elapsed());
+
+                Ok(mesh)
+            }
             Err(error) => Err(Arc::new(error)),
         };
         let _ = self.event_loop_proxy.send_event(model_update);
