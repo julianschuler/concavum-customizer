@@ -43,7 +43,8 @@ impl IntoNode for BoxShape {
         let abs = context.vec_abs(point)?;
         let q = context.vec_sub(abs, size)?;
 
-        let zero = Vec::from_node(context, 0.0)?;
+        // Use EPSILON instead of 0.0 to get well-behaved gradients
+        let zero = Vec::from_node(context, EPSILON)?;
         let max = context.vec_max(q, zero)?;
         let outer = context.vec_length(max)?;
 
