@@ -2,7 +2,7 @@ use fidget::{
     context::{IntoNode, Node},
     Context, Error,
 };
-use glam::DVec3;
+use glam::{DVec2, DVec3};
 
 use crate::model::config::EPSILON;
 
@@ -21,7 +21,7 @@ impl Sphere {
 
 impl IntoNode for Sphere {
     fn into_node(self, context: &mut Context) -> Result<Node> {
-        let point = Vec::point(context);
+        let point = Vec3::point(context);
         let length = context.vec_length(point)?;
 
         context.sub(length, self.radius)
@@ -40,13 +40,13 @@ impl BoxShape {
 
 impl IntoNode for BoxShape {
     fn into_node(self, context: &mut Context) -> Result<Node> {
-        let point = Vec::point(context);
-        let size = Vec::from_parameter(context, self.size);
+        let point = Vec3::point(context);
+        let size = Vec3::from_parameter(context, self.size);
         let abs = context.vec_abs(point)?;
         let q = context.vec_sub(abs, size)?;
 
         // Use EPSILON instead of 0.0 to get well-behaved gradients
-        let zero = Vec::from_node(context, EPSILON)?;
+        let zero = Vec3::from_node(context, EPSILON)?;
         let max = context.vec_max(q, zero)?;
         let outer = context.vec_length(max)?;
 
@@ -78,13 +78,13 @@ trait Vector {
 }
 
 #[derive(Copy, Clone)]
-struct Vec {
+struct Vec3 {
     x: Node,
     y: Node,
     z: Node,
 }
 
-impl Vec {
+impl Vec3 {
     fn point(context: &mut Context) -> Self {
         let x = context.x();
         let y = context.y();
@@ -112,7 +112,7 @@ impl Vec {
     }
 }
 
-impl Vector for Vec {
+impl Vector for Vec3 {
     fn map_unary<F>(context: &mut Context, f: F, vec: Self) -> Result<Self>
     where
         F: Fn(&mut Context, Node) -> Result<Node>,
@@ -144,6 +144,70 @@ impl Vector for Vec {
     {
         let result = f(context, vec.x, vec.y)?;
         f(context, result, vec.z)
+    }
+}
+
+#[derive(Copy, Clone)]
+struct Vec2 {
+    x: Node,
+    y: Node,
+}
+
+impl Vec2 {
+    fn new(x: Node, y: Node) -> Self {
+        Self { x, y }
+    }
+
+    fn point(context: &mut Context) -> Self {
+        let x = context.x();
+        let y = context.y();
+
+        Self { x, y }
+    }
+
+    fn from_node<T: IntoNode>(context: &mut Context, node: T) -> Result<Self> {
+        let node = node.into_node(context)?;
+
+        Ok(Self { x: node, y: node })
+    }
+
+    fn from_parameter(context: &mut Context, parameter: DVec2) -> Self {
+        let x = context.constant(parameter.x);
+        let y = context.constant(parameter.y);
+
+        Self { x, y }
+    }
+}
+
+impl Vector for Vec2 {
+    fn map_unary<F>(context: &mut Context, f: F, vec: Self) -> Result<Self>
+    where
+        F: Fn(&mut Context, Node) -> Result<Node>,
+        Self: Sized,
+    {
+        let x = f(context, vec.x)?;
+        let y = f(context, vec.y)?;
+
+        Ok(Self { x, y })
+    }
+
+    fn map_binary<F>(context: &mut Context, f: F, vec_a: Self, vec_b: Self) -> Result<Self>
+    where
+        F: Fn(&mut Context, Node, Node) -> Result<Node>,
+        Self: Sized,
+    {
+        let x = f(context, vec_a.x, vec_b.x)?;
+        let y = f(context, vec_a.y, vec_b.y)?;
+
+        Ok(Self { x, y })
+    }
+
+    fn fold<F>(context: &mut Context, f: F, vec: Self) -> Result<Node>
+    where
+        F: Fn(&mut Context, Node, Node) -> Result<Node>,
+        Self: Sized,
+    {
+        f(context, vec.x, vec.y)
     }
 }
 
