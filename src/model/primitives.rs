@@ -273,7 +273,7 @@ impl Vector for Vec2 {
     }
 }
 
-trait VecOperations {
+trait VectorOperations {
     /// Calculate the element-wise absolute value
     fn vec_abs<Vec: Vector>(&mut self, a: Vec) -> Result<Vec>;
 
@@ -282,6 +282,9 @@ trait VecOperations {
 
     /// Calculate the element-wise subtraction
     fn vec_sub<Vec: Vector>(&mut self, a: Vec, b: Vec) -> Result<Vec>;
+
+    /// Calculate the scalar multiplication
+    fn vec_mul<Vec: Vector>(&mut self, scalar: Node, a: Vec) -> Result<Vec>;
 
     /// Square each element of a Vec
     fn vec_square<Vec: Vector>(&mut self, a: Vec) -> Result<Vec>;
@@ -298,17 +301,24 @@ trait VecOperations {
     /// Calculate the maximum value of all elements
     fn vec_max_elem<Vec: Vector>(&mut self, a: Vec) -> Result<Node>;
 
-    /// Calculate the euclidean length of a Vec
-    fn vec_length<Vec: Vector>(&mut self, a: Vec) -> Result<Node>;
+    /// Calculate the dot product of two Vecs
+    fn vec_dot<Vec: Vector>(&mut self, a: Vec, b: Vec) -> Result<Node>;
+
+    /// Calculate the euclidean norm of a Vec
+    fn vec_length<Vec: Vector + Copy>(&mut self, a: Vec) -> Result<Node>;
 }
 
-impl VecOperations for Context {
+impl VectorOperations for Context {
     fn vec_abs<Vec: Vector>(&mut self, a: Vec) -> Result<Vec> {
         Vec::map_unary(self, Context::abs, a)
     }
 
     fn vec_add<Vec: Vector>(&mut self, a: Vec, b: Vec) -> Result<Vec> {
         Vec::map_binary(self, Context::add, a, b)
+    }
+
+    fn vec_mul<Vec: Vector>(&mut self, scalar: Node, a: Vec) -> Result<Vec> {
+        Vec::map_unary(self, |context, x| context.mul(scalar, x), a)
     }
 
     fn vec_sub<Vec: Vector>(&mut self, a: Vec, b: Vec) -> Result<Vec> {
@@ -335,10 +345,13 @@ impl VecOperations for Context {
         Vec::fold(self, Context::max, a)
     }
 
-    fn vec_length<Vec: Vector>(&mut self, a: Vec) -> Result<Node> {
-        let square = self.vec_square(a)?;
-        let sum = Vec::fold(self, Context::add, square)?;
+    fn vec_dot<Vec: Vector>(&mut self, a: Vec, b: Vec) -> Result<Node> {
+        let product = Vec::map_binary(self, Context::mul, a, b)?;
+        Vec::fold(self, Context::add, product)
+    }
 
-        self.sqrt(sum)
+    fn vec_length<Vec: Vector + Copy>(&mut self, a: Vec) -> Result<Node> {
+        let squared_length = self.vec_dot(a, a)?;
+        self.sqrt(squared_length)
     }
 }
