@@ -4,6 +4,8 @@ use fidget::{
 };
 use glam::DVec3;
 
+use crate::model::config::EPSILON;
+
 type Result<T> = std::result::Result<T, Error>;
 
 pub struct Sphere {
@@ -55,6 +57,26 @@ impl IntoNode for BoxShape {
     }
 }
 
+trait Vector {
+    /// Apply a unary function element-wise
+    fn map_unary<F>(context: &mut Context, f: F, vec: Self) -> Result<Self>
+    where
+        F: Fn(&mut Context, Node) -> Result<Node>,
+        Self: Sized;
+
+    /// Apply a binary function element-wise
+    fn map_binary<F>(context: &mut Context, f: F, vec_a: Self, vec_b: Self) -> Result<Self>
+    where
+        F: Fn(&mut Context, Node, Node) -> Result<Node>,
+        Self: Sized;
+
+    /// Fold all Vec elements using a binary function
+    fn fold<F>(context: &mut Context, f: F, vec: Self) -> Result<Node>
+    where
+        F: Fn(&mut Context, Node, Node) -> Result<Node>,
+        Self: Sized;
+}
+
 #[derive(Copy, Clone)]
 struct Vec {
     x: Node,
@@ -90,116 +112,106 @@ impl Vec {
     }
 }
 
+impl Vector for Vec {
+    fn map_unary<F>(context: &mut Context, f: F, vec: Self) -> Result<Self>
+    where
+        F: Fn(&mut Context, Node) -> Result<Node>,
+        Self: Sized,
+    {
+        let x = f(context, vec.x)?;
+        let y = f(context, vec.y)?;
+        let z = f(context, vec.z)?;
+
+        Ok(Self { x, y, z })
+    }
+
+    fn map_binary<F>(context: &mut Context, f: F, vec_a: Self, vec_b: Self) -> Result<Self>
+    where
+        F: Fn(&mut Context, Node, Node) -> Result<Node>,
+        Self: Sized,
+    {
+        let x = f(context, vec_a.x, vec_b.x)?;
+        let y = f(context, vec_a.y, vec_b.y)?;
+        let z = f(context, vec_a.z, vec_b.z)?;
+
+        Ok(Self { x, y, z })
+    }
+
+    fn fold<F>(context: &mut Context, f: F, vec: Self) -> Result<Node>
+    where
+        F: Fn(&mut Context, Node, Node) -> Result<Node>,
+        Self: Sized,
+    {
+        let result = f(context, vec.x, vec.y)?;
+        f(context, result, vec.z)
+    }
+}
+
 trait VecOperations {
-    /// Apply a unary function element-wise
-    fn map_unary<F>(&mut self, f: F, vec: Vec) -> Result<Vec>
-    where
-        F: Fn(&mut Context, Node) -> Result<Node>;
-
-    /// Apply a binary function element-wise
-    fn map_binary<F>(&mut self, f: F, vec_a: Vec, vec_b: Vec) -> Result<Vec>
-    where
-        F: Fn(&mut Context, Node, Node) -> Result<Node>;
-
-    /// Fold all Vec elements using a binary function
-    fn fold<F>(&mut self, f: F, vec: Vec) -> Result<Node>
-    where
-        F: Fn(&mut Context, Node, Node) -> Result<Node>;
-
     /// Calculate the element-wise absolute value
-    fn vec_abs(&mut self, a: Vec) -> Result<Vec>;
+    fn vec_abs<Vec: Vector>(&mut self, a: Vec) -> Result<Vec>;
 
     /// Calculate the element-wise addition
-    fn vec_add(&mut self, a: Vec, b: Vec) -> Result<Vec>;
+    fn vec_add<Vec: Vector>(&mut self, a: Vec, b: Vec) -> Result<Vec>;
 
     /// Calculate the element-wise subtraction
-    fn vec_sub(&mut self, a: Vec, b: Vec) -> Result<Vec>;
+    fn vec_sub<Vec: Vector>(&mut self, a: Vec, b: Vec) -> Result<Vec>;
 
     /// Square each element of a Vec
-    fn vec_square(&mut self, a: Vec) -> Result<Vec>;
+    fn vec_square<Vec: Vector>(&mut self, a: Vec) -> Result<Vec>;
 
     /// Calculate the element-wise mininum
-    fn vec_min(&mut self, a: Vec, b: Vec) -> Result<Vec>;
+    fn vec_min<Vec: Vector>(&mut self, a: Vec, b: Vec) -> Result<Vec>;
 
     /// Calculate the element-wise maximum
-    fn vec_max(&mut self, a: Vec, b: Vec) -> Result<Vec>;
+    fn vec_max<Vec: Vector>(&mut self, a: Vec, b: Vec) -> Result<Vec>;
 
     /// Calculate the minimum value of all elements
-    fn vec_min_elem(&mut self, a: Vec) -> Result<Node>;
+    fn vec_min_elem<Vec: Vector>(&mut self, a: Vec) -> Result<Node>;
 
     /// Calculate the maximum value of all elements
-    fn vec_max_elem(&mut self, a: Vec) -> Result<Node>;
+    fn vec_max_elem<Vec: Vector>(&mut self, a: Vec) -> Result<Node>;
 
     /// Calculate the euclidean length of a Vec
-    fn vec_length(&mut self, a: Vec) -> Result<Node>;
+    fn vec_length<Vec: Vector>(&mut self, a: Vec) -> Result<Node>;
 }
 
 impl VecOperations for Context {
-    fn map_unary<F>(&mut self, f: F, vec: Vec) -> Result<Vec>
-    where
-        F: Fn(&mut Context, Node) -> Result<Node>,
-    {
-        let x = f(self, vec.x)?;
-        let y = f(self, vec.y)?;
-        let z = f(self, vec.z)?;
-
-        Ok(Vec { x, y, z })
+    fn vec_abs<Vec: Vector>(&mut self, a: Vec) -> Result<Vec> {
+        Vec::map_unary(self, Context::abs, a)
     }
 
-    fn map_binary<F>(&mut self, f: F, vec_a: Vec, vec_b: Vec) -> Result<Vec>
-    where
-        F: Fn(&mut Context, Node, Node) -> Result<Node>,
-    {
-        let x = f(self, vec_a.x, vec_b.x)?;
-        let y = f(self, vec_a.y, vec_b.y)?;
-        let z = f(self, vec_a.z, vec_b.z)?;
-
-        Ok(Vec { x, y, z })
+    fn vec_add<Vec: Vector>(&mut self, a: Vec, b: Vec) -> Result<Vec> {
+        Vec::map_binary(self, Context::add, a, b)
     }
 
-    fn fold<F>(&mut self, f: F, a: Vec) -> Result<Node>
-    where
-        F: Fn(&mut Context, Node, Node) -> Result<Node>,
-    {
-        let result = f(self, a.x, a.y)?;
-        f(self, result, a.z)
+    fn vec_sub<Vec: Vector>(&mut self, a: Vec, b: Vec) -> Result<Vec> {
+        Vec::map_binary(self, Context::sub, a, b)
     }
 
-    fn vec_abs(&mut self, a: Vec) -> Result<Vec> {
-        self.map_unary(Context::abs, a)
+    fn vec_square<Vec: Vector>(&mut self, a: Vec) -> Result<Vec> {
+        Vec::map_unary(self, Context::square, a)
     }
 
-    fn vec_add(&mut self, a: Vec, b: Vec) -> Result<Vec> {
-        self.map_binary(Context::add, a, b)
+    fn vec_min<Vec: Vector>(&mut self, a: Vec, b: Vec) -> Result<Vec> {
+        Vec::map_binary(self, Context::min, a, b)
     }
 
-    fn vec_sub(&mut self, a: Vec, b: Vec) -> Result<Vec> {
-        self.map_binary(Context::sub, a, b)
+    fn vec_max<Vec: Vector>(&mut self, a: Vec, b: Vec) -> Result<Vec> {
+        Vec::map_binary(self, Context::max, a, b)
     }
 
-    fn vec_square(&mut self, a: Vec) -> Result<Vec> {
-        self.map_unary(Context::square, a)
+    fn vec_min_elem<Vec: Vector>(&mut self, a: Vec) -> Result<Node> {
+        Vec::fold(self, Context::min, a)
     }
 
-    fn vec_min(&mut self, a: Vec, b: Vec) -> Result<Vec> {
-        self.map_binary(Context::min, a, b)
+    fn vec_max_elem<Vec: Vector>(&mut self, a: Vec) -> Result<Node> {
+        Vec::fold(self, Context::max, a)
     }
 
-    fn vec_max(&mut self, a: Vec, b: Vec) -> Result<Vec> {
-        self.map_binary(Context::max, a, b)
-    }
-
-    fn vec_min_elem(&mut self, a: Vec) -> Result<Node> {
-        self.fold(Context::min, a)
-    }
-
-    fn vec_max_elem(&mut self, a: Vec) -> Result<Node> {
-        self.fold(Context::max, a)
-    }
-
-    fn vec_length(&mut self, a: Vec) -> Result<Node> {
+    fn vec_length<Vec: Vector>(&mut self, a: Vec) -> Result<Node> {
         let square = self.vec_square(a)?;
-        let sum = self.fold(Context::add, square)?;
+        let sum = Vec::fold(self, Context::add, square)?;
 
         self.sqrt(sum)
     }
