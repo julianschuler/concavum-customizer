@@ -14,7 +14,7 @@ use fidget::{context::IntoNode, mesh::Settings, Context};
 use glam::{dvec3, DVec3};
 use hex_color::HexColor;
 
-pub use crate::viewer::model::{Component, Viewable};
+pub use crate::viewer::{Component, Viewable};
 use config::Config;
 use primitives::BoxShape;
 
