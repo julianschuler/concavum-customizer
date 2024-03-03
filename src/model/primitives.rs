@@ -1,12 +1,16 @@
 #![allow(unused)]
 
-use std::{iter::once, vec};
+use std::{
+    f64::{INFINITY, NEG_INFINITY},
+    iter::once,
+    vec,
+};
 
 use fidget::{
     context::{IntoNode, Node},
     Context, Error,
 };
-use glam::{DVec2, DVec3};
+use glam::{dvec2, DVec2, DVec3};
 
 use crate::model::config::EPSILON;
 
@@ -57,6 +61,70 @@ impl IntoNode for BoxShape {
         let inner = context.min(max_elem, 0.0)?;
 
         context.add(outer, inner)
+    }
+}
+
+pub struct ConvexPolygon {
+    vertices: vec::Vec<DVec2>,
+}
+
+impl ConvexPolygon {
+    pub fn new(vertices: vec::Vec<DVec2>) -> Self {
+        assert!(vertices.len() >= 3);
+
+        Self { vertices }
+    }
+}
+
+impl IntoNode for ConvexPolygon {
+    fn into_node(self, context: &mut Context) -> Result<Node> {
+        let point = Vec2::point(context);
+        let length = context.vec_length(point)?;
+
+        let first = *self.vertices.first().unwrap();
+        let last = *self.vertices.last().unwrap();
+
+        let mut squared_abs = context.constant(INFINITY);
+        let mut inner = context.constant(NEG_INFINITY);
+
+        for window in self
+            .vertices
+            .windows(2)
+            .chain(once([last, first].as_slice()))
+        {
+            let previous_vertex = window[0];
+            let vertex = window[1];
+
+            let edge = previous_vertex - vertex;
+            let edge_length = edge.length();
+            let edge = edge.normalize_or_zero();
+            let normal = Vec2::from_parameter(context, dvec2(-edge.y, edge.x));
+            let edge = Vec2::from_parameter(context, edge);
+            let vertex_vec = Vec2::from_parameter(context, vertex);
+            let diff = context.vec_sub(point, vertex_vec)?;
+
+            // Calculate shortest possible vector from point to edge
+            let edge_projection = context.vec_dot(diff, edge)?;
+            let max = context.max(edge_projection, 0.0)?;
+            let clamped_factor = context.min(max, edge_length)?;
+            let scaled_edge = context.vec_mul(clamped_factor, edge)?;
+            let shortest_diff = context.vec_sub(diff, scaled_edge)?;
+
+            let shortest_distance = context.vec_dot(shortest_diff, shortest_diff)?;
+            squared_abs = context.min(squared_abs, shortest_distance)?;
+
+            // Calculate inner distance
+            let dot = context.vec_dot(normal, diff)?;
+            let min = context.min(dot, 0.0)?;
+            inner = context.max(inner, min)?;
+        }
+
+        // Clamp to EPSILON to get well-behaved gradients
+        let max = context.max(squared_abs, EPSILON)?;
+        let abs_distance = context.sqrt(max)?;
+        let double_inner = context.mul(2.0, inner)?;
+
+        context.add(abs_distance, double_inner)
     }
 }
 
