@@ -5,7 +5,7 @@ edition = "2021"
 
 [dependencies]
 color-eyre = { version = "0.6", default-features = false }
-fidget = { path = "../fidget/fidget", default-features = false, features = ["jit", "mesh"] }
+fidget = { version = "0.2.1", default-features = false, features = ["jit", "mesh"] }
 futures = "0.3"
 glam = { version = "0.24", features = ["serde"] }
 hex_color = { version = "3.0", features = ["serde"] }
