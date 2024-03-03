@@ -7,7 +7,7 @@ use std::path::Path;
 
 use color_eyre::{config::HookBuilder, eyre::WrapErr, Result};
 
-use viewer::{reload::ModelReloader, window::Window};
+use viewer::{ModelReloader, Window};
 
 fn main() -> Result<()> {
     HookBuilder::new().display_env_section(false).install()?;
