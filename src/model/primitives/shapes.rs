@@ -21,11 +21,13 @@ use crate::model::{
     },
 };
 
+/// A sphere centered at the origin.
 pub struct Sphere {
     radius: f64,
 }
 
 impl Sphere {
+    /// Creates a new sphere with the given radius.
     pub fn new(radius: f64) -> Self {
         Self { radius }
     }
@@ -40,11 +42,13 @@ impl IntoNode for Sphere {
     }
 }
 
+/// A box centered at the origin.
 pub struct BoxShape {
     size: DVec3,
 }
 
 impl BoxShape {
+    /// Creates a new box with the given size.
     pub fn new(size: DVec3) -> Self {
         Self { size }
     }
@@ -74,11 +78,19 @@ struct Distances {
     inner: Node,
 }
 
+/// A convex polygon without holes.
+/// For non-convex polygons, use [`SimplePolygon`] instead.
 pub struct ConvexPolygon {
     vertices: Vec<DVec2>,
 }
 
 impl ConvexPolygon {
+    /// Creates a new convex polygon from the given vertices.
+    /// The vertices have to be in counterclockwise order.
+    ///
+    /// # Panics
+    ///
+    /// Panics if there are less than three vertices given.
     pub fn new(vertices: Vec<DVec2>) -> Self {
         assert!(vertices.len() >= 3);
 
@@ -203,6 +215,14 @@ pub struct SimplePolygon {
 }
 
 impl SimplePolygon {
+    /// Creates a new convex polygon from the given vertices.
+    /// For non-convex polygons, use [`SimplePolygon`] instead.
+    ///
+    /// The vertices have to be in a counterclockwise order.
+    ///
+    /// # Panics
+    ///
+    /// Panics if there are less than three vertices given.
     pub fn new(vertices: Vec<DVec2>) -> Self {
         assert!(vertices.len() >= 3);
 
