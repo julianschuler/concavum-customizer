@@ -66,20 +66,23 @@ impl IntoNode for BoxShape {
     }
 }
 
+struct Distances {
+    absolute: Node,
+    inner: Node,
+}
+
 pub struct ConvexPolygon {
-    vertices: vec::Vec<DVec2>,
+    vertices: Vec<DVec2>,
 }
 
 impl ConvexPolygon {
-    pub fn new(vertices: vec::Vec<DVec2>) -> Self {
+    pub fn new(vertices: Vec<DVec2>) -> Self {
         assert!(vertices.len() >= 3);
 
         Self { vertices }
     }
-}
 
-impl IntoNode for ConvexPolygon {
-    fn into_node(self, context: &mut Context) -> Result<Node> {
+    fn distances(self, context: &mut Context) -> Result<Distances> {
         let point = Vec2::point(context);
         let length = context.vec_length(point)?;
 
@@ -102,8 +105,8 @@ impl IntoNode for ConvexPolygon {
             let edge = edge.normalize_or_zero();
             let normal = Vec2::from_parameter(context, dvec2(-edge.y, edge.x));
             let edge = Vec2::from_parameter(context, edge);
-            let vertex_vec = Vec2::from_parameter(context, vertex);
-            let diff = context.vec_sub(point, vertex_vec)?;
+            let vertex = Vec2::from_parameter(context, vertex);
+            let diff = context.vec_sub(point, vertex)?;
 
             // Calculate shortest possible vector from point to edge
             let edge_projection = context.vec_dot(diff, edge)?;
@@ -123,26 +126,37 @@ impl IntoNode for ConvexPolygon {
 
         // Clamp to EPSILON to get well-behaved gradients
         let max = context.max(squared_abs, EPSILON)?;
-        let abs_distance = context.sqrt(max)?;
-        let double_inner = context.mul(2.0, inner)?;
+        let absolute_distance = context.sqrt(max)?;
 
-        context.add(abs_distance, double_inner)
+        Ok(Distances {
+            absolute: absolute_distance,
+            inner,
+        })
     }
 }
 
-pub struct Polygon {
-    vertices: vec::Vec<DVec2>,
+impl IntoNode for ConvexPolygon {
+    fn into_node(self, context: &mut Context) -> Result<Node> {
+        let Distances { absolute, inner } = self.distances(context)?;
+        let double_inner = context.mul(2.0, inner)?;
+
+        context.add(absolute, double_inner)
+    }
 }
 
-impl Polygon {
-    pub fn new(vertices: vec::Vec<DVec2>) -> Self {
+pub struct SimplePolygon {
+    vertices: Vec<DVec2>,
+}
+
+impl SimplePolygon {
+    pub fn new(vertices: Vec<DVec2>) -> Self {
         assert!(vertices.len() >= 3);
 
         Self { vertices }
     }
 }
 
-impl IntoNode for Polygon {
+impl IntoNode for SimplePolygon {
     fn into_node(self, context: &mut Context) -> Result<Node> {
         let point = Vec2::point(context);
         let length = context.vec_length(point)?;
