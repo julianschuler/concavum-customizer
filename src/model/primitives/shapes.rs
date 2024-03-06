@@ -1,7 +1,6 @@
 use std::{
     f64::{INFINITY, NEG_INFINITY},
-    iter::{once, repeat},
-    result,
+    iter::once,
     vec::Vec,
 };
 
@@ -14,7 +13,7 @@ use glam::{dvec2, DVec2, DVec3};
 
 use crate::model::{
     config::EPSILON,
-    geometry::counter_clockwise_or_colinear,
+    geometry::counterclockwise_or_colinear,
     primitives::{
         vector::{Operations, Vec2, Vec3, Vector},
         Result,
@@ -346,5 +345,5 @@ fn is_convex_after_insert(
     let d = vertices[polygon[index]];
     let e = vertices[polygon[(index + 1) % n]];
 
-    counter_clockwise_or_colinear(a, b, c) && counter_clockwise_or_colinear(c, d, e)
+    counterclockwise_or_colinear(a, b, c) && counterclockwise_or_colinear(c, d, e)
 }
