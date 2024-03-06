@@ -69,7 +69,7 @@ pub trait Viewable {
     fn light_positions(&self) -> Vec<DVec3>;
     fn background_color(&self) -> HexColor;
 
-    fn into_mesh(self) -> Mesh
+    fn into_model(self) -> Model
     where
         Self: Sized,
     {
@@ -111,7 +111,7 @@ pub trait Viewable {
             }
         }
 
-        Mesh {
+        Model {
             objects,
             light_positions,
             background_color,
@@ -127,7 +127,7 @@ pub struct CpuObject {
 }
 
 #[derive(Clone)]
-pub struct Mesh {
+pub struct Model {
     pub objects: Vec<CpuObject>,
     pub light_positions: Vec<Vec3>,
     pub background_color: Srgba,

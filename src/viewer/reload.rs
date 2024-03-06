@@ -60,10 +60,10 @@ impl ModelReloader {
         let start = Instant::now();
         let model_update = match model::Model::try_from_config(&self.config_path) {
             Ok(model) => {
-                let mesh = model.into_mesh();
+                let model = model.into_model();
                 eprintln!("Reloaded model in {:?}", start.elapsed());
 
-                Ok(mesh)
+                Ok(model)
             }
             Err(error) => Err(Arc::new(error)),
         };
