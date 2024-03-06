@@ -4,7 +4,7 @@ use glam::{dvec3, DAffine3, DQuat, DVec2, EulerRot};
 
 use crate::model::{
     config::{self, Config, FingerCluster, PositiveDVec2, ThumbCluster},
-    geometry::{zvec, Rotate, Translate},
+    geometry::zvec,
     key::Switch,
 };
 
@@ -121,8 +121,8 @@ impl Columns {
                 };
 
                 let translation = dvec3(x, offset.x, offset.y + z_offset);
-                let column_transform =
-                    DAffine3::from_rotation_y(side * side_angle).translate(translation);
+                let column_transform = DAffine3::from_translation(translation)
+                    * DAffine3::from_rotation_y(side * side_angle);
 
                 let curvature_angle = curvature_angle.to_radians();
                 let entries = if curvature_angle == 0.0 {
@@ -151,7 +151,8 @@ impl Columns {
                             let z = curvature_radius * rcos;
 
                             column_transform
-                                * DAffine3::from_rotation_x(total_angle).translate(dvec3(x, y, z))
+                                * DAffine3::from_translation(dvec3(x, y, z))
+                                * DAffine3::from_rotation_x(total_angle)
                         })
                         .collect()
                 };
@@ -219,13 +220,11 @@ impl ThumbKeys {
                     let total_angle = curvature_angle
                         * f64::from(i16::from(i) - i16::from(config.resting_key_index));
                     let (sin, rcos) = (total_angle.sin(), 1.0 - total_angle.cos());
+                    let translation = dvec3(curvature_radius * sin, 0.0, curvature_radius * rcos);
 
                     key_transform
-                        * DAffine3::from_rotation_y(-total_angle).translate(dvec3(
-                            curvature_radius * sin,
-                            0.0,
-                            curvature_radius * rcos,
-                        ))
+                        * DAffine3::from_translation(translation)
+                        * DAffine3::from_rotation_y(-total_angle)
                 })
                 .collect()
         };
@@ -280,7 +279,8 @@ impl KeyPositions {
         const Z_OFFSET: f64 = 12.0;
 
         let (tilting_x, tilting_y) = (tilting_angle.x.to_radians(), tilting_angle.y.to_radians());
-        let tilting_transform = DAffine3::from_rotation_x(tilting_x).rotate_y(tilting_y);
+        let tilting_transform =
+            DAffine3::from_rotation_y(tilting_y) * DAffine3::from_rotation_x(tilting_x);
 
         let tilted_positions = tilting_transform * self;
 
