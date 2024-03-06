@@ -6,26 +6,28 @@ use glam::{DVec2, DVec3};
 
 use crate::model::primitives::Result;
 
+/// A trait defining operations on a vector.
 pub trait Vector {
-    /// Apply a unary function element-wise
+    /// Applies a unary function element-wise.
     fn map_unary<F>(context: &mut Context, f: F, vec: Self) -> Result<Self>
     where
         F: Fn(&mut Context, Node) -> Result<Node>,
         Self: Sized;
 
-    /// Apply a binary function element-wise
+    /// Applies a binary function element-wise.
     fn map_binary<F>(context: &mut Context, f: F, vec_a: Self, vec_b: Self) -> Result<Self>
     where
         F: Fn(&mut Context, Node, Node) -> Result<Node>,
         Self: Sized;
 
-    /// Fold all Vec elements using a binary function
+    /// Folds all Vector elements using a binary function.
     fn fold<F>(context: &mut Context, f: F, vec: Self) -> Result<Node>
     where
         F: Fn(&mut Context, Node, Node) -> Result<Node>,
         Self: Sized;
 }
 
+/// A 3-dimensional vector of nodes.
 #[derive(Copy, Clone)]
 pub struct Vec3 {
     pub x: Node,
@@ -34,6 +36,7 @@ pub struct Vec3 {
 }
 
 impl Vec3 {
+    /// Creates a vector from the x, y and z variables of context.
     pub fn point(context: &mut Context) -> Self {
         let x = context.x();
         let y = context.y();
@@ -42,6 +45,7 @@ impl Vec3 {
         Self { x, y, z }
     }
 
+    /// Creates a vector by duplicating a node.
     pub fn from_node<T: IntoNode>(context: &mut Context, node: T) -> Result<Self> {
         let node = node.into_node(context)?;
 
@@ -52,6 +56,7 @@ impl Vec3 {
         })
     }
 
+    /// Creates a node using a given parameter as content.
     pub fn from_parameter(context: &mut Context, parameter: DVec3) -> Self {
         let x = context.constant(parameter.x);
         let y = context.constant(parameter.y);
@@ -96,6 +101,7 @@ impl Vector for Vec3 {
     }
 }
 
+/// A 2-dimensional vector of nodes.
 #[derive(Copy, Clone)]
 pub struct Vec2 {
     pub x: Node,
@@ -103,10 +109,12 @@ pub struct Vec2 {
 }
 
 impl Vec2 {
+    /// Creates a vector from the given values.
     pub fn new(x: Node, y: Node) -> Self {
         Self { x, y }
     }
 
+    /// Creates a vector from the x and y variables of context.
     pub fn point(context: &mut Context) -> Self {
         let x = context.x();
         let y = context.y();
@@ -114,12 +122,14 @@ impl Vec2 {
         Self { x, y }
     }
 
+    /// Creates a vector by duplicating a node.
     pub fn from_node<T: IntoNode>(context: &mut Context, node: T) -> Result<Self> {
         let node = node.into_node(context)?;
 
         Ok(Self { x: node, y: node })
     }
 
+    /// Creates a node using a given parameter as content.
     pub fn from_parameter(context: &mut Context, parameter: DVec2) -> Self {
         let x = context.constant(parameter.x);
         let y = context.constant(parameter.y);
@@ -160,38 +170,39 @@ impl Vector for Vec2 {
     }
 }
 
+/// A helper trait for performing vector operations.
 pub trait Operations {
-    /// Calculate the element-wise absolute value
+    /// Calculates the element-wise absolute value.
     fn vec_abs<Vec: Vector>(&mut self, a: Vec) -> Result<Vec>;
 
-    /// Calculate the element-wise addition
+    /// Calculates the element-wise addition.
     fn vec_add<Vec: Vector>(&mut self, a: Vec, b: Vec) -> Result<Vec>;
 
-    /// Calculate the element-wise subtraction
+    /// Calculates the element-wise subtraction.
     fn vec_sub<Vec: Vector>(&mut self, a: Vec, b: Vec) -> Result<Vec>;
 
-    /// Calculate the scalar multiplication
+    /// Calculates the scalar multiplication.
     fn vec_mul<Vec: Vector>(&mut self, scalar: Node, a: Vec) -> Result<Vec>;
 
-    /// Square each element of a Vec
+    /// Squares each element of a Vector.
     fn vec_square<Vec: Vector>(&mut self, a: Vec) -> Result<Vec>;
 
-    /// Calculate the element-wise mininum
+    /// Calculates the element-wise mininum.
     fn vec_min<Vec: Vector>(&mut self, a: Vec, b: Vec) -> Result<Vec>;
 
-    /// Calculate the element-wise maximum
+    /// Calculates the element-wise maximum.
     fn vec_max<Vec: Vector>(&mut self, a: Vec, b: Vec) -> Result<Vec>;
 
-    /// Calculate the minimum value of all elements
+    /// Calculates the minimum value of all elements.
     fn vec_min_elem<Vec: Vector>(&mut self, a: Vec) -> Result<Node>;
 
-    /// Calculate the maximum value of all elements
+    /// Calculates the maximum value of all elements.
     fn vec_max_elem<Vec: Vector>(&mut self, a: Vec) -> Result<Node>;
 
-    /// Calculate the dot product of two Vecs
+    /// Calculates the dot product of two Vecs.
     fn vec_dot<Vec: Vector>(&mut self, a: Vec, b: Vec) -> Result<Node>;
 
-    /// Calculate the euclidean norm of a Vec
+    /// Calculates the euclidean norm of a Vec.
     fn vec_length<Vec: Vector + Copy>(&mut self, a: Vec) -> Result<Node>;
 }
 
