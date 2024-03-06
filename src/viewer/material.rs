@@ -3,11 +3,13 @@ use three_d::{
     MaterialType, Program, RenderStates, Srgba, ToneMapping,
 };
 
+/// A simple physical material with an albedo.
 pub struct Physical {
     albedo: Srgba,
 }
 
 impl Physical {
+    /// Creates a new physical material given an albedo.
     pub fn new(albedo: Srgba) -> Self {
         Self { albedo }
     }

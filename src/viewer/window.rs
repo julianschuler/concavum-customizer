@@ -18,8 +18,10 @@ use crate::{
     viewer::{material::Physical, model::Model},
 };
 
+/// A Model update.
 pub type ModelUpdate = Result<Model, Arc<Error>>;
 
+/// An application window with a custom event loop.
 pub struct Window {
     event_loop: EventLoop<ModelUpdate>,
     inner: winit::window::Window,
@@ -27,6 +29,9 @@ pub struct Window {
 }
 
 impl Window {
+    /// Creates a new window.
+    ///
+    /// Returns a [`WindowError`] the window could not be created.
     pub fn try_new() -> Result<Self, WindowError> {
         let event_loop = EventLoopBuilder::with_user_event().build();
         let inner = WindowBuilder::new()
@@ -41,10 +46,14 @@ impl Window {
         })
     }
 
+    /// Returns the event loop proxy.
     pub fn event_loop_proxy(&self) -> EventLoopProxy<ModelUpdate> {
         self.event_loop.create_proxy()
     }
 
+    /// Runs the render loop.
+    ///
+    /// This is blocking until the window is closed.
     pub fn run_render_loop(self) {
         let frame_input_generator = FrameInputGenerator::from_winit_window(&self.inner);
         let (width, height): (u32, u32) = self.inner.inner_size().into();
@@ -74,6 +83,7 @@ impl Window {
     }
 }
 
+/// An application rendering an interactive Scene.
 struct Application {
     control: OrbitControl,
     camera: Camera,
@@ -82,6 +92,7 @@ struct Application {
 }
 
 impl Application {
+    /// Creates a new Application from a frame input generator and a viewport.
     fn new(frame_input_generator: FrameInputGenerator, viewport: Viewport) -> Self {
         const DEFAULT_DISTANCE: f32 = 300.0;
         const DEFAULT_FOV: Degrees = degrees(22.5);
@@ -107,6 +118,7 @@ impl Application {
         }
     }
 
+    /// Handles redraw events for the given context.
     fn handle_redraw(&mut self, context: &WindowedContext) {
         let mut frame_input = self.frame_input_generator.generate(context);
 
@@ -131,6 +143,7 @@ impl Application {
         self.scene.render(&self.camera, &frame_input.screen());
     }
 
+    /// Handles a window event for the given context and control flow.
     fn handle_window_event(
         &mut self,
         event: &WindowEvent,
@@ -152,6 +165,7 @@ impl Application {
         }
     }
 
+    /// Handles a model update for the given context.
     fn handle_model_update(&mut self, model_update: ModelUpdate, context: &WindowedContext) {
         match model_update {
             Ok(model) => self.scene = Scene::from_model(&model, context),
@@ -170,6 +184,7 @@ struct Scene {
 }
 
 impl Scene {
+    /// Creates a scene from a model given a context.
     fn from_model(model: &Model, context: &Context) -> Scene {
         let mut objects = Vec::new();
         let mut instanced_objects = Vec::new();
@@ -217,6 +232,7 @@ impl Scene {
         }
     }
 
+    /// Renders the scene with a given camera and render target.
     fn render(&self, camera: &Camera, screen: &RenderTarget) {
         let Srgba { r, g, b, a } = self.background_color;
 
