@@ -25,6 +25,12 @@ pub trait Vector {
     where
         F: Fn(&mut Context, Node, Node) -> Result<Node>,
         Self: Sized;
+
+    /// Creates a vector by duplicating a node.
+    fn from_node<T>(context: &mut Context, node: T) -> Result<Self>
+    where
+        T: IntoNode,
+        Self: Sized;
 }
 
 /// A 3-dimensional vector of nodes.
@@ -43,17 +49,6 @@ impl Vec3 {
         let z = context.z();
 
         Self { x, y, z }
-    }
-
-    /// Creates a vector by duplicating a node.
-    pub fn from_node<T: IntoNode>(context: &mut Context, node: T) -> Result<Self> {
-        let node = node.into_node(context)?;
-
-        Ok(Self {
-            x: node,
-            y: node,
-            z: node,
-        })
     }
 
     /// Creates a node using a given parameter as content.
@@ -99,6 +94,16 @@ impl Vector for Vec3 {
         let result = f(context, vec.x, vec.y)?;
         f(context, result, vec.z)
     }
+
+    fn from_node<T: IntoNode>(context: &mut Context, node: T) -> Result<Self> {
+        let node = node.into_node(context)?;
+
+        Ok(Self {
+            x: node,
+            y: node,
+            z: node,
+        })
+    }
 }
 
 /// A 2-dimensional vector of nodes.
@@ -109,24 +114,12 @@ pub struct Vec2 {
 }
 
 impl Vec2 {
-    /// Creates a vector from the given values.
-    pub fn new(x: Node, y: Node) -> Self {
-        Self { x, y }
-    }
-
     /// Creates a vector from the x and y variables of context.
     pub fn point(context: &mut Context) -> Self {
         let x = context.x();
         let y = context.y();
 
         Self { x, y }
-    }
-
-    /// Creates a vector by duplicating a node.
-    pub fn from_node<T: IntoNode>(context: &mut Context, node: T) -> Result<Self> {
-        let node = node.into_node(context)?;
-
-        Ok(Self { x: node, y: node })
     }
 
     /// Creates a node using a given parameter as content.
@@ -167,6 +160,12 @@ impl Vector for Vec2 {
         Self: Sized,
     {
         f(context, vec.x, vec.y)
+    }
+
+    fn from_node<T: IntoNode>(context: &mut Context, node: T) -> Result<Self> {
+        let node = node.into_node(context)?;
+
+        Ok(Self { x: node, y: node })
     }
 }
 
