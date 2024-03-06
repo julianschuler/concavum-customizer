@@ -18,12 +18,17 @@ use crate::{
     viewer::window::ModelUpdate,
 };
 
+/// A file watcher reloading the model upon file change.
 pub struct ModelReloader {
     config_path: PathBuf,
     event_loop_proxy: EventLoopProxy<ModelUpdate>,
 }
 
 impl ModelReloader {
+    /// Creates a new reloader for the given config file path.
+    ///
+    /// Upon file change, a model update is sent via the given event loop proxy.
+    /// Returns [`Error`] if the file path could not be canonicalized.
     pub fn try_new(
         config_path: &Path,
         event_loop_proxy: EventLoopProxy<ModelUpdate>,
@@ -36,6 +41,9 @@ impl ModelReloader {
         })
     }
 
+    /// Starts watching the config file in a different thread.
+    ///
+    /// Returns [`Error`] if watching the file was unsuccessful.
     pub fn watch(self) -> Result<RecommendedWatcher, Error> {
         self.update_model();
 
@@ -56,6 +64,8 @@ impl ModelReloader {
         Ok(watcher)
     }
 
+    /// Updates the model by reloading it from the config file and sending it via the event loop
+    /// proxy.
     fn update_model(&self) {
         let start = Instant::now();
         let model_update = match model::Model::try_from_config(&self.config_path) {

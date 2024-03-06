@@ -9,6 +9,7 @@ use glam::{DAffine3, DMat4, DVec3};
 use hex_color::HexColor;
 use three_d::{CpuMesh, Indices, Mat4, Positions, Srgba, Vec3};
 
+/// A component which can be meshed and may have multiple positions.
 pub struct Component {
     context: Context,
     root: Node,
@@ -17,6 +18,7 @@ pub struct Component {
 }
 
 impl Component {
+    /// Creates a new component from a given context, root node and color.
     pub fn new(context: Context, root: Node, color: HexColor) -> Self {
         Self {
             context,
@@ -26,10 +28,14 @@ impl Component {
         }
     }
 
+    /// Sets the positions of the component.
     pub fn with_positions(&mut self, positions: Vec<DAffine3>) {
         self.positions = Some(positions);
     }
 
+    /// Meshes the component.
+    ///
+    /// Returns [`CpuError`] if the component could not be converted to a shape.
     fn mesh(&self, settings: Settings) -> Result<CpuMesh, Error> {
         let shape = JitShape::new(&self.context, self.root)?;
         let mesh = Octree::build(&shape, settings).walk_dual(settings);
@@ -63,6 +69,7 @@ impl Component {
     }
 }
 
+/// A trait for displaying components with settings.
 pub trait Viewable {
     fn components(self) -> Vec<Component>;
     fn settings(&self) -> Settings;
@@ -119,6 +126,7 @@ pub trait Viewable {
     }
 }
 
+/// A CPU-side version of an object.
 #[derive(Clone)]
 pub struct CpuObject {
     pub mesh: CpuMesh,
@@ -126,6 +134,7 @@ pub struct CpuObject {
     pub transformations: Option<Vec<Mat4>>,
 }
 
+/// A model consisting of objects and other settings.
 #[derive(Clone)]
 pub struct Model {
     pub objects: Vec<CpuObject>,
