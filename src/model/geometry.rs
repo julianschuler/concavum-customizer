@@ -1,4 +1,4 @@
-use glam::{dvec3, DAffine3, DVec3};
+use glam::{dvec3, DAffine3, DVec2, DVec3};
 
 pub fn zvec(z: f64) -> DVec3 {
     dvec3(0.0, 0.0, z)
@@ -86,4 +86,9 @@ impl Project<Plane> for DVec3 {
     fn project_to(self, plane: &Plane) -> Self {
         self - plane.signed_distance_to(self) * plane.normal
     }
+}
+
+/// Check whether a triangle given by three points p1, p2 and p2 is clockwise or colinear
+pub fn counter_clockwise_or_colinear(p1: DVec2, p2: DVec2, p3: DVec2) -> bool {
+    (p2.x - p1.x) * (p3.y - p1.y) - (p2.y - p1.y) * (p3.x - p1.x) <= 0.0
 }
