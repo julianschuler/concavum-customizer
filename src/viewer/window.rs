@@ -15,10 +15,10 @@ use winit::{
 
 use crate::{
     model::Error,
-    viewer::{material::Physical, model::Mesh},
+    viewer::{material::Physical, model::Model},
 };
 
-pub type ModelUpdate = Result<Mesh, Arc<Error>>;
+pub type ModelUpdate = Result<Model, Arc<Error>>;
 
 pub struct Window {
     event_loop: EventLoop<ModelUpdate>,
@@ -154,7 +154,7 @@ impl Application {
 
     fn handle_model_update(&mut self, model_update: ModelUpdate, context: &WindowedContext) {
         match model_update {
-            Ok(model) => self.scene = Scene::from_mesh(&model, context),
+            Ok(model) => self.scene = Scene::from_model(&model, context),
             Err(err) => eprintln!("Error:{:?}", Report::from(err.clone())),
         }
     }
@@ -162,17 +162,15 @@ impl Application {
 
 #[derive(Default)]
 struct Scene {
-    // objects: Vec<Gm<three_d::Mesh, PhysicalMaterial>>,
     objects: Vec<Gm<three_d::Mesh, Physical>>,
     instanced_objects: Vec<Gm<InstancedMesh, Physical>>,
-    // instanced_objects: Vec<Gm<InstancedMesh, PhysicalMaterial>>,
     lights: Vec<PointLight>,
     ambient: AmbientLight,
     background_color: Srgba,
 }
 
 impl Scene {
-    fn from_mesh(model: &Mesh, context: &Context) -> Scene {
+    fn from_model(model: &Model, context: &Context) -> Scene {
         let mut objects = Vec::new();
         let mut instanced_objects = Vec::new();
 
