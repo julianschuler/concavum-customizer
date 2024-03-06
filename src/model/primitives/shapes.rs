@@ -1,9 +1,11 @@
 use std::{
     f64::{INFINITY, NEG_INFINITY},
-    iter::once,
-    result, vec,
+    iter::{once, repeat},
+    result,
+    vec::Vec,
 };
 
+use earcutr::earcut;
 use fidget::{
     context::{IntoNode, Node},
     Context,
@@ -12,6 +14,7 @@ use glam::{dvec2, DVec2, DVec3};
 
 use crate::model::{
     config::EPSILON,
+    geometry::counter_clockwise_or_colinear,
     primitives::{
         vector::{Operations, Vec2, Vec3, Vector},
         Result,
@@ -80,6 +83,57 @@ impl ConvexPolygon {
         assert!(vertices.len() >= 3);
 
         Self { vertices }
+    }
+
+    fn grow_from_triangles(
+        start_polygon: [usize; 3],
+        triangles: &mut Vec<[usize; 3]>,
+        vertices: &[DVec2],
+    ) -> Self {
+        let mut polygon = start_polygon.to_vec();
+        loop {
+            let mut triangle_removed = false;
+
+            triangles.retain(|triangle| {
+                let &[a, b, c] = triangle;
+                let [e1, e2, e3] = [Edge::new(a, b), Edge::new(b, c), Edge::new(c, a)];
+
+                let first = polygon.first().unwrap();
+                let last = polygon.last().unwrap();
+                polygon
+                    .windows(2)
+                    .chain(once([*last, *first].as_slice()))
+                    .enumerate()
+                    .find_map(|(i, window)| {
+                        // Try to find a shared edge between polygon and triangle
+                        let edge = Edge::new(window[0], window[1]);
+                        match edge {
+                            edge if edge == e1 => Some((i + 1, c)),
+                            edge if edge == e2 => Some((i + 1, a)),
+                            edge if edge == e3 => Some((i + 1, b)),
+                            _ => None,
+                        }
+                    })
+                    .map_or(true, |(index, point)| {
+                        // If resulting polygon is convex, insert point and remove triangle
+                        let convex = is_convex_after_insert(&polygon, index, point, vertices);
+                        if convex {
+                            polygon.insert(index, point);
+                            triangle_removed = true;
+                        }
+                        !convex
+                    })
+            });
+
+            if !triangle_removed {
+                // No triangle was removed, polygon can't grow larger
+                break;
+            }
+        }
+
+        Self {
+            vertices: polygon.into_iter().map(|index| vertices[index]).collect(),
+        }
     }
 
     fn distances(self, context: &mut Context) -> Result<Distances> {
@@ -154,6 +208,29 @@ impl SimplePolygon {
 
         Self { vertices }
     }
+
+    fn split_into_convex_polygons(&self) -> Vec<ConvexPolygon> {
+        let n = self.vertices.len();
+        let vertices: Vec<_> = self.vertices.iter().flat_map(DVec2::to_array).collect();
+        let triangles =
+            earcut(&vertices, &[], 2).expect("simple polygon should always have a triangulation");
+
+        let mut triangles: Vec<[usize; 3]> = triangles
+            .chunks_exact(3)
+            .map(|slice| slice.try_into().unwrap())
+            .collect();
+        let mut merged_polygons = Vec::new();
+
+        while let Some(triangle) = triangles.pop() {
+            merged_polygons.push(ConvexPolygon::grow_from_triangles(
+                triangle,
+                &mut triangles,
+                &self.vertices,
+            ));
+        }
+
+        merged_polygons
+    }
 }
 
 impl IntoNode for SimplePolygon {
@@ -215,4 +292,39 @@ impl IntoNode for SimplePolygon {
         let distance = context.sqrt(squared_distance)?;
         context.mul(sign, distance)
     }
+}
+
+#[derive(Eq, Clone)]
+struct Edge {
+    start: usize,
+    end: usize,
+}
+
+impl Edge {
+    fn new(start: usize, end: usize) -> Self {
+        Self { start, end }
+    }
+}
+
+impl PartialEq for Edge {
+    fn eq(&self, other: &Self) -> bool {
+        self.start == other.end && self.end == other.start
+    }
+}
+
+#[allow(clippy::many_single_char_names)]
+fn is_convex_after_insert(
+    polygon: &[usize],
+    index: usize,
+    point: usize,
+    vertices: &[DVec2],
+) -> bool {
+    let n = polygon.len();
+    let a = vertices[polygon[(index + n - 2) % n]];
+    let b = vertices[polygon[(index + n - 1) % n]];
+    let c = vertices[point];
+    let d = vertices[polygon[index]];
+    let e = vertices[polygon[(index + 1) % n]];
+
+    counter_clockwise_or_colinear(a, b, c) && counter_clockwise_or_colinear(c, d, e)
 }
