@@ -1,3 +1,5 @@
+#![allow(unused)]
+
 use std::{
     f64::{INFINITY, NEG_INFINITY},
     iter::once,
