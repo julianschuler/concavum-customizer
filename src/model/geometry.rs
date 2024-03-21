@@ -73,5 +73,5 @@ impl Project<Plane> for DVec3 {
 
 /// Returns true if the triangle given by `p1`, `p2` and `p3` is counterclockwise or colinear.
 pub fn counterclockwise_or_colinear(p1: DVec2, p2: DVec2, p3: DVec2) -> bool {
-    (p2.x - p1.x) * (p3.y - p1.y) - (p2.y - p1.y) * (p3.x - p1.x) <= 0.0
+    (p2.x - p1.x) * (p3.y - p1.y) - (p2.y - p1.y) * (p3.x - p1.x) >= 0.0
 }
