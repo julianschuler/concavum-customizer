@@ -209,14 +209,14 @@ impl IntoNode for ConvexPolygon {
     }
 }
 
+/// A simple polygon without self-intersections or holes.
+/// If the polygon is convex, consider using [`ConvexPolygon`] instead.
 pub struct SimplePolygon {
     vertices: Vec<DVec2>,
 }
 
 impl SimplePolygon {
-    /// Creates a new convex polygon from the given vertices.
-    /// For non-convex polygons, use [`SimplePolygon`] instead.
-    ///
+    /// Creates a new simple polygon from the given vertices.
     /// The vertices have to be in a counterclockwise order.
     ///
     /// # Panics
