@@ -149,8 +149,6 @@ impl ConvexPolygon {
 
     fn distances(self, context: &mut Context) -> Result<Distances> {
         let point = Vec2::point(context);
-        let length = context.vec_length(point)?;
-
         let first = *self.vertices.first().unwrap();
         let last = *self.vertices.last().unwrap();
 
@@ -180,8 +178,8 @@ impl ConvexPolygon {
             let scaled_edge = context.vec_mul(clamped_factor, edge)?;
             let shortest_diff = context.vec_sub(diff, scaled_edge)?;
 
-            let shortest_distance = context.vec_dot(shortest_diff, shortest_diff)?;
-            squared_abs = context.min(squared_abs, shortest_distance)?;
+            let shortest_abs = context.vec_dot(shortest_diff, shortest_diff)?;
+            squared_abs = context.min(squared_abs, shortest_abs)?;
 
             // Calculate inner distance
             let dot = context.vec_dot(normal, diff)?;
