@@ -73,7 +73,7 @@ impl IntoNode for BoxShape {
 }
 
 struct Distances {
-    absolute: Node,
+    squared: Node,
     inner: Node,
 }
 
@@ -152,7 +152,7 @@ impl ConvexPolygon {
         let first = *self.vertices.first().unwrap();
         let last = *self.vertices.last().unwrap();
 
-        let mut squared_abs = context.constant(INFINITY);
+        let mut squared = context.constant(INFINITY);
         let mut inner = context.constant(NEG_INFINITY);
 
         for window in self
@@ -178,8 +178,8 @@ impl ConvexPolygon {
             let scaled_edge = context.vec_mul(clamped_factor, edge)?;
             let shortest_diff = context.vec_sub(diff, scaled_edge)?;
 
-            let shortest_abs = context.vec_dot(shortest_diff, shortest_diff)?;
-            squared_abs = context.min(squared_abs, shortest_abs)?;
+            let shortest_squared = context.vec_dot(shortest_diff, shortest_diff)?;
+            squared = context.min(squared, shortest_squared)?;
 
             // Calculate inner distance
             let dot = context.vec_dot(normal, diff)?;
@@ -187,23 +187,20 @@ impl ConvexPolygon {
             inner = context.max(inner, min)?;
         }
 
-        // Clamp to EPSILON to get well-behaved gradients
-        let max = context.max(squared_abs, EPSILON)?;
-        let absolute_distance = context.sqrt(max)?;
-
-        Ok(Distances {
-            absolute: absolute_distance,
-            inner,
-        })
+        Ok(Distances { squared, inner })
     }
 }
 
 impl IntoNode for ConvexPolygon {
     fn into_node(self, context: &mut Context) -> Result<Node> {
-        let Distances { absolute, inner } = self.distances(context)?;
+        let Distances { squared, inner } = self.distances(context)?;
+
+        // Clamp to EPSILON to get well-behaved gradients
+        let clamped_squared = context.max(squared, EPSILON)?;
+        let absolute_distance = context.sqrt(clamped_squared)?;
         let double_inner = context.mul(2.0, inner)?;
 
-        context.add(absolute, double_inner)
+        context.add(absolute_distance, double_inner)
     }
 }
 
@@ -256,7 +253,7 @@ impl IntoNode for SimplePolygon {
         let first = *self.vertices.first().unwrap();
         let last = *self.vertices.last().unwrap();
 
-        let mut squared_abs = context.constant(INFINITY);
+        let mut squared = context.constant(INFINITY);
 
         for window in self
             .vertices
@@ -280,23 +277,28 @@ impl IntoNode for SimplePolygon {
             let scaled_edge = context.vec_mul(clamped_factor, edge)?;
             let shortest_diff = context.vec_sub(diff, scaled_edge)?;
 
-            let shortest_abs = context.vec_dot(shortest_diff, shortest_diff)?;
-            squared_abs = context.min(squared_abs, shortest_abs)?;
+            let shortest_squared = context.vec_dot(shortest_diff, shortest_diff)?;
+            squared = context.min(squared, shortest_squared)?;
         }
 
         // Calculate outer distance from outer distances of convex partition
-        let mut outer_distance = context.constant(INFINITY);
+        let mut squared_outer_distance = context.constant(INFINITY);
         for polygon in self.split_into_convex_polygons() {
-            let Distances { absolute, inner } = polygon.distances(context)?;
-            let outer = context.add(absolute, inner)?;
+            let Distances { squared, inner } = polygon.distances(context)?;
+            let squared_inner = context.square(inner)?;
+            let squared_outer = context.sub(squared, squared_inner)?;
 
-            outer_distance = context.min(outer_distance, outer)?;
+            squared_outer_distance = context.min(squared_outer_distance, squared_outer)?;
         }
+
+        // Clamp to EPSILON to get well-behaved gradients
+        let clamped_squared_outer = context.max(squared_outer_distance, EPSILON)?;
+        let outer_distance = context.sqrt(clamped_squared_outer)?;
         let double_outer = context.mul(2.0, outer_distance)?;
 
         // Clamp to EPSILON to get well-behaved gradients
-        let max = context.max(squared_abs, EPSILON)?;
-        let absolute_distance = context.sqrt(max)?;
+        let clamped_squared = context.max(squared, EPSILON)?;
+        let absolute_distance = context.sqrt(clamped_squared)?;
 
         context.sub(double_outer, absolute_distance)
     }
