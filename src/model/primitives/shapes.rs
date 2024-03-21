@@ -117,11 +117,11 @@ impl ConvexPolygon {
                     .enumerate()
                     .find_map(|(i, window)| {
                         // Try to find a shared edge between polygon and triangle
-                        let edge = Edge::new(window[0], window[1]);
+                        let edge = Edge::new(window[1], window[0]);
                         match edge {
-                            edge if edge == e1 => Some((i + 1, c)),
-                            edge if edge == e2 => Some((i + 1, a)),
-                            edge if edge == e3 => Some((i + 1, b)),
+                            edge if edge == e1 => Some((i, c)),
+                            edge if edge == e2 => Some((i, a)),
+                            edge if edge == e3 => Some((i, b)),
                             _ => None,
                         }
                     })
@@ -129,7 +129,7 @@ impl ConvexPolygon {
                         // If resulting polygon is convex, insert point and remove triangle
                         let convex = is_convex_after_insert(&polygon, index, point, vertices);
                         if convex {
-                            polygon.insert(index, point);
+                            polygon.insert(index + 1, point);
                             triangle_removed = true;
                         }
                         !convex
@@ -304,7 +304,7 @@ impl IntoNode for SimplePolygon {
     }
 }
 
-#[derive(Eq, Clone)]
+#[derive(PartialEq, Eq, Clone)]
 struct Edge {
     start: usize,
     end: usize,
@@ -316,12 +316,6 @@ impl Edge {
     }
 }
 
-impl PartialEq for Edge {
-    fn eq(&self, other: &Self) -> bool {
-        self.start == other.end && self.end == other.start
-    }
-}
-
 #[allow(clippy::many_single_char_names)]
 fn is_convex_after_insert(
     polygon: &[usize],
@@ -330,11 +324,11 @@ fn is_convex_after_insert(
     vertices: &[DVec2],
 ) -> bool {
     let n = polygon.len();
-    let a = vertices[polygon[(index + n - 2) % n]];
-    let b = vertices[polygon[(index + n - 1) % n]];
+    let a = vertices[polygon[(index + n - 1) % n]];
+    let b = vertices[polygon[index]];
     let c = vertices[point];
-    let d = vertices[polygon[index]];
-    let e = vertices[polygon[(index + 1) % n]];
+    let d = vertices[polygon[(index + 1) % n]];
+    let e = vertices[polygon[(index + 2) % n]];
 
     counterclockwise_or_colinear(a, b, c) && counterclockwise_or_colinear(c, d, e)
 }
