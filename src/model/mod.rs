@@ -10,17 +10,20 @@ mod util;
 
 use std::path::Path;
 
-use fidget::{context::IntoNode, mesh::Settings, Context};
+use fidget::{context::IntoNode, Context};
 use glam::{dvec3, DVec3};
 use hex_color::HexColor;
 
-pub use crate::viewer::{Component, Viewable};
+use crate::viewer::{Component, MeshSettings, Viewable};
+
 use config::Config;
-use primitives::BoxShape;
+use primitives::{BoundingBox, BoxShape};
+
+pub use primitives::Shape;
 
 pub struct Model {
     components: Vec<Component>,
-    settings: Settings,
+    settings: MeshSettings,
     light_positions: Vec<DVec3>,
     background_color: HexColor,
 }
@@ -31,10 +34,11 @@ impl Model {
         let size = 0.5;
 
         let mut context = Context::new();
-        let box_shape = BoxShape::new(dvec3(size, size, size)).into_node(&mut context)?;
-        let components = vec![Component::new(context, box_shape, config.colors.keyboard)];
+        let root = BoxShape::new(dvec3(size, size, size)).into_node(&mut context)?;
+        let shape = Shape::new(context, root, BoundingBox::new(DVec3::NEG_ONE, DVec3::ONE))?;
+        let components = vec![Component::new(shape, config.colors.keyboard)];
 
-        let settings = Settings {
+        let settings = MeshSettings {
             threads: 12,
             min_depth: 5,
             max_depth: 12,
@@ -54,7 +58,7 @@ impl Viewable for Model {
         self.components
     }
 
-    fn settings(&self) -> Settings {
+    fn settings(&self) -> MeshSettings {
         self.settings
     }
 

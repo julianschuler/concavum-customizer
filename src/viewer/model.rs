@@ -1,28 +1,21 @@
-use fidget::{
-    context::Node,
-    eval::MathShape,
-    jit::JitShape,
-    mesh::{Octree, Settings},
-    Context, Error,
-};
 use glam::{DAffine3, DMat4, DVec3};
 use hex_color::HexColor;
 use three_d::{CpuMesh, Indices, Mat4, Positions, Srgba, Vec3};
 
+use crate::model::Shape;
+
 /// A component which can be meshed and may have multiple positions.
 pub struct Component {
-    context: Context,
-    root: Node,
+    shape: Shape,
     color: HexColor,
     positions: Option<Vec<DAffine3>>,
 }
 
 impl Component {
-    /// Creates a new component from a given context, root node and color.
-    pub fn new(context: Context, root: Node, color: HexColor) -> Self {
+    /// Creates a new component from a given shape and color.
+    pub fn new(shape: Shape, color: HexColor) -> Self {
         Self {
-            context,
-            root,
+            shape,
             color,
             positions: None,
         }
@@ -34,11 +27,8 @@ impl Component {
     }
 
     /// Meshes the component.
-    ///
-    /// Returns [`CpuError`] if the component could not be converted to a shape.
-    fn mesh(&self, settings: Settings) -> Result<CpuMesh, Error> {
-        let shape = JitShape::new(&self.context, self.root)?;
-        let mesh = Octree::build(&shape, settings).walk_dual(settings);
+    fn mesh(&self, settings: MeshSettings) -> CpuMesh {
+        let mesh = self.shape.mesh(settings);
 
         let vertices = mesh
             .vertices
@@ -65,14 +55,14 @@ impl Component {
         };
         mesh.compute_normals();
 
-        Ok(mesh)
+        mesh
     }
 }
 
 /// A trait for displaying components with settings.
 pub trait Viewable {
     fn components(self) -> Vec<Component>;
-    fn settings(&self) -> Settings;
+    fn settings(&self) -> MeshSettings;
     fn light_positions(&self) -> Vec<DVec3>;
     fn background_color(&self) -> HexColor;
 
@@ -89,34 +79,30 @@ pub trait Viewable {
         let HexColor { r, g, b, a } = self.background_color();
         let background_color = Srgba::new(r, g, b, a);
 
-        let mut objects = Vec::new();
+        let objects = self
+            .components()
+            .into_iter()
+            .map(|component| {
+                let mesh = component.mesh(settings);
+                let HexColor { r, g, b, a } = component.color;
+                let color = Srgba::new(r, g, b, a);
+                let transformations = component.positions.map(|positions| {
+                    positions
+                        .into_iter()
+                        .map(|position| {
+                            let matrix: DMat4 = position.into();
+                            matrix.as_mat4().to_cols_array_2d().into()
+                        })
+                        .collect()
+                });
 
-        for component in self.components() {
-            match component.mesh(settings) {
-                Ok(mesh) => {
-                    let HexColor { r, g, b, a } = component.color;
-                    let color = Srgba::new(r, g, b, a);
-                    let transformations = component.positions.map(|positions| {
-                        positions
-                            .into_iter()
-                            .map(|position| {
-                                let matrix: DMat4 = position.into();
-                                matrix.as_mat4().to_cols_array_2d().into()
-                            })
-                            .collect()
-                    });
-
-                    objects.push(CpuObject {
-                        mesh,
-                        color,
-                        transformations,
-                    });
+                CpuObject {
+                    mesh,
+                    color,
+                    transformations,
                 }
-                Err(_) => {
-                    eprintln!("Warning: Could not triangulate component, ignoring it");
-                }
-            }
-        }
+            })
+            .collect();
 
         Model {
             objects,
@@ -124,6 +110,14 @@ pub trait Viewable {
             background_color,
         }
     }
+}
+
+/// Settings to use for meshing
+#[derive(Copy, Clone)]
+pub struct MeshSettings {
+    pub threads: u8,
+    pub min_depth: u8,
+    pub max_depth: u8,
 }
 
 /// A CPU-side version of an object.
