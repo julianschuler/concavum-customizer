@@ -14,8 +14,8 @@ use notify::{
 use winit::event_loop::EventLoopProxy;
 
 use crate::{
-    model::{self, Viewable},
-    viewer::window::ModelUpdate,
+    model,
+    viewer::{ModelUpdate, Viewable},
 };
 
 /// A file watcher reloading the model upon file change.

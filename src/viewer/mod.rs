@@ -3,6 +3,6 @@ mod model;
 mod reload;
 mod window;
 
-pub use model::{Component, Viewable};
+pub use model::{Component, MeshSettings, Viewable};
 pub use reload::ModelReloader;
-pub use window::Window;
+pub use window::{ModelUpdate, Window};
