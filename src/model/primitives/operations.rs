@@ -8,11 +8,6 @@ use crate::model::primitives::{
 
 /// A trait defining Constructive Solid Geometry (CSG) operations.
 pub trait Csg {
-    /// Extrudes a 2D shape to a given height.
-    fn extrusion<T>(&mut self, shape: T, height: f64) -> Result<Node>
-    where
-        T: IntoNode;
-
     /// Performs the union between two shapes.
     fn union<A, B>(&mut self, a: A, b: B) -> Result<Node>
     where
@@ -30,18 +25,18 @@ pub trait Csg {
     where
         A: IntoNode,
         B: IntoNode;
+
+    /// Extrudes a 2D shape to a given height.
+    fn extrusion<T: IntoNode>(&mut self, shape: T, height: f64) -> Result<Node>;
+
+    /// Offsets a shape by a given value.
+    fn offset<T: IntoNode>(&mut self, shape: T, offset: f64) -> Result<Node>;
+
+    /// Creates a shell with a given thickness.
+    fn shell<T: IntoNode>(&mut self, shape: T, thickness: f64) -> Result<Node>;
 }
 
 impl Csg for Context {
-    fn extrusion<T: IntoNode>(&mut self, node: T, height: f64) -> Result<Node> {
-        let z = self.z();
-        let neg_z = self.neg(z)?;
-        let diff = self.sub(z, height)?;
-        let dist_z = self.max(neg_z, diff)?;
-
-        self.max(node, dist_z)
-    }
-
     fn union<A, B>(&mut self, a: A, b: B) -> Result<Node>
     where
         A: IntoNode,
@@ -65,6 +60,26 @@ impl Csg for Context {
         B: IntoNode,
     {
         self.max(a, b)
+    }
+
+    fn extrusion<T: IntoNode>(&mut self, node: T, height: f64) -> Result<Node> {
+        let z = self.z();
+        let neg_z = self.neg(z)?;
+        let diff = self.sub(z, height)?;
+        let dist_z = self.max(neg_z, diff)?;
+
+        self.max(node, dist_z)
+    }
+
+    fn offset<T: IntoNode>(&mut self, node: T, offset: f64) -> Result<Node> {
+        self.sub(node, offset)
+    }
+
+    fn shell<T: IntoNode>(&mut self, node: T, thickness: f64) -> Result<Node> {
+        let node = node.into_node(self)?;
+        let inner = self.offset(node, -thickness)?;
+
+        self.difference(node, inner)
     }
 }
 
