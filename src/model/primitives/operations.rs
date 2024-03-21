@@ -2,25 +2,26 @@ use fidget::context::{Context, IntoNode, Node};
 
 use crate::model::primitives::Result;
 
+/// A trait defining Constructive Solid Geometry (CSG) operations.
 pub trait Csg {
-    /// Extrude a 2D shape to a given height
+    /// Extrudes a 2D shape to a given height.
     fn extrusion<T>(&mut self, shape: T, height: f64) -> Result<Node>
     where
         T: IntoNode;
 
-    /// Perform the union between two 3D shapes
+    /// Performs the union between two shapes.
     fn union<A, B>(&mut self, a: A, b: B) -> Result<Node>
     where
         A: IntoNode,
         B: IntoNode;
 
-    /// Perform the difference between two 3D shapes
+    /// Performs the difference between two shapes.
     fn difference<A, B>(&mut self, a: A, b: B) -> Result<Node>
     where
         A: IntoNode,
         B: IntoNode;
 
-    /// Perform the intersection between two 3D shapes
+    /// Performs the intersection between two shapes.
     fn intersection<A, B>(&mut self, a: A, b: B) -> Result<Node>
     where
         A: IntoNode,
