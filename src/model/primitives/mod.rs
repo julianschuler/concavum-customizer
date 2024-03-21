@@ -6,9 +6,9 @@ type Result<T> = std::result::Result<T, fidget::Error>;
 
 use fidget::{
     context::Node,
-    eval::MathShape,
+    eval::{types::Interval, MathShape},
     jit::JitShape,
-    mesh::{Mesh, Octree, Settings},
+    mesh::{CellBounds, Mesh, Octree, Settings},
     Context,
 };
 use glam::DVec3;
@@ -43,6 +43,7 @@ impl Shape {
             threads: settings.threads,
             min_depth: settings.min_depth,
             max_depth: settings.max_depth,
+            bounds: self.bounding_box.clone().into(),
         };
         Octree::build(&self.inner, settings).walk_dual(settings)
     }
@@ -62,5 +63,19 @@ impl BoundingBox {
 
     pub fn size(&self) -> DVec3 {
         self.b - self.a
+    }
+}
+
+impl From<BoundingBox> for CellBounds {
+    fn from(bounding_box: BoundingBox) -> Self {
+        let BoundingBox { a, b } = bounding_box;
+        let a = a.as_vec3();
+        let b = b.as_vec3();
+
+        Self {
+            x: Interval::new(a.x, b.x),
+            y: Interval::new(a.y, b.y),
+            z: Interval::new(a.z, b.z),
+        }
     }
 }
