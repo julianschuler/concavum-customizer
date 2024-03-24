@@ -26,6 +26,7 @@ pub struct Preview {
     pub show_bottom_plate: bool,
     pub triangulation_tolerance: PositiveFloat,
     pub light_positions: Vec<DVec3>,
+    pub resolution: PositiveFloat,
 }
 
 #[derive(Deserialize)]
