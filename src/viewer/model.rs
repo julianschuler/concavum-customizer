@@ -116,8 +116,7 @@ pub trait Viewable {
 #[derive(Copy, Clone)]
 pub struct MeshSettings {
     pub threads: u8,
-    pub min_depth: u8,
-    pub max_depth: u8,
+    pub resolution: f64,
 }
 
 /// A CPU-side version of an object.

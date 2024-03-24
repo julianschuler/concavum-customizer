@@ -39,43 +39,35 @@ impl Shape {
 
     /// Meshes the shape.
     pub fn mesh(&self, settings: MeshSettings) -> Mesh {
+        let center = self.bounding_box.center.as_vec3();
+        let depth = (self.bounding_box.size / settings.resolution).log2().ceil() as u8;
+        let offset = (2u32.pow((depth - 1) as u32) as f64 * settings.resolution) as f32;
+
+        let bounds = CellBounds {
+            x: Interval::new(center.x - offset, center.x + offset),
+            y: Interval::new(center.y - offset, center.y + offset),
+            z: Interval::new(center.z - offset, center.z + offset),
+        };
         let settings = Settings {
             threads: settings.threads,
-            min_depth: settings.min_depth,
-            max_depth: settings.max_depth,
-            bounds: self.bounding_box.clone().into(),
+            min_depth: depth,
+            max_depth: depth,
+            bounds,
         };
+
         Octree::build(&self.inner, settings).walk_dual(settings)
     }
 }
 
-/// A bounding box given by two corner points
-#[derive(Clone)]
+/// A bounding box given by a size and a center point.
 pub struct BoundingBox {
-    a: DVec3,
-    b: DVec3,
+    size: f64,
+    center: DVec3,
 }
 
 impl BoundingBox {
-    pub fn new(a: DVec3, b: DVec3) -> Self {
-        Self { a, b }
-    }
-
-    pub fn size(&self) -> DVec3 {
-        self.b - self.a
-    }
-}
-
-impl From<BoundingBox> for CellBounds {
-    fn from(bounding_box: BoundingBox) -> Self {
-        let BoundingBox { a, b } = bounding_box;
-        let a = a.as_vec3();
-        let b = b.as_vec3();
-
-        Self {
-            x: Interval::new(a.x, b.x),
-            y: Interval::new(a.y, b.y),
-            z: Interval::new(a.z, b.z),
-        }
+    /// Creates a new bounding box from a size and a center point.
+    pub fn new(size: f64, center: DVec3) -> Self {
+        Self { size, center }
     }
 }

@@ -9,6 +9,8 @@ show_bottom_plate = true
 triangulation_tolerance = 0.1
 # Light positions, will be hardcoded at a later stage
 light_positions = [[100, 0, 100]]
+# Resolution used for meshing, size of the smallest feature
+resolution = 0.5
 
 
 [finger_cluster]
