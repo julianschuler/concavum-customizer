@@ -11,73 +11,16 @@ use fidget::{
     context::{IntoNode, Node},
     Context,
 };
-use glam::{dvec2, DVec2, DVec3};
+use glam::{dvec2, DVec2};
 
 use crate::model::{
     config::EPSILON,
     geometry::counterclockwise_or_colinear,
     primitives::{
-        vector::{Operations, Vec2, Vec3, Vector},
+        vector::{Operations, Vec2, Vector},
         Result,
     },
 };
-
-/// A sphere centered at the origin.
-pub struct Sphere {
-    radius: f64,
-}
-
-impl Sphere {
-    /// Creates a new sphere with the given radius.
-    pub fn new(radius: f64) -> Self {
-        Self { radius }
-    }
-}
-
-impl IntoNode for Sphere {
-    fn into_node(self, context: &mut Context) -> Result<Node> {
-        let point = Vec3::point(context);
-        let length = context.vec_length(point)?;
-
-        context.sub(length, self.radius)
-    }
-}
-
-/// A box centered at the origin.
-pub struct BoxShape {
-    size: DVec3,
-}
-
-impl BoxShape {
-    /// Creates a new box with the given size.
-    pub fn new(size: DVec3) -> Self {
-        Self { size }
-    }
-}
-
-impl IntoNode for BoxShape {
-    fn into_node(self, context: &mut Context) -> Result<Node> {
-        let point = Vec3::point(context);
-        let size = Vec3::from_parameter(context, self.size / 2.0);
-        let abs = context.vec_abs(point)?;
-        let q = context.vec_sub(abs, size)?;
-
-        // Use EPSILON instead of 0.0 to get well-behaved gradients
-        let zero = Vec3::from_node(context, EPSILON)?;
-        let max = context.vec_max(q, zero)?;
-        let outer = context.vec_length(max)?;
-
-        let max_elem = context.vec_max_elem(q)?;
-        let inner = context.min(max_elem, 0.0)?;
-
-        context.add(outer, inner)
-    }
-}
-
-struct Distances {
-    squared: Node,
-    inner: Node,
-}
 
 /// A convex polygon without holes.
 /// For non-convex polygons, use [`SimplePolygon`] instead.
@@ -304,6 +247,11 @@ impl IntoNode for SimplePolygon {
 
         context.sub(double_outer, absolute_distance)
     }
+}
+
+struct Distances {
+    squared: Node,
+    inner: Node,
 }
 
 #[derive(PartialEq, Eq, Clone)]
