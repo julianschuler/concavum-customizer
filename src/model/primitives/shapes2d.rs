@@ -22,6 +22,58 @@ use crate::model::{
     },
 };
 
+/// A circle centered at the origin.
+pub struct Circle {
+    radius: f64,
+}
+
+impl Circle {
+    /// Creates a new circle with the given radius.
+    pub fn new(radius: f64) -> Self {
+        Self { radius }
+    }
+}
+
+impl IntoNode for Circle {
+    fn into_node(self, context: &mut Context) -> Result<Node> {
+        let point = Vec2::point(context);
+        let length = context.vec_length(point)?;
+
+        context.sub(length, self.radius)
+    }
+}
+
+/// A rectangle centered at the origin.
+pub struct Rectangle {
+    size: DVec2,
+}
+
+impl Rectangle {
+    /// Creates a new rectangle with the given size.
+    pub fn new(size: DVec2) -> Self {
+        Self { size }
+    }
+}
+
+impl IntoNode for Rectangle {
+    fn into_node(self, context: &mut Context) -> Result<Node> {
+        let point = Vec2::point(context);
+        let size = Vec2::from_parameter(context, self.size / 2.0);
+        let abs = context.vec_abs(point)?;
+        let q = context.vec_sub(abs, size)?;
+
+        // Use EPSILON instead of 0.0 to get well-behaved gradients
+        let zero = Vec2::from_node(context, EPSILON)?;
+        let max = context.vec_max(q, zero)?;
+        let outer = context.vec_length(max)?;
+
+        let max_elem = context.vec_max_elem(q)?;
+        let inner = context.min(max_elem, 0.0)?;
+
+        context.add(outer, inner)
+    }
+}
+
 /// A convex polygon without holes.
 /// For non-convex polygons, use [`SimplePolygon`] instead.
 pub struct ConvexPolygon {
