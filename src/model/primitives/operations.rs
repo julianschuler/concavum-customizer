@@ -1,8 +1,8 @@
 use fidget::context::{Context, IntoNode, Node};
-use glam::{DAffine3, DVec3};
+use glam::{DAffine3, DVec2, DVec3, Vec3Swizzles};
 
 use crate::model::primitives::{
-    vector::{Operations, Vec3},
+    vector::{Operations, Vec2, Vec3},
     Result,
 };
 
@@ -99,6 +99,9 @@ pub trait Transforms {
 
     /// Applies an affine linear transform.
     fn affine<T: IntoNode>(&mut self, node: T, affine: DAffine3) -> Result<Node>;
+
+    /// Tapers a shape to the given scale (in x/y) at the given target.
+    fn taper<T: IntoNode>(&mut self, node: T, scale: DVec2, target: DVec3) -> Result<Node>;
 }
 
 impl Transforms for Context {
@@ -136,6 +139,31 @@ impl Transforms for Context {
         let x = self.sub(x, affine.translation.x)?;
         let y = self.sub(y, affine.translation.y)?;
         let z = self.sub(z, affine.translation.z)?;
+
+        self.remap_xyz(root, [x, y, z])
+    }
+
+    fn taper<T: IntoNode>(&mut self, node: T, scale: DVec2, target: DVec3) -> Result<Node> {
+        let root = node.into_node(self)?;
+        let point = Vec3::point(self);
+
+        // Compute factor for linear interpolation between origin and target
+        let z = point.z;
+        let alpha = self.div(z, target.z)?;
+
+        // Scale x and y
+        let ones = Vec2::from_parameter(self, DVec2::ONE);
+        let scale = Vec2::from_parameter(self, scale - DVec2::ONE);
+        let scale = self.vec_mul(alpha, scale)?;
+        let scale = self.vec_add(scale, ones)?;
+        let scaled_x = self.div(point.x, scale.x)?;
+        let scaled_y = self.div(point.y, scale.y)?;
+
+        // Shear along x and y
+        let target = Vec2::from_parameter(self, target.xy());
+        let target = self.vec_mul(alpha, target)?;
+        let x = self.sub(scaled_x, target.x)?;
+        let y = self.sub(scaled_y, target.y)?;
 
         self.remap_xyz(root, [x, y, z])
     }
