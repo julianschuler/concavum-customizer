@@ -35,7 +35,7 @@ impl Model {
 
         let mut context = Context::new();
         let root = BoxShape::new(dvec3(size, size, size)).into_node(&mut context)?;
-        let shape = Shape::new(context, root, BoundingBox::new(1.0, DVec3::ZERO))?;
+        let shape = Shape::new(&context, root, BoundingBox::new(1.0, DVec3::ZERO))?;
         let components = vec![Component::new(shape, config.colors.keyboard)];
 
         let settings = MeshSettings {

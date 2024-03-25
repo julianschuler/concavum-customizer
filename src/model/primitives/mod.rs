@@ -28,8 +28,8 @@ impl Shape {
     /// Creates a new shape from a context, root node and bounding box.
     ///
     /// Returns [`fidget::Error`] if the root node does not belong to the same context.
-    pub fn new(context: Context, root: Node, bounding_box: BoundingBox) -> Result<Self> {
-        let inner = JitShape::new(&context, root)?;
+    pub fn new(context: &Context, root: Node, bounding_box: BoundingBox) -> Result<Self> {
+        let inner = JitShape::new(context, root)?;
 
         Ok(Self {
             inner,
@@ -40,8 +40,10 @@ impl Shape {
     /// Meshes the shape.
     pub fn mesh(&self, settings: MeshSettings) -> Mesh {
         let center = self.bounding_box.center.as_vec3();
+        #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
         let depth = (self.bounding_box.size / settings.resolution).log2().ceil() as u8;
-        let offset = (2u32.pow((depth - 1) as u32) as f64 * settings.resolution) as f32;
+        #[allow(clippy::cast_possible_truncation)]
+        let offset = (f64::from(2u32.pow(u32::from(depth - 1))) * settings.resolution) as f32;
 
         let bounds = CellBounds {
             x: Interval::new(center.x - offset, center.x + offset),
