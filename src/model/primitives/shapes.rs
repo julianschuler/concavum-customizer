@@ -58,7 +58,7 @@ impl BoxShape {
 impl IntoNode for BoxShape {
     fn into_node(self, context: &mut Context) -> Result<Node> {
         let point = Vec3::point(context);
-        let size = Vec3::from_parameter(context, self.size);
+        let size = Vec3::from_parameter(context, self.size / 2.0);
         let abs = context.vec_abs(point)?;
         let q = context.vec_sub(abs, size)?;
 
