@@ -1,5 +1,6 @@
 mod operations;
-mod shapes;
+mod shapes2d;
+mod shapes3d;
 mod vector;
 
 type Result<T> = std::result::Result<T, fidget::Error>;
@@ -14,7 +15,8 @@ use fidget::{
 use glam::DVec3;
 
 pub use operations::*;
-pub use shapes::*;
+pub use shapes2d::*;
+pub use shapes3d::*;
 
 use crate::viewer::MeshSettings;
 
