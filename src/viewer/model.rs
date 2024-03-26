@@ -48,14 +48,11 @@ impl Component {
             })
             .collect();
 
-        let mut mesh = CpuMesh {
+        CpuMesh {
             positions: Positions::F32(vertices),
             indices: Indices::U32(indices),
             ..Default::default()
-        };
-        mesh.compute_normals();
-
-        mesh
+        }
     }
 }
 
