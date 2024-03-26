@@ -59,7 +59,7 @@ impl KeyCap {
         let shape = context.taper(shape, scale, zvec(HEIGHT))?;
         let root = context.translate(shape, zvec(Switch::TOP_HEIGHT))?;
 
-        let bounding_box = BoundingBox::new(20.0, DVec3::ZERO);
+        let bounding_box = BoundingBox::new(bottom_length, zvec(Switch::TOP_HEIGHT));
         let shape = Shape::new(&context, root, bounding_box)?;
 
         Ok(Self {
