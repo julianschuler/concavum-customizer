@@ -50,8 +50,8 @@ impl Csg for Context {
         A: IntoNode,
         B: IntoNode,
     {
-        let neg_a = self.neg(a)?;
-        self.max(neg_a, b)
+        let neg_b = self.neg(b)?;
+        self.max(a, neg_b)
     }
 
     fn intersection<A, B>(&mut self, a: A, b: B) -> Result<Node>
