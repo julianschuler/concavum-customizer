@@ -3,14 +3,14 @@ mod shapes2d;
 mod shapes3d;
 mod vector;
 
-type Result<T> = std::result::Result<T, fidget::Error>;
+pub type Result<T> = std::result::Result<T, fidget::Error>;
 
 use fidget::{
     context::Node,
-    eval::{types::Interval, MathShape},
+    eval::MathShape,
     jit::JitShape,
-    mesh::{CellBounds, Mesh, Octree, Settings},
-    Context,
+    mesh::{Mesh, Octree, Settings},
+    shape, Context,
 };
 use glam::DVec3;
 
@@ -37,17 +37,13 @@ impl Shape {
 
     /// Meshes the shape.
     pub fn mesh(&self, settings: MeshSettings) -> Mesh {
-        let center = self.bounding_box.center.as_vec3();
         #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
-        let depth = (self.bounding_box.size / settings.resolution).log2().ceil() as u8;
+        let depth = ((self.bounds.size / settings.resolution).log2().ceil() as u8).max(1);
         #[allow(clippy::cast_possible_truncation)]
-        let offset = (f64::from(2u32.pow(u32::from(depth - 1))) * settings.resolution) as f32;
+        let size = (f64::from(2u32.pow(u32::from(depth - 1))) * settings.resolution) as f32;
 
-        let bounds = CellBounds {
-            x: Interval::new(center.x - offset, center.x + offset),
-            y: Interval::new(center.y - offset, center.y + offset),
-            z: Interval::new(center.z - offset, center.z + offset),
-        };
+        let center = self.bounds.center.as_vec3().to_array().into();
+        let bounds = shape::Bounds { center, size };
         let settings = Settings {
             threads: settings.threads,
             min_depth: depth,
