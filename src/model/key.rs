@@ -59,8 +59,8 @@ impl KeyCap {
         let shape = context.taper(shape, scale, zvec(HEIGHT))?;
         let root = context.translate(shape, zvec(Switch::TOP_HEIGHT))?;
 
-        let bounding_box = BoundingBox::new(bottom_length, zvec(Switch::TOP_HEIGHT));
-        let shape = Shape::new(&context, root, bounding_box)?;
+        let bounds = Bounds::new(bottom_length, zvec(Switch::TOP_HEIGHT));
+        let shape = Shape::new(&context, root, bounds)?;
 
         Ok(Self {
             shape,
@@ -102,8 +102,8 @@ impl Switch {
 
         let union = context.union(bottom, top)?;
 
-        let bounding_box = BoundingBox::new(16.0, DVec3::ZERO);
-        let shape = Shape::new(&context, union, bounding_box)?;
+        let bounds = Bounds::new(16.0, DVec3::ZERO);
+        let shape = Shape::new(&context, union, bounds)?;
 
         Ok(Self {
             shape,
