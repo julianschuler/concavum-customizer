@@ -20,23 +20,19 @@ pub use shapes3d::*;
 
 use crate::viewer::MeshSettings;
 
-/// A generic sphere given by a context, root node and bounding box
+/// A generic shape
 pub struct Shape {
     inner: JitShape,
-    bounding_box: BoundingBox,
+    bounds: Bounds,
 }
 
 impl Shape {
-    /// Creates a new shape from a context, root node and bounding box.
+    /// Creates a new shape from a context, root node and bounds.
     ///
     /// Returns [`fidget::Error`] if the root node does not belong to the same context.
-    pub fn new(context: &Context, root: Node, bounding_box: BoundingBox) -> Result<Self> {
+    pub fn new(context: &Context, root: Node, bounds: Bounds) -> Result<Self> {
         let inner = JitShape::new(context, root)?;
-
-        Ok(Self {
-            inner,
-            bounding_box,
-        })
+        Ok(Self { inner, bounds })
     }
 
     /// Meshes the shape.
@@ -63,14 +59,14 @@ impl Shape {
     }
 }
 
-/// A bounding box given by a size and a center point.
-pub struct BoundingBox {
+/// A cubical bounded region used for meshing.
+pub struct Bounds {
     size: f64,
     center: DVec3,
 }
 
-impl BoundingBox {
-    /// Creates a new bounding box from a size and a center point.
+impl Bounds {
+    /// Creates new bounds given a size and center point.
     pub fn new(size: f64, center: DVec3) -> Self {
         Self { size, center }
     }
