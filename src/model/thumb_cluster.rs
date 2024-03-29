@@ -1,24 +1,27 @@
-use glam::{dvec2, DVec2, DVec3};
-use opencascade::primitives::{IntoShape, JoinType, Shape, Wire};
+use fidget::{context::Node, Context};
+use glam::{dvec2, DVec2, DVec3, Vec3Swizzles};
 
 use crate::model::{
-    config::{PositiveDVec2, KEY_CLEARANCE},
-    geometry::{zvec, Line, Plane},
+    config::{PositiveDVec2, EPSILON, KEY_CLEARANCE},
+    geometry::{Line, Plane},
     key_positions::ThumbKeys,
-    util::{corner_point, side_point, wire_from_points, MountSize, Side, SideX, SideY},
+    primitives::{ConvexPolygon, Csg, Result},
+    util::{corner_point, side_point, MountSize, Side, SideX, SideY},
+    util::{prism_from_projected_points, sheared_prism_from_projected_points},
 };
 
 pub struct ThumbCluster {
-    pub mount: Shape,
-    pub key_clearance: Shape,
+    pub mount: Node,
+    pub key_clearance: Node,
 }
 
 impl ThumbCluster {
     pub fn new(
+        context: &mut Context,
         thumb_keys: &ThumbKeys,
         key_distance: &PositiveDVec2,
         circumference_distance: f64,
-    ) -> Self {
+    ) -> Result<Self> {
         let key_clearance = dvec2(
             key_distance.x + KEY_CLEARANCE,
             1.5 * key_distance.y + KEY_CLEARANCE,
@@ -27,43 +30,44 @@ impl ThumbCluster {
         let size =
             MountSize::from_positions(thumb_keys.iter(), &key_clearance, circumference_distance);
 
-        let mount_clearance = Self::mount_clearance(thumb_keys, &key_clearance, &size);
         let mount_outline = Self::mount_outline(thumb_keys, &key_clearance);
-        let mount = mount_outline
-            .offset(circumference_distance, JoinType::Arc)
-            .to_face()
-            .extrude(zvec(size.height))
-            .into_shape()
-            .subtract(&mount_clearance)
-            .into();
+        let outline = context.offset(mount_outline, circumference_distance)?;
+        let mount = context.extrude(outline, size.height)?;
 
-        let key_clearance = Self::key_clearance(thumb_keys, &key_clearance, &size);
+        let mount_clearance = Self::mount_clearance(context, thumb_keys, &key_clearance, &size)?;
+        let mount = context.difference(mount, mount_clearance)?;
 
-        Self {
+        let key_clearance = Self::key_clearance(context, thumb_keys, &key_clearance, &size)?;
+
+        Ok(Self {
             mount,
             key_clearance,
-        }
+        })
     }
 
-    fn mount_outline(thumb_keys: &ThumbKeys, key_clearance: &DVec2) -> Wire {
+    fn mount_outline(thumb_keys: &ThumbKeys, key_clearance: &DVec2) -> ConvexPolygon {
         let first_thumb_key = thumb_keys.first();
         let last_thumb_key = thumb_keys.last();
 
         let points = [
-            corner_point(first_thumb_key, SideX::Left, SideY::Bottom, key_clearance),
             corner_point(first_thumb_key, SideX::Left, SideY::Top, key_clearance),
-            corner_point(last_thumb_key, SideX::Right, SideY::Top, key_clearance),
+            corner_point(first_thumb_key, SideX::Left, SideY::Bottom, key_clearance),
             corner_point(last_thumb_key, SideX::Right, SideY::Bottom, key_clearance),
-        ];
+            corner_point(last_thumb_key, SideX::Right, SideY::Top, key_clearance),
+        ]
+        .into_iter()
+        .map(Vec3Swizzles::xy)
+        .collect();
 
-        wire_from_points(points, &Plane::new(DVec3::ZERO, DVec3::Z))
+        ConvexPolygon::new(points)
     }
 
     fn mount_clearance(
+        context: &mut Context,
         thumb_keys: &ThumbKeys,
         key_clearance: &DVec2,
         mount_size: &MountSize,
-    ) -> Shape {
+    ) -> Result<Node> {
         let first = thumb_keys.first();
         let last = thumb_keys.last();
 
@@ -75,7 +79,7 @@ impl ThumbCluster {
         let last_upwards_point = last_outwards_point + 2.0 * mount_size.height * DVec3::Z;
 
         // All points in the center, if any
-        let points = thumb_keys
+        let points: Vec<_> = thumb_keys
             .windows(2)
             .filter_map(|window| {
                 let position = window[0];
@@ -92,26 +96,45 @@ impl ThumbCluster {
                 first_upwards_point,
                 first_outwards_point,
                 first_point,
-            ]);
+            ])
+            .collect();
 
-        let lower_plane = Plane::new(side_point(first, Side::Bottom, key_clearance), first.y_axis);
+        let lower_point = side_point(first, Side::Bottom, key_clearance);
+        let lower_plane = Plane::new(lower_point, -first.y_axis);
+        let middle_plane = Plane::new(lower_point - EPSILON * first.y_axis, first.y_axis);
         let upper_plane = Plane::new(side_point(first, Side::Top, key_clearance), first.y_axis);
 
-        let lower_face = wire_from_points(points.clone(), &lower_plane).to_face();
-        let upper_face = wire_from_points(points, &upper_plane).to_face();
+        let lower = sheared_prism_from_projected_points(
+            context,
+            points.iter().copied(),
+            &lower_plane,
+            mount_size.length,
+            DVec3::Y,
+        )?;
+        let middle = prism_from_projected_points(
+            context,
+            points.iter().copied(),
+            &middle_plane,
+            2.0 * (key_clearance.y + EPSILON),
+        )?;
+        let upper = sheared_prism_from_projected_points(
+            context,
+            points,
+            &upper_plane,
+            mount_size.length,
+            DVec3::Y,
+        )?;
 
-        lower_face
-            .extrude(2.0 * key_clearance.y * first.y_axis)
-            .union(&lower_face.extrude(mount_size.length * DVec3::NEG_Y))
-            .union(&upper_face.extrude(mount_size.length * DVec3::Y).into())
-            .into()
+        let union = context.union(lower, middle)?;
+        context.union(union, upper)
     }
 
     fn key_clearance(
+        context: &mut Context,
         thumb_keys: &ThumbKeys,
         key_clearance: &DVec2,
         mount_size: &MountSize,
-    ) -> Shape {
+    ) -> Result<Node> {
         let first = thumb_keys.first();
         let last = thumb_keys.last();
 
@@ -136,10 +159,6 @@ impl ThumbCluster {
             ]);
 
         let plane = Plane::new(side_point(first, Side::Bottom, key_clearance), first.y_axis);
-
-        wire_from_points(points, &plane)
-            .to_face()
-            .extrude(2.0 * key_clearance.y * first.y_axis)
-            .into()
+        prism_from_projected_points(context, points, &plane, 2.0 * key_clearance.y)
     }
 }

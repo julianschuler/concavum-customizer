@@ -10,16 +10,15 @@ mod util;
 
 use std::path::Path;
 
-use fidget::{context::IntoNode, Context};
-use glam::{dvec3, DVec3};
+use glam::DVec3;
 use hex_color::HexColor;
 
 use crate::viewer::{Component, MeshSettings, Viewable};
+pub use primitives::Shape;
 
 use config::Config;
-use primitives::{BoundingBox, BoxShape};
-
-pub use primitives::Shape;
+use key::Key;
+use key_cluster::KeyCluster;
 
 pub struct Model {
     components: Vec<Component>,
@@ -31,12 +30,31 @@ pub struct Model {
 impl Model {
     pub fn try_from_config(config_path: &Path) -> Result<Self, Error> {
         let config = Config::try_from_path(config_path)?;
-        let size = 0.5;
 
-        let mut context = Context::new();
-        let root = BoxShape::new(dvec3(size, size, size)).into_node(&mut context)?;
-        let shape = Shape::new(&context, root, BoundingBox::new(1.0, DVec3::ZERO))?;
-        let components = vec![Component::new(shape, config.colors.keyboard)];
+        let mut components = Vec::new();
+        let key_cluster = KeyCluster::from_config(&config)?;
+
+        if config.preview.show_keys {
+            let finger_key = Key::new(&config, 1.0)?;
+            let thumb_key = Key::new(&config, 1.5)?;
+            let (mut finger_keycap, mut finger_switch) = finger_key.into();
+            let (mut thumb_keycap, mut thumb_switch) = thumb_key.into();
+
+            let finger_key_positions = key_cluster.finger_key_positions();
+            let thumb_key_positions = key_cluster.thumb_key_positions();
+
+            finger_keycap.with_positions(finger_key_positions.clone());
+            finger_switch.with_positions(finger_key_positions);
+            thumb_keycap.with_positions(thumb_key_positions.clone());
+            thumb_switch.with_positions(thumb_key_positions);
+
+            components.push(finger_keycap);
+            components.push(finger_switch);
+            components.push(thumb_keycap);
+            components.push(thumb_switch);
+        }
+
+        components.push(key_cluster.into());
 
         let settings = MeshSettings {
             threads: 12,
