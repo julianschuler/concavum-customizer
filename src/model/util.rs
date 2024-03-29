@@ -1,7 +1,10 @@
-use glam::{dvec3, DAffine3, DVec2, DVec3};
-use opencascade::primitives::{Solid, Wire};
+use fidget::{context::Node, Context};
+use glam::{dvec3, DAffine3, DQuat, DVec2, DVec3, Vec3Swizzles};
 
-use crate::model::geometry::{Plane, Project};
+use crate::model::{
+    geometry::{zvec, Plane},
+    primitives::{Csg, Result, SimplePolygon, Transforms},
+};
 
 /// Upper bound for the size of a mount
 pub struct MountSize {
@@ -114,17 +117,54 @@ pub fn side_point(position: &DAffine3, side: Side, key_clearance: &DVec2) -> DVe
     }
 }
 
-pub fn wire_from_points(points: impl IntoIterator<Item = DVec3>, plane: &Plane) -> Wire {
-    let points = points.into_iter().map(|point| point.project_to(plane));
-    Wire::from_ordered_points(points).expect("wire is created from more than 2 points")
-}
-
-pub fn project_points_to_plane_and_extrude(
+/// Creates a prism by projecting points to a plane and extruding to a given height.
+///
+/// The points must be in a counter-clockwise order.
+pub fn prism_from_projected_points(
+    context: &mut Context,
     points: impl IntoIterator<Item = DVec3>,
     plane: &Plane,
     height: f64,
-) -> Solid {
-    let direction = height * plane.normal();
+) -> Result<Node> {
+    let rotation = DQuat::from_rotation_arc(plane.normal(), DVec3::Z);
+    let offset = (rotation * plane.point()).z;
 
-    wire_from_points(points, plane).to_face().extrude(direction)
+    let vertices = points
+        .into_iter()
+        .map(|point| (rotation * point).xy())
+        .collect();
+
+    let polygon = SimplePolygon::new(vertices);
+    let prism = context.extrude(polygon, height)?;
+
+    let affine = DAffine3::from_translation(zvec(offset)) * DAffine3::from_quat(rotation.inverse());
+    context.affine(prism, affine)
+}
+
+/// Creates a sheared prism by projecting points to a plane, extruding to a
+/// given height and sheering it to the given direction.
+///
+/// The points must be in a counter-clockwise order.
+pub fn sheared_prism_from_projected_points(
+    context: &mut Context,
+    points: impl IntoIterator<Item = DVec3>,
+    plane: &Plane,
+    height: f64,
+    direction: DVec3,
+) -> Result<Node> {
+    let rotation = DQuat::from_rotation_arc(plane.normal(), DVec3::Z);
+    let offset = (rotation * plane.point()).z;
+    let shearing_direction = rotation * direction;
+
+    let vertices = points
+        .into_iter()
+        .map(|point| (rotation * point).xy())
+        .collect();
+
+    let polygon = SimplePolygon::new(vertices);
+    let prism = context.extrude(polygon, height)?;
+    let prism = context.shear(prism, shearing_direction.xy(), shearing_direction.z)?;
+
+    let affine = DAffine3::from_translation(zvec(offset)) * DAffine3::from_quat(rotation.inverse());
+    context.affine(prism, affine)
 }

@@ -1,11 +1,12 @@
-use glam::DAffine3;
+use fidget::Context;
+use glam::{DAffine3, DVec3};
 use hex_color::HexColor;
-use opencascade::primitives::Shape;
 
 use crate::model::{
     config::{Config, PositiveDVec2},
     finger_cluster::FingerCluster,
     key_positions::KeyPositions,
+    primitives::{Bounds, Csg, Result, Shape},
     thumb_cluster::ThumbCluster,
     Component,
 };
@@ -17,33 +18,37 @@ pub struct KeyCluster {
 }
 
 impl KeyCluster {
-    pub fn from_config(config: &Config) -> Self {
+    pub fn from_config(config: &Config) -> Result<Self> {
         let key_distance: PositiveDVec2 = (&config.finger_cluster.key_distance).into();
         let circumference_distance = *config.keyboard.circumference_distance;
-
         let key_positions = KeyPositions::from_config(config).tilt(config.keyboard.tilting_angle);
 
+        let mut context = Context::new();
+
         let finger_cluster = FingerCluster::new(
+            &mut context,
             &key_positions.columns,
             &key_distance,
             circumference_distance,
-        );
+        )?;
         let thumb_cluster = ThumbCluster::new(
+            &mut context,
             &key_positions.thumb_keys,
             &key_distance,
             circumference_distance,
-        );
+        )?;
 
-        let finger_mount = finger_cluster.mount.subtract(&thumb_cluster.key_clearance);
-        let thumb_mount = thumb_cluster.mount.subtract(&finger_cluster.key_clearance);
+        let finger_mount = context.difference(finger_cluster.mount, thumb_cluster.key_clearance)?;
+        let thumb_mount = context.difference(thumb_cluster.mount, finger_cluster.key_clearance)?;
+        let cluster = context.union(finger_mount, thumb_mount)?;
 
-        let shape = finger_mount.union(&thumb_mount).into();
+        let shape = Shape::new(&context, cluster, Bounds::new(200.0, DVec3::ZERO))?;
 
-        Self {
+        Ok(Self {
             shape,
             color: config.colors.keyboard,
             key_positions,
-        }
+        })
     }
 
     pub fn finger_key_positions(&self) -> Vec<DAffine3> {
@@ -62,6 +67,6 @@ impl KeyCluster {
 
 impl From<KeyCluster> for Component {
     fn from(cluster: KeyCluster) -> Self {
-        Component::new(todo!(), cluster.color)
+        Component::new(cluster.shape, cluster.color)
     }
 }

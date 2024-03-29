@@ -1,27 +1,29 @@
-use glam::{dvec2, dvec3, DAffine3, DVec2, DVec3};
-use opencascade::primitives::{IntoShape, JoinType, Shape, Solid, Wire};
+use fidget::{
+    context::{IntoNode, Node},
+    Context,
+};
+use glam::{dvec2, dvec3, DAffine3, DVec2, DVec3, Vec3Swizzles};
 
 use crate::model::{
     config::{PositiveDVec2, EPSILON, KEY_CLEARANCE},
-    geometry::{zvec, Line, Plane, Project},
+    geometry::{Line, Plane, Project},
     key_positions::{Column, ColumnType, Columns},
-    util::{
-        corner_point, project_points_to_plane_and_extrude, side_point, wire_from_points, MountSize,
-        Side, SideX, SideY,
-    },
+    primitives::{Csg, Result, SimplePolygon},
+    util::{corner_point, prism_from_projected_points, side_point, MountSize, Side, SideX, SideY},
 };
 
 pub struct FingerCluster {
-    pub mount: Shape,
-    pub key_clearance: Shape,
+    pub mount: Node,
+    pub key_clearance: Node,
 }
 
 impl FingerCluster {
     pub fn new(
+        context: &mut Context,
         columns: &Columns,
         key_distance: &PositiveDVec2,
         circumference_distance: f64,
-    ) -> Self {
+    ) -> Result<Self> {
         let key_clearance = dvec2(
             key_distance.x + KEY_CLEARANCE,
             key_distance.y + KEY_CLEARANCE,
@@ -33,25 +35,23 @@ impl FingerCluster {
             circumference_distance,
         );
 
-        let mount_outline = Self::mount_outline(columns, &key_clearance);
-        let mount_clearance = ClearanceBuilder::new(columns, &key_clearance, &size).build();
-        let mount = mount_outline
-            .offset(circumference_distance, JoinType::Arc)
-            .to_face()
-            .extrude(zvec(size.height))
-            .into_shape()
-            .subtract(&mount_clearance)
-            .into();
+        let mount_outline = Self::mount_outline(columns, &key_clearance).into_node(context)?;
+        let outline = context.offset(mount_outline, circumference_distance)?;
+        let prism = context.extrude(outline, size.height)?;
 
-        let key_clearance = mount_outline.to_face().extrude(zvec(size.height)).into();
+        let mount_clearance =
+            ClearanceBuilder::new(context, columns, &key_clearance, &size).build()?;
+        let mount = context.difference(prism, mount_clearance)?;
 
-        Self {
+        let key_clearance = context.extrude(mount_outline, size.height)?;
+
+        Ok(Self {
             mount,
             key_clearance,
-        }
+        })
     }
 
-    fn mount_outline(columns: &Columns, key_clearance: &DVec2) -> Wire {
+    fn mount_outline(columns: &Columns, key_clearance: &DVec2) -> SimplePolygon {
         let bottom_points = columns.windows(2).map(|window| {
             let first_left = window[0].first();
             let first_right = window[1].first();
@@ -67,14 +67,14 @@ impl FingerCluster {
         let left_points = Self::side_circumference_points(columns, SideX::Left, key_clearance);
         let right_points = Self::side_circumference_points(columns, SideX::Right, key_clearance);
 
-        let points: Vec<_> = bottom_points
+        let vertices: Vec<_> = bottom_points
             .chain(right_points)
             .chain(top_points.rev())
             .chain(left_points.into_iter().rev())
-            .map(|point| dvec3(point.x, point.y, 0.0))
+            .map(Vec3Swizzles::xy)
             .collect();
 
-        wire_from_points(points, &Plane::new(DVec3::ZERO, DVec3::Z))
+        SimplePolygon::new(vertices)
     }
 
     fn circumference_point(
@@ -148,6 +148,7 @@ impl FingerCluster {
 }
 
 struct ClearanceBuilder<'a> {
+    context: &'a mut Context,
     columns: &'a Columns,
     key_clearance: &'a DVec2,
     mount_size: &'a MountSize,
@@ -155,10 +156,16 @@ struct ClearanceBuilder<'a> {
 }
 
 impl<'a> ClearanceBuilder<'a> {
-    fn new(columns: &'a Columns, key_clearance: &'a DVec2, mount_size: &'a MountSize) -> Self {
+    fn new(
+        context: &'a mut Context,
+        columns: &'a Columns,
+        key_clearance: &'a DVec2,
+        mount_size: &'a MountSize,
+    ) -> Self {
         let support_planes = SupportPlanes::from_columns(columns, key_clearance);
 
         Self {
+            context,
             columns,
             key_clearance,
             mount_size,
@@ -166,7 +173,7 @@ impl<'a> ClearanceBuilder<'a> {
         }
     }
 
-    fn build(self) -> Shape {
+    fn build(mut self) -> Result<Node> {
         let columns = self.columns;
         let first = columns.first();
         let last = columns.last();
@@ -175,26 +182,27 @@ impl<'a> ClearanceBuilder<'a> {
             ColumnType::Normal => None,
             ColumnType::Side => columns.get(1),
         };
-        let left_clearance = self.side_column_clearance(first, neighbor, SideX::Left);
+        let left_clearance = self.side_column_clearance(first, neighbor, SideX::Left)?;
 
         let neighbor = match last.column_type {
             ColumnType::Normal => None,
             ColumnType::Side => columns.get(columns.len() - 2),
         };
-        let right_clearance = self.side_column_clearance(last, neighbor, SideX::Right);
+        let right_clearance = self.side_column_clearance(last, neighbor, SideX::Right)?;
 
-        let mut clearance = left_clearance.union(&right_clearance);
+        let mut clearance = self.context.union(left_clearance, right_clearance)?;
 
         if let Some(columns) = columns.get(1..columns.len() - 1) {
             for column in columns {
-                clearance = clearance.union(&self.normal_column_clearance(column).into());
+                let normal_column_clearance = self.normal_column_clearance(column)?;
+                clearance = self.context.union(clearance, normal_column_clearance)?;
             }
         }
 
-        clearance.into()
+        Ok(clearance)
     }
 
-    fn normal_column_clearance(&self, column: &Column) -> Solid {
+    fn normal_column_clearance(&mut self, column: &Column) -> Result<Node> {
         let points = self.clearance_points(column);
         let first = column.first();
         let plane = Plane::new(
@@ -202,15 +210,15 @@ impl<'a> ClearanceBuilder<'a> {
             first.x_axis,
         );
 
-        project_points_to_plane_and_extrude(points, &plane, 2.0 * self.key_clearance.x)
+        prism_from_projected_points(self.context, points, &plane, 2.0 * self.key_clearance.x)
     }
 
     fn side_column_clearance(
-        &self,
+        &mut self,
         column: &Column,
         neighbor: Option<&Column>,
         side_x: SideX,
-    ) -> Shape {
+    ) -> Result<Node> {
         let normal_offset = self.key_clearance.x;
         let side_offset = 4.0 * self.key_clearance.x;
         let extrusion_height = 8.0 * self.key_clearance.x;
@@ -224,30 +232,29 @@ impl<'a> ClearanceBuilder<'a> {
         let combined_clearance = if let Some(neighbor) = neighbor {
             let plane = Plane::new(translation - side_offset * normal, normal);
             let column_clearance =
-                project_points_to_plane_and_extrude(points, &plane, extrusion_height);
+                prism_from_projected_points(self.context, points, &plane, extrusion_height)?;
 
             let translation = neighbor.first().translation;
             let normal = side_x.direction() * neighbor.first().x_axis;
             let plane = Plane::new(translation - normal_offset * normal, normal);
             let points = self.clearance_points(neighbor);
             let neighbor_clearance =
-                project_points_to_plane_and_extrude(points, &plane, extrusion_height);
+                prism_from_projected_points(self.context, points, &plane, extrusion_height)?;
 
-            column_clearance.intersect(&neighbor_clearance).into_shape()
+            self.context
+                .intersection(column_clearance, neighbor_clearance)?
         } else {
             let plane = Plane::new(translation - normal_offset * normal, normal);
-            let column_clearance =
-                project_points_to_plane_and_extrude(points, &plane, extrusion_height);
-
-            column_clearance.into_shape()
+            prism_from_projected_points(self.context, points, &plane, extrusion_height)?
         };
 
         // Combined column, side and neighbor clearance
-        let side_clearance = self.side_clearance(side_x);
+        let side_clearance = self.side_clearance(side_x)?;
         #[allow(clippy::if_not_else)]
         #[allow(clippy::float_cmp)]
         if column.first().x_axis.z.signum() != side_x.direction() {
-            combined_clearance.intersect(&side_clearance).into()
+            self.context
+                .intersection(combined_clearance, side_clearance)
         } else {
             // Bound side clearance since it is combined by union and can interfere with other columns
             let plane = Plane::new(translation - normal_offset * normal, normal);
@@ -258,16 +265,16 @@ impl<'a> ClearanceBuilder<'a> {
                 dvec3(0.0, -self.mount_size.length, 2.0 * self.mount_size.height),
             ];
             let side_bounding_shape =
-                project_points_to_plane_and_extrude(points, &plane, extrusion_height);
+                prism_from_projected_points(self.context, points, &plane, extrusion_height)?;
 
-            side_clearance
-                .intersect(&side_bounding_shape.into())
-                .union(&combined_clearance)
-                .into()
+            let intersection = self
+                .context
+                .intersection(side_clearance, side_bounding_shape)?;
+            self.context.union(intersection, combined_clearance)
         }
     }
 
-    fn side_clearance(&self, side_x: SideX) -> Shape {
+    fn side_clearance(&mut self, side_x: SideX) -> Result<Node> {
         let column = match side_x {
             SideX::Left => self.columns.first(),
             SideX::Right => self.columns.last(),
@@ -283,7 +290,7 @@ impl<'a> ClearanceBuilder<'a> {
         let upwards_bottom_point = outwards_bottom_point + 2.0 * self.mount_size.height * DVec3::Z;
         let upwards_top_point = outwards_top_point + 2.0 * self.mount_size.height * DVec3::Z;
 
-        let points = column
+        let points: Vec<_> = column
             .windows(2)
             .filter_map(|window| self.side_point(&window[0], &window[1], side_x))
             .chain([
@@ -293,10 +300,11 @@ impl<'a> ClearanceBuilder<'a> {
                 upwards_bottom_point,
                 outwards_bottom_point,
                 lower_corner,
-            ]);
+            ])
+            .collect();
 
         let plane = Plane::new(self.mount_size.width * DVec3::NEG_X, DVec3::X);
-        project_points_to_plane_and_extrude(points, &plane, 2.0 * self.mount_size.width).into()
+        prism_from_projected_points(self.context, points, &plane, 2.0 * self.mount_size.width)
     }
 
     fn side_point(&self, bottom: &DAffine3, top: &DAffine3, side_x: SideX) -> Option<DVec3> {

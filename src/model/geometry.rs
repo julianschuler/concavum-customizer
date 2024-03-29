@@ -57,6 +57,11 @@ impl Plane {
     pub fn normal(&self) -> DVec3 {
         self.normal
     }
+
+    /// Returns a point on the plane.
+    pub fn point(&self) -> DVec3 {
+        self.point
+    }
 }
 
 /// A trait for projecting objects onto others.
