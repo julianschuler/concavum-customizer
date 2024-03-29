@@ -135,9 +135,9 @@ pub fn prism_from_projected_points(
         .collect();
 
     let polygon = SimplePolygon::new(vertices);
-    let prism = context.extrude(polygon, height)?;
+    let prism = context.extrude(polygon, offset, offset + height)?;
 
-    let affine = DAffine3::from_translation(zvec(offset)) * DAffine3::from_quat(rotation.inverse());
+    let affine = DAffine3::from_quat(rotation.inverse());
     context.affine(prism, affine)
 }
 
@@ -162,7 +162,7 @@ pub fn sheared_prism_from_projected_points(
         .collect();
 
     let polygon = SimplePolygon::new(vertices);
-    let prism = context.extrude(polygon, height)?;
+    let prism = context.extrude(polygon, 0.0, height)?;
     let prism = context.shear(prism, shearing_direction.xy(), shearing_direction.z)?;
 
     let affine = DAffine3::from_translation(zvec(offset)) * DAffine3::from_quat(rotation.inverse());

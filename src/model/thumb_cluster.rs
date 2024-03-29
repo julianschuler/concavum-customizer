@@ -32,7 +32,7 @@ impl ThumbCluster {
 
         let mount_outline = Self::mount_outline(thumb_keys, &key_clearance);
         let outline = context.offset(mount_outline, circumference_distance)?;
-        let mount = context.extrude(outline, size.height)?;
+        let mount = context.extrude(outline, -size.height, size.height)?;
 
         let mount_clearance = Self::mount_clearance(context, thumb_keys, &key_clearance, &size)?;
         let mount = context.difference(mount, mount_clearance)?;

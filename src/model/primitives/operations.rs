@@ -26,8 +26,8 @@ pub trait Csg {
         A: IntoNode,
         B: IntoNode;
 
-    /// Extrudes a 2D shape to a given height.
-    fn extrude<T: IntoNode>(&mut self, shape: T, height: f64) -> Result<Node>;
+    /// Extrudes a 2D shape between two `z_min` and `z_max`.
+    fn extrude<T: IntoNode>(&mut self, shape: T, z_min: f64, z_max: f64) -> Result<Node>;
 
     /// Offsets a shape by a given value.
     fn offset<T: IntoNode>(&mut self, shape: T, offset: f64) -> Result<Node>;
@@ -62,11 +62,11 @@ impl Csg for Context {
         self.max(a, b)
     }
 
-    fn extrude<T: IntoNode>(&mut self, node: T, height: f64) -> Result<Node> {
+    fn extrude<T: IntoNode>(&mut self, node: T, z_min: f64, z_max: f64) -> Result<Node> {
         let z = self.z();
-        let neg_z = self.neg(z)?;
-        let diff = self.sub(z, height)?;
-        let dist_z = self.max(neg_z, diff)?;
+        let dist_z_min = self.sub(z_min, z)?;
+        let dist_z_max = self.sub(z, z_max)?;
+        let dist_z = self.max(dist_z_min, dist_z_max)?;
 
         self.max(node, dist_z)
     }

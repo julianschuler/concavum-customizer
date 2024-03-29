@@ -37,13 +37,13 @@ impl FingerCluster {
 
         let mount_outline = Self::mount_outline(columns, &key_clearance).into_node(context)?;
         let outline = context.offset(mount_outline, circumference_distance)?;
-        let prism = context.extrude(outline, size.height)?;
+        let prism = context.extrude(outline, -size.height, size.height)?;
 
         let mount_clearance =
             ClearanceBuilder::new(context, columns, &key_clearance, &size).build()?;
         let mount = context.difference(prism, mount_clearance)?;
 
-        let key_clearance = context.extrude(mount_outline, size.height)?;
+        let key_clearance = context.extrude(mount_outline, -size.height, size.height)?;
 
         Ok(Self {
             mount,
