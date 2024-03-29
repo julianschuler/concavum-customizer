@@ -5,8 +5,9 @@ use hex_color::HexColor;
 use crate::model::{
     config::{Config, PositiveDVec2},
     finger_cluster::FingerCluster,
+    geometry::Plane,
     key_positions::KeyPositions,
-    primitives::{Bounds, Csg, Result, Shape},
+    primitives::{Bounds, Csg, HalfSpace, Result, Shape},
     thumb_cluster::ThumbCluster,
     Component,
 };
@@ -38,9 +39,15 @@ impl KeyCluster {
             circumference_distance,
         )?;
 
+        // Subtract key clearances from each other and combine the mounts
         let finger_mount = context.difference(finger_cluster.mount, thumb_cluster.key_clearance)?;
         let thumb_mount = context.difference(thumb_cluster.mount, finger_cluster.key_clearance)?;
-        let cluster = context.union(finger_mount, thumb_mount)?;
+        let combined_mount = context.union(finger_mount, thumb_mount)?;
+
+        // Hollow out the combined mount and cut off everthing below a z value of 0
+        let half_space = HalfSpace::new(Plane::new(DVec3::ZERO, DVec3::NEG_Z));
+        let hollowed_cluster = context.shell(combined_mount, *config.keyboard.shell_thickness)?;
+        let cluster = context.intersection(hollowed_cluster, half_space)?;
 
         let shape = Shape::new(&context, cluster, Bounds::new(200.0, DVec3::ZERO))?;
 
