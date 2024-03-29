@@ -8,6 +8,7 @@ use glam::DVec3;
 
 use crate::model::{
     config::EPSILON,
+    geometry::Plane,
     primitives::{
         vector::{Operations, Vec3, Vector},
         Result,
@@ -32,6 +33,29 @@ impl IntoNode for Sphere {
         let length = context.vec_length(point)?;
 
         context.sub(length, self.radius)
+    }
+}
+
+/// A half space given by a dividing plane.
+pub struct HalfSpace {
+    plane: Plane,
+}
+
+impl HalfSpace {
+    /// Creates a new half given by the dividing plane.
+    pub fn new(plane: Plane) -> Self {
+        Self { plane }
+    }
+}
+
+impl IntoNode for HalfSpace {
+    fn into_node(self, context: &mut Context) -> Result<Node> {
+        let point = Vec3::point(context);
+        let normal = Vec3::from_parameter(context, self.plane.normal());
+        let plane_point = Vec3::from_parameter(context, self.plane.point());
+
+        let difference = context.vec_sub(point, plane_point)?;
+        context.vec_dot(difference, normal)
     }
 }
 
