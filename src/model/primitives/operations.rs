@@ -1,5 +1,5 @@
 use fidget::context::{Context, IntoNode, Node};
-use glam::{DAffine3, DVec2, DVec3, Vec3Swizzles};
+use glam::{DAffine3, DVec2, DVec3};
 
 use crate::model::primitives::{
     vector::{Operations, Vec2, Vec3},
@@ -100,8 +100,11 @@ pub trait Transforms {
     /// Applies an affine linear transform.
     fn affine<T: IntoNode>(&mut self, node: T, affine: DAffine3) -> Result<Node>;
 
-    /// Tapers a shape to the given scale (in x/y) at the given target.
-    fn taper<T: IntoNode>(&mut self, node: T, scale: DVec2, target: DVec3) -> Result<Node>;
+    /// Tapers a shape to the given scale (in x/y) at the given height.
+    fn taper<T: IntoNode>(&mut self, node: T, scale: DVec2, height: f64) -> Result<Node>;
+
+    /// Shears a shape to the given offset (in x/y) at the given height.
+    fn shear<T: IntoNode>(&mut self, node: T, offset: DVec2, height: f64) -> Result<Node>;
 }
 
 impl Transforms for Context {
@@ -143,28 +146,33 @@ impl Transforms for Context {
         self.remap_xyz(root, [x, y, z])
     }
 
-    fn taper<T: IntoNode>(&mut self, node: T, scale: DVec2, target: DVec3) -> Result<Node> {
+    fn taper<T: IntoNode>(&mut self, node: T, scale: DVec2, height: f64) -> Result<Node> {
         let root = node.into_node(self)?;
         let point = Vec3::point(self);
-
-        // Compute factor for linear interpolation between origin and target
-        let z = point.z;
-        let alpha = self.div(z, target.z)?;
+        let alpha = self.div(point.z, height)?;
 
         // Scale x and y
         let ones = Vec2::from_parameter(self, DVec2::ONE);
         let scale = Vec2::from_parameter(self, scale - DVec2::ONE);
         let scale = self.vec_mul(alpha, scale)?;
         let scale = self.vec_add(scale, ones)?;
-        let scaled_x = self.div(point.x, scale.x)?;
-        let scaled_y = self.div(point.y, scale.y)?;
+        let x = self.div(point.x, scale.x)?;
+        let y = self.div(point.y, scale.y)?;
+
+        self.remap_xyz(root, [x, y, point.z])
+    }
+
+    fn shear<T: IntoNode>(&mut self, node: T, offset: DVec2, height: f64) -> Result<Node> {
+        let root = node.into_node(self)?;
+        let point = Vec3::point(self);
+        let alpha = self.div(point.z, height)?;
 
         // Shear along x and y
-        let target = Vec2::from_parameter(self, target.xy());
-        let target = self.vec_mul(alpha, target)?;
-        let x = self.sub(scaled_x, target.x)?;
-        let y = self.sub(scaled_y, target.y)?;
+        let offset = Vec2::from_parameter(self, offset);
+        let offset = self.vec_mul(alpha, offset)?;
+        let x = self.sub(point.x, offset.x)?;
+        let y = self.sub(point.y, offset.y)?;
 
-        self.remap_xyz(root, [x, y, z])
+        self.remap_xyz(root, [x, y, point.z])
     }
 }
