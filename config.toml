@@ -5,12 +5,10 @@ show_keys = true
 show_interface_pcb = true
 # Show the bottom plate during preview
 show_bottom_plate = true
-# Triangulation tolerance, lower values result in higher preview fidelity
-triangulation_tolerance = 0.1
-# Light positions, will be hardcoded at a later stage
-light_positions = [[100, 0, 100]]
 # Resolution used for meshing, size of the smallest feature
-resolution = 0.5
+resolution = 1.0
+# Light positions, will be hardcoded at a later stage
+light_positions = [[100, 0, 100], [100, -100, -100]]
 
 
 [finger_cluster]
