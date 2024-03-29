@@ -55,7 +55,7 @@ impl KeyCap {
         ));
         let rounded_rectangle = context.offset(rectangle, BOTTOM_FILLET)?;
 
-        let shape = context.extrude(rounded_rectangle, HEIGHT)?;
+        let shape = context.extrude(rounded_rectangle, 0.0, HEIGHT)?;
         let shape = context.taper(shape, scale, HEIGHT)?;
         let root = context.translate(shape, zvec(Switch::TOP_HEIGHT))?;
 
