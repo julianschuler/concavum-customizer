@@ -5,7 +5,7 @@ use hex_color::HexColor;
 use crate::model::{
     config::{Config, EPSILON},
     geometry::zvec,
-    primitives::{BoundingBox, BoxShape, Csg, Rectangle, Result, Shape, Transforms},
+    primitives::{Bounds, BoxShape, Csg, Rectangle, Result, Shape, Transforms},
     Component,
 };
 
@@ -56,7 +56,7 @@ impl KeyCap {
         let rounded_rectangle = context.offset(rectangle, BOTTOM_FILLET)?;
 
         let shape = context.extrude(rounded_rectangle, HEIGHT)?;
-        let shape = context.taper(shape, scale, zvec(HEIGHT))?;
+        let shape = context.taper(shape, scale, HEIGHT)?;
         let root = context.translate(shape, zvec(Switch::TOP_HEIGHT))?;
 
         let bounds = Bounds::new(bottom_length, zvec(Switch::TOP_HEIGHT));
@@ -98,7 +98,8 @@ impl Switch {
 
         let top = BoxShape::new(dvec3(TOP_WIDTH, TOP_WIDTH, Self::TOP_HEIGHT));
         let top = context.translate(top, zvec(Self::TOP_HEIGHT / 2.0))?;
-        let top = context.taper(top, scale, dvec3(0.0, TOP_OFFSET, Self::TOP_HEIGHT))?;
+        let top = context.taper(top, scale, Self::TOP_HEIGHT)?;
+        let top = context.shear(top, dvec2(0.0, TOP_OFFSET), Self::TOP_HEIGHT)?;
 
         let union = context.union(bottom, top)?;
 
