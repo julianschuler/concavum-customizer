@@ -1,31 +1,43 @@
-use std::sync::Arc;
+use std::sync::{
+    mpsc::{channel, Receiver, Sender},
+    Arc,
+};
 
 use color_eyre::Report;
 use three_d::{
-    degrees, vec3, AmbientLight, Attenuation, Camera, ClearState, Context, Degrees,
-    FrameInputGenerator, Gm, InnerSpace, InstancedMesh, Instances, Light, MouseButton,
-    OrbitControl, PointLight, RenderTarget, Srgba, SurfaceSettings, Vec3, Viewport, WindowError,
-    WindowedContext,
+    degrees, vec3, window, AmbientLight, Attenuation, Camera, ClearState, Context, Degrees,
+    FrameInput, FrameOutput, Gm, InnerSpace, InstancedMesh, Instances, Light, MouseButton,
+    OrbitControl, PointLight, RenderTarget, Srgba, Vec3, Viewport, WindowError, WindowSettings,
 };
-use winit::{
-    event::{Event, WindowEvent},
-    event_loop::{ControlFlow, EventLoop, EventLoopBuilder, EventLoopProxy},
-    window::WindowBuilder,
-};
+use winit::event_loop::{EventLoop, EventLoopProxy};
 
 use crate::{
     model::Error,
     viewer::{material::Physical, model::Model},
 };
 
-/// A Model update.
+/// A model update.
 pub type ModelUpdate = Result<Model, Arc<Error>>;
 
-/// An application window with a custom event loop.
+/// A model updater allowing to update a model at runtime.
+#[derive(Clone)]
+pub struct ModelUpdater {
+    sender: Sender<ModelUpdate>,
+    event_loop_proxy: EventLoopProxy<()>,
+}
+
+impl ModelUpdater {
+    pub fn send_event(&self, model_update: ModelUpdate) {
+        let _ = self.sender.send(model_update);
+        let _ = self.event_loop_proxy.send_event(());
+    }
+}
+
+/// An application window with a model updater.
 pub struct Window {
-    event_loop: EventLoop<ModelUpdate>,
-    inner: winit::window::Window,
-    context: WindowedContext,
+    inner: window::Window,
+    updater: ModelUpdater,
+    receiver: Receiver<ModelUpdate>,
 }
 
 impl Window {
@@ -33,53 +45,45 @@ impl Window {
     ///
     /// Returns a [`WindowError`] the window could not be created.
     pub fn try_new() -> Result<Self, WindowError> {
-        let event_loop = EventLoopBuilder::with_user_event().build();
-        let inner = WindowBuilder::new()
-            .with_title("Concavum customizer")
-            .build(&event_loop)?;
-        let context = WindowedContext::from_winit_window(&inner, SurfaceSettings::default())?;
+        let event_loop = EventLoop::new();
+        let event_loop_proxy = event_loop.create_proxy();
+        let inner = window::Window::from_event_loop(
+            WindowSettings {
+                title: "Concavum customizer".to_owned(),
+                ..Default::default()
+            },
+            event_loop,
+        )?;
+
+        let (sender, receiver) = channel();
+
+        let updater = ModelUpdater {
+            sender,
+            event_loop_proxy,
+        };
 
         Ok(Self {
-            event_loop,
             inner,
-            context,
+            updater,
+            receiver,
         })
     }
 
-    /// Returns the event loop proxy.
-    pub fn event_loop_proxy(&self) -> EventLoopProxy<ModelUpdate> {
-        self.event_loop.create_proxy()
+    /// Returns the model updater.
+    pub fn model_updater(&self) -> ModelUpdater {
+        self.updater.clone()
     }
 
     /// Runs the render loop.
     ///
     /// This is blocking until the window is closed.
     pub fn run_render_loop(self) {
-        let frame_input_generator = FrameInputGenerator::from_winit_window(&self.inner);
-        let (width, height): (u32, u32) = self.inner.inner_size().into();
-        let viewport = Viewport::new_at_origo(width, height);
-        let mut application = Application::new(frame_input_generator, viewport);
+        let mut application = Application::new(self.inner.viewport(), self.receiver);
 
-        self.event_loop
-            .run(move |event, _, control_flow| match event {
-                Event::MainEventsCleared => {
-                    self.inner.request_redraw();
-                }
-                Event::RedrawRequested(_) => {
-                    application.handle_redraw(&self.context);
-
-                    self.context.swap_buffers().unwrap();
-                    control_flow.set_poll();
-                    self.inner.request_redraw();
-                }
-                Event::WindowEvent { ref event, .. } => {
-                    application.handle_window_event(event, &self.context, control_flow);
-                }
-                Event::UserEvent(model_update) => {
-                    application.handle_model_update(model_update, &self.context);
-                }
-                _ => {}
-            });
+        self.inner.render_loop(move |frame_input| {
+            application.handle_events(frame_input);
+            FrameOutput::default()
+        });
     }
 }
 
@@ -88,12 +92,12 @@ struct Application {
     control: OrbitControl,
     camera: Camera,
     scene: Scene,
-    frame_input_generator: FrameInputGenerator,
+    receiver: Receiver<ModelUpdate>,
 }
 
 impl Application {
-    /// Creates a new Application from a frame input generator and a viewport.
-    fn new(frame_input_generator: FrameInputGenerator, viewport: Viewport) -> Self {
+    /// Creates a new Application from a viewport and a receiver with model updates.
+    fn new(viewport: Viewport, receiver: Receiver<ModelUpdate>) -> Self {
         const DEFAULT_DISTANCE: f32 = 300.0;
         const DEFAULT_FOV: Degrees = degrees(22.5);
         const DEFAULT_TARGET: Vec3 = vec3(0.0, 0.0, 0.0);
@@ -114,14 +118,12 @@ impl Application {
             control,
             camera,
             scene,
-            frame_input_generator,
+            receiver,
         }
     }
 
-    /// Handles redraw events for the given context.
-    fn handle_redraw(&mut self, context: &WindowedContext) {
-        let mut frame_input = self.frame_input_generator.generate(context);
-
+    /// Handles events for the given frame input.
+    fn handle_events(&mut self, mut frame_input: FrameInput) {
         self.control
             .handle_events(&mut self.camera, &mut frame_input.events);
         self.camera.set_viewport(frame_input.viewport);
@@ -140,33 +142,15 @@ impl Application {
             }
         }
 
+        if let Ok(model_update) = self.receiver.try_recv() {
+            self.handle_model_update(model_update, &frame_input.context);
+        }
+
         self.scene.render(&self.camera, &frame_input.screen());
     }
 
-    /// Handles a window event for the given context and control flow.
-    fn handle_window_event(
-        &mut self,
-        event: &WindowEvent,
-        context: &WindowedContext,
-        control_flow: &mut ControlFlow,
-    ) {
-        self.frame_input_generator.handle_winit_window_event(event);
-        match event {
-            WindowEvent::Resized(physical_size) => {
-                context.resize(*physical_size);
-            }
-            WindowEvent::ScaleFactorChanged { new_inner_size, .. } => {
-                context.resize(**new_inner_size);
-            }
-            WindowEvent::CloseRequested => {
-                control_flow.set_exit();
-            }
-            _ => (),
-        }
-    }
-
-    /// Handles a model update for the given context.
-    fn handle_model_update(&mut self, model_update: ModelUpdate, context: &WindowedContext) {
+    /// Handles a model update using the given context.
+    fn handle_model_update(&mut self, model_update: ModelUpdate, context: &Context) {
         match model_update {
             Ok(model) => self.scene = Scene::from_model(&model, context),
             Err(err) => eprintln!("Error:{:?}", Report::from(err.clone())),

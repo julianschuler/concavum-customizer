@@ -16,7 +16,7 @@ fn main() -> Result<()> {
 
     let window = Window::try_new()?;
 
-    let reloader = ModelReloader::try_new(config_path, window.event_loop_proxy())
+    let reloader = ModelReloader::try_new(config_path, window.model_updater())
         .wrap_err("Failed to initialize file watcher")?;
     let _watcher = reloader.watch().wrap_err("Failed to watch file")?;
 
