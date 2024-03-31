@@ -8,11 +8,11 @@ color-eyre = { version = "0.6", default-features = false }
 earcutr = "0.4.3"
 fidget = { path = "../fidget/fidget", default-features = false, features = ["jit", "mesh"] }
 futures = "0.3"
-glam = { version = "0.24", features = ["serde"] }
+glam = { version = "0.27", features = ["serde"] }
 hex_color = { version = "3.0", features = ["serde"] }
 notify = "6.1"
 serde = { version = "1.0", features = ["derive"] }
 thiserror = "1.0"
-three-d = { version = "0.16", features = ["egui-gui"] }
+three-d = { version = "0.17", features = ["egui-gui"] }
 toml = "0.8"
 winit = "0.28"
