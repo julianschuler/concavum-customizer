@@ -11,33 +11,29 @@ use notify::{
     EventKind::Access,
     RecommendedWatcher, RecursiveMode, Watcher,
 };
-use winit::event_loop::EventLoopProxy;
 
 use crate::{
     model,
-    viewer::{ModelUpdate, Viewable},
+    viewer::{ModelUpdater, Viewable},
 };
 
 /// A file watcher reloading the model upon file change.
 pub struct ModelReloader {
     config_path: PathBuf,
-    event_loop_proxy: EventLoopProxy<ModelUpdate>,
+    model_updater: ModelUpdater,
 }
 
 impl ModelReloader {
     /// Creates a new reloader for the given config file path.
     ///
-    /// Upon file change, a model update is sent via the given event loop proxy.
+    /// Upon file change, a model update is sent via the given model updater.
     /// Returns [`Error`] if the file path could not be canonicalized.
-    pub fn try_new(
-        config_path: &Path,
-        event_loop_proxy: EventLoopProxy<ModelUpdate>,
-    ) -> Result<Self, Error> {
+    pub fn try_new(config_path: &Path, model_updater: ModelUpdater) -> Result<Self, Error> {
         let config_path = config_path.canonicalize()?;
 
         Ok(Self {
             config_path,
-            event_loop_proxy,
+            model_updater,
         })
     }
 
@@ -64,8 +60,8 @@ impl ModelReloader {
         Ok(watcher)
     }
 
-    /// Updates the model by reloading it from the config file and sending it via the event loop
-    /// proxy.
+    /// Updates the model by reloading it from the config file and sending it via the model
+    /// updater.
     fn update_model(&self) {
         let start = Instant::now();
         let model_update = match model::Model::try_from_config(&self.config_path) {
@@ -77,7 +73,7 @@ impl ModelReloader {
             }
             Err(error) => Err(Arc::new(error)),
         };
-        let _ = self.event_loop_proxy.send_event(model_update);
+        self.model_updater.send_event(model_update);
     }
 }
 
