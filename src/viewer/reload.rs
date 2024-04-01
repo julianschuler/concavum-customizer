@@ -14,7 +14,7 @@ use notify::{
 
 use crate::{
     model,
-    viewer::{ModelUpdater, Viewable},
+    viewer::{ModelUpdater, ReloadEvent, Viewable},
 };
 
 /// A file watcher reloading the model upon file change.
@@ -64,16 +64,19 @@ impl ModelReloader {
     /// updater.
     fn update_model(&self) {
         let start = Instant::now();
-        let model_update = match model::Model::try_from_config(&self.config_path) {
+
+        self.model_updater.send_event(ReloadEvent::Started);
+        let reload_event = match model::Model::try_from_config(&self.config_path) {
             Ok(model) => {
                 let model = model.into_model();
                 eprintln!("Reloaded model in {:?}", start.elapsed());
 
-                Ok(model)
+                ReloadEvent::Finished(model)
             }
-            Err(error) => Err(Arc::new(error)),
+            Err(error) => ReloadEvent::Error(Arc::new(error)),
         };
-        self.model_updater.send_event(model_update);
+
+        self.model_updater.send_event(reload_event);
     }
 }
 
