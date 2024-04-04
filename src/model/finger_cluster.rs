@@ -4,12 +4,16 @@ use fidget::{
 };
 use glam::{dvec2, dvec3, DAffine3, DVec2, DVec3, Vec3Swizzles};
 
-use crate::model::{
+use crate::{
     config::{PositiveDVec2, EPSILON, KEY_CLEARANCE},
-    geometry::{Line, Plane, Project},
-    key_positions::{Column, ColumnType, Columns},
-    primitives::{Csg, Result, SimplePolygon},
-    util::{corner_point, prism_from_projected_points, side_point, MountSize, Side, SideX, SideY},
+    model::{
+        geometry::{Line, Plane, Project},
+        key_positions::{Column, ColumnType, Columns},
+        primitives::{Csg, Result, SimplePolygon},
+        util::{
+            corner_point, prism_from_projected_points, side_point, MountSize, Side, SideX, SideY,
+        },
+    },
 };
 
 pub struct FingerCluster {

@@ -1,13 +1,17 @@
 use fidget::{context::Node, Context};
 use glam::{dvec2, DVec2, DVec3, Vec3Swizzles};
 
-use crate::model::{
+use crate::{
     config::{PositiveDVec2, EPSILON, KEY_CLEARANCE},
-    geometry::{Line, Plane},
-    key_positions::ThumbKeys,
-    primitives::{ConvexPolygon, Csg, Result},
-    util::{corner_point, side_point, MountSize, Side, SideX, SideY},
-    util::{prism_from_projected_points, sheared_prism_from_projected_points},
+    model::{
+        geometry::{Line, Plane},
+        key_positions::ThumbKeys,
+        primitives::{ConvexPolygon, Csg, Result},
+        util::{
+            corner_point, prism_from_projected_points, sheared_prism_from_projected_points,
+            side_point, MountSize, Side, SideX, SideY,
+        },
+    },
 };
 
 pub struct ThumbCluster {

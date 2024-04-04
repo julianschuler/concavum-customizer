@@ -1,4 +1,3 @@
-mod config;
 mod finger_cluster;
 mod geometry;
 mod key;
@@ -13,10 +12,12 @@ use std::path::Path;
 use glam::DVec3;
 use hex_color::HexColor;
 
-use crate::viewer::{Component, MeshSettings, Viewable};
+use crate::{
+    config::{Config, Error as ConfigError},
+    viewer::{Component, MeshSettings, Viewable},
+};
 pub use primitives::Shape;
 
-use config::Config;
 use key::Key;
 use key_cluster::KeyCluster;
 
@@ -92,7 +93,7 @@ impl Viewable for Model {
 pub enum Error {
     /// Failed to parse config
     #[error("failed to parse config")]
-    ParseConfig(#[from] config::Error),
+    ParseConfig(#[from] ConfigError),
     /// Failed to create model
     #[error("failed to create model")]
     CreateModel(#[from] fidget::Error),

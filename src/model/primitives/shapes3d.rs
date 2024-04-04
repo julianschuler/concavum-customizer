@@ -6,12 +6,14 @@ use fidget::{
 };
 use glam::DVec3;
 
-use crate::model::{
+use crate::{
     config::EPSILON,
-    geometry::Plane,
-    primitives::{
-        vector::{Operations, Vec3, Vector},
-        Result,
+    model::{
+        geometry::Plane,
+        primitives::{
+            vector::{Operations, Vec3, Vector},
+            Result,
+        },
     },
 };
 
