@@ -13,12 +13,14 @@ use fidget::{
 };
 use glam::{dvec2, DVec2};
 
-use crate::model::{
+use crate::{
     config::EPSILON,
-    geometry::counterclockwise_or_colinear,
-    primitives::{
-        vector::{Operations, Vec2, Vector},
-        Result,
+    model::{
+        geometry::counterclockwise_or_colinear,
+        primitives::{
+            vector::{Operations, Vec2, Vector},
+            Result,
+        },
     },
 };
 

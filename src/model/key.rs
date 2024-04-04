@@ -2,11 +2,13 @@ use fidget::Context;
 use glam::{dvec2, dvec3, DVec2, DVec3};
 use hex_color::HexColor;
 
-use crate::model::{
+use crate::{
     config::{Config, EPSILON},
-    geometry::zvec,
-    primitives::{Bounds, BoxShape, Csg, Rectangle, Result, Shape, Transforms},
-    Component,
+    model::{
+        geometry::zvec,
+        primitives::{Bounds, BoxShape, Csg, Rectangle, Result, Shape, Transforms},
+        Component,
+    },
 };
 
 pub struct Key {

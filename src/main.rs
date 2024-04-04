@@ -1,5 +1,6 @@
 #![warn(clippy::pedantic)]
 
+mod config;
 mod model;
 mod viewer;
 

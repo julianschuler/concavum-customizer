@@ -2,14 +2,16 @@ use fidget::Context;
 use glam::{DAffine3, DVec3};
 use hex_color::HexColor;
 
-use crate::model::{
+use crate::{
     config::{Config, PositiveDVec2},
-    finger_cluster::FingerCluster,
-    geometry::Plane,
-    key_positions::KeyPositions,
-    primitives::{Bounds, Csg, HalfSpace, Result, Shape},
-    thumb_cluster::ThumbCluster,
-    Component,
+    model::{
+        finger_cluster::FingerCluster,
+        geometry::Plane,
+        key_positions::KeyPositions,
+        primitives::{Bounds, Csg, HalfSpace, Result, Shape},
+        thumb_cluster::ThumbCluster,
+        Component,
+    },
 };
 
 pub struct KeyCluster {

@@ -2,10 +2,9 @@ use std::ops::{Deref, Mul};
 
 use glam::{dvec3, DAffine3, DQuat, DVec2, EulerRot};
 
-use crate::model::{
-    config::{self, Config, FingerCluster, PositiveDVec2, ThumbCluster},
-    geometry::zvec,
-    key::Switch,
+use crate::{
+    config::{Column as ConfigColumn, Config, FingerCluster, PositiveDVec2, ThumbCluster},
+    model::{geometry::zvec, key::Switch},
 };
 
 pub struct Column {
@@ -20,10 +19,10 @@ pub enum ColumnType {
 }
 
 impl Column {
-    pub fn new(entries: Vec<DAffine3>, column_type: &config::Column) -> Self {
+    pub fn new(entries: Vec<DAffine3>, column_type: &ConfigColumn) -> Self {
         let column_type = match column_type {
-            config::Column::Normal { .. } => ColumnType::Normal,
-            config::Column::Side { .. } => ColumnType::Side,
+            ConfigColumn::Normal { .. } => ColumnType::Normal,
+            ConfigColumn::Side { .. } => ColumnType::Side,
         };
 
         Self {
@@ -80,18 +79,18 @@ impl Columns {
             .enumerate()
             .map(|(i, column)| {
                 let (curvature_angle, offset, side_angle, side) = match column {
-                    config::Column::Normal {
+                    ConfigColumn::Normal {
                         curvature_angle,
                         offset,
                     } => (curvature_angle, offset, 0.0, 0.0),
-                    config::Column::Side { side_angle } => {
+                    ConfigColumn::Side { side_angle } => {
                         let (side, column) = if i == 0 {
                             (1.0, config.columns.get(1))
                         } else {
                             (-1.0, config.columns.get(config.columns.len() - 2))
                         };
 
-                        if let config::Column::Normal {
+                        if let ConfigColumn::Normal {
                             curvature_angle,
                             offset,
                         } = column.expect("there has to be at least one normal column")
