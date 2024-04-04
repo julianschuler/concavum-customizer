@@ -7,7 +7,7 @@ use std::path::Path;
 
 use color_eyre::{config::HookBuilder, eyre::WrapErr, Result};
 
-use viewer::{ModelReloader, Window};
+use viewer::{FileWatcher, Window};
 
 fn main() -> Result<()> {
     HookBuilder::new().display_env_section(false).install()?;
@@ -16,7 +16,7 @@ fn main() -> Result<()> {
 
     let window = Window::try_new()?;
 
-    let reloader = ModelReloader::try_new(config_path, window.model_updater())
+    let reloader = FileWatcher::try_new(config_path, window.model_updater())
         .wrap_err("Failed to initialize file watcher")?;
     let _watcher = reloader.watch().wrap_err("Failed to watch file")?;
 

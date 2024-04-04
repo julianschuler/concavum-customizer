@@ -18,12 +18,12 @@ use crate::{
 };
 
 /// A file watcher reloading the model upon file change.
-pub struct ModelReloader {
+pub struct FileWatcher {
     config_path: PathBuf,
     model_updater: ModelUpdater,
 }
 
-impl ModelReloader {
+impl FileWatcher {
     /// Creates a new reloader for the given config file path.
     ///
     /// Upon file change, a model update is sent via the given model updater.
