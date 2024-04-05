@@ -18,7 +18,7 @@ use crate::{
     viewer::{material::Physical, model::Model},
 };
 
-/// A model update.
+/// A reload event.
 pub enum ReloadEvent {
     Started,
     Finished(Model),

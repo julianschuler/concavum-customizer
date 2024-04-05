@@ -1,8 +1,6 @@
 use std::{
     io,
     path::{Path, PathBuf},
-    sync::Arc,
-    time::Instant,
 };
 
 use notify::{
@@ -12,28 +10,25 @@ use notify::{
     RecommendedWatcher, RecursiveMode, Watcher,
 };
 
-use crate::{
-    model,
-    viewer::{ModelUpdater, ReloadEvent, Viewable},
-};
+use crate::{config::Config, viewer::reload::ModelReloader};
 
 /// A file watcher reloading the model upon file change.
 pub struct FileWatcher {
     config_path: PathBuf,
-    model_updater: ModelUpdater,
+    model_reloader: ModelReloader,
 }
 
 impl FileWatcher {
     /// Creates a new reloader for the given config file path.
     ///
-    /// Upon file change, a model update is sent via the given model updater.
+    /// Upon file change, the model is reloaded via via the given model reloader.
     /// Returns [`Error`] if the file path could not be canonicalized.
-    pub fn try_new(config_path: &Path, model_updater: ModelUpdater) -> Result<Self, Error> {
+    pub fn try_new(config_path: &Path, model_reloader: ModelReloader) -> Result<Self, Error> {
         let config_path = config_path.canonicalize()?;
 
         Ok(Self {
             config_path,
-            model_updater,
+            model_reloader,
         })
     }
 
@@ -60,23 +55,10 @@ impl FileWatcher {
         Ok(watcher)
     }
 
-    /// Updates the model by reloading it from the config file and sending it via the model
-    /// updater.
+    /// Parse the config file and reload the model from it.
     fn update_model(&self) {
-        let start = Instant::now();
-
-        self.model_updater.send_event(ReloadEvent::Started);
-        let reload_event = match model::Model::try_from_config(&self.config_path) {
-            Ok(model) => {
-                let model = model.into_model();
-                eprintln!("Reloaded model in {:?}", start.elapsed());
-
-                ReloadEvent::Finished(model)
-            }
-            Err(error) => ReloadEvent::Error(Arc::new(error)),
-        };
-
-        self.model_updater.send_event(reload_event);
+        let config = Config::try_from_path(&self.config_path);
+        self.model_reloader.reload(config);
     }
 }
 
