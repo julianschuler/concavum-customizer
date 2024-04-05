@@ -7,8 +7,6 @@ mod primitives;
 mod thumb_cluster;
 mod util;
 
-use std::path::Path;
-
 use glam::DVec3;
 use hex_color::HexColor;
 
@@ -29,9 +27,7 @@ pub struct Model {
 }
 
 impl Model {
-    pub fn try_from_config(config_path: &Path) -> Result<Self, Error> {
-        let config = Config::try_from_path(config_path)?;
-
+    pub fn try_from_config(config: Config) -> Result<Self, Error> {
         let mut components = Vec::new();
         let key_cluster = KeyCluster::from_config(&config)?;
 
