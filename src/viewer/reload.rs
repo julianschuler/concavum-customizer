@@ -14,7 +14,7 @@ pub struct ModelReloader {
 }
 
 impl ModelReloader {
-    /// Creates a new ModelReloader using the given updater for updating the model.
+    /// Creates a new model reloader using the given updater for updating the model.
     pub fn new(updater: ModelUpdater) -> Self {
         Self { updater }
     }

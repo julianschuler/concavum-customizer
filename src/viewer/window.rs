@@ -185,9 +185,9 @@ impl Application {
         self.show_spinner = matches!(&reload_event, ReloadEvent::Started);
 
         match reload_event {
+            ReloadEvent::Started => {}
             ReloadEvent::Finished(model) => self.scene = Scene::from_model(&model, context),
             ReloadEvent::Error(err) => eprintln!("Error:{:?}", Report::from(err.clone())),
-            _ => {}
         }
     }
 }
