@@ -169,7 +169,7 @@ impl Application {
         }
 
         if let Ok(reload_event) = self.receiver.try_recv() {
-            self.handle_reload_event(reload_event, &frame_input.context);
+            self.handle_reload_event(&frame_input.context, reload_event);
         }
 
         // Render scene and GUI
@@ -180,13 +180,13 @@ impl Application {
             .expect("rendering the gui should never fail");
     }
 
-    /// Handles a reload event using the given context.
-    fn handle_reload_event(&mut self, reload_event: ReloadEvent, context: &Context) {
+    /// Handles a reload event for the given context.
+    fn handle_reload_event(&mut self, context: &Context, reload_event: ReloadEvent) {
         self.show_spinner = matches!(&reload_event, ReloadEvent::Started);
 
         match reload_event {
             ReloadEvent::Started => {}
-            ReloadEvent::Finished(model) => self.scene = Scene::from_model(&model, context),
+            ReloadEvent::Finished(model) => self.scene = Scene::from_model(context, &model),
             ReloadEvent::Error(err) => eprintln!("Error:{:?}", Report::from(err.clone())),
         }
     }
@@ -202,8 +202,8 @@ struct Scene {
 }
 
 impl Scene {
-    /// Creates a scene from a model given a context.
-    fn from_model(model: &Model, context: &Context) -> Scene {
+    /// Creates a scene from a model for the given context.
+    fn from_model(context: &Context, model: &Model) -> Scene {
         let mut objects = Vec::new();
         let mut instanced_objects = Vec::new();
 
