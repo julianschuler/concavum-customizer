@@ -1,3 +1,4 @@
+use hex_color::HexColor;
 use three_d::{
     lights_shader_source, Camera, ColorMapping, FragmentAttributes, LightingModel, Material,
     MaterialType, Program, RenderStates, Srgba, ToneMapping,
@@ -5,12 +6,12 @@ use three_d::{
 
 /// A simple physical material with an albedo.
 pub struct Physical {
-    albedo: Srgba,
+    albedo: HexColor,
 }
 
 impl Physical {
     /// Creates a new physical material given an albedo.
-    pub fn new(albedo: Srgba) -> Self {
+    pub fn new(albedo: HexColor) -> Self {
         Self { albedo }
     }
 }
@@ -48,7 +49,8 @@ impl Material for Physical {
                 light.use_uniforms(program, i as u32);
             }
         }
-        program.use_uniform("albedo", self.albedo.to_linear_srgb());
+        let HexColor { r, g, b, a } = self.albedo;
+        program.use_uniform("albedo", Srgba::new(r, g, b, a).to_linear_srgb());
     }
 
     fn render_states(&self) -> RenderStates {

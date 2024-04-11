@@ -18,8 +18,6 @@ pub use operations::*;
 pub use shapes2d::*;
 pub use shapes3d::*;
 
-use crate::viewer::MeshSettings;
-
 /// A generic shape
 pub struct Shape {
     inner: JitShape,
@@ -66,4 +64,11 @@ impl Bounds {
     pub fn new(size: f64, center: DVec3) -> Self {
         Self { size, center }
     }
+}
+
+/// Settings to use for meshing
+#[derive(Copy, Clone)]
+pub struct MeshSettings {
+    pub threads: u8,
+    pub resolution: f64,
 }

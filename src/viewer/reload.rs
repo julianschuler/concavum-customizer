@@ -4,8 +4,8 @@ use crate::{
     config::{Config, Error},
     model::Model,
     viewer::{
+        model::IntoShape,
         window::{ModelUpdater, ReloadEvent},
-        Viewable,
     },
 };
 
