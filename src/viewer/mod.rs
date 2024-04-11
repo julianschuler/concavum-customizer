@@ -1,3 +1,4 @@
+mod assets;
 mod file_watcher;
 mod material;
 mod model;

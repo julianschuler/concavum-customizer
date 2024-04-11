@@ -14,10 +14,7 @@ use winit::event_loop::{EventLoop, EventLoopProxy};
 
 use crate::{
     model::Error,
-    viewer::{
-        model::Model,
-        scene::{Assets, Scene},
-    },
+    viewer::{assets::Assets, model::Model, scene::Scene},
 };
 
 /// A reload event.

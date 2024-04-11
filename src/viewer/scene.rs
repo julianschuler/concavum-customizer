@@ -4,20 +4,7 @@ use three_d::{
     Light, Mat4, Mesh, PointLight, RenderTarget, Srgba,
 };
 
-use crate::viewer::{material::Physical, model::Model};
-
-/// Fixed assets loaded from OBJ files.
-pub struct Assets {
-    switch: CpuMesh,
-    keycap_1u: CpuMesh,
-    keycap_1_5u: CpuMesh,
-}
-
-impl Assets {
-    pub fn new() -> Self {
-        todo!()
-    }
-}
+use crate::viewer::{assets::Assets, material::Physical, model::Model};
 
 #[derive(Default)]
 pub struct Scene {
