@@ -15,32 +15,35 @@ fn main() {
     let mut struct_definition = String::new();
     let mut struct_implementation = String::new();
 
-    for entry in read_dir(assets_dir).expect("assets directory should exist") {
-        if let Ok(entry) = entry {
-            let path = entry.path();
-            if path.extension() == Some(OsStr::new("obj")) {
-                if let Some(name) = path.file_stem().map(|stem| stem.to_str()).flatten() {
-                    let uppercase_name = name.to_uppercase();
-                    let (positions, indices) = constants_from_path(&path);
+    for entry in read_dir(assets_dir)
+        .expect("assets directory should exist")
+        .flatten()
+    {
+        let path = entry.path();
+        if path.extension() == Some(OsStr::new("obj")) {
+            if let Some(name) = path.file_stem().and_then(|stem| stem.to_str()) {
+                let uppercase_name = name.to_uppercase();
+                let (positions, indices) = constants_from_path(&path);
 
-                    struct_definition.push_str(&format!("\n    pub {name}: CpuMesh,"));
-                    struct_implementation.push_str(&format!(
-                        "
+                struct_definition.push_str(&format!("\n    pub {name}: CpuMesh,"));
+                struct_implementation.push_str(&format!(
+                    "
             {name}: CpuMesh {{
                 positions: Positions::F32({uppercase_name}_POSITIONS),
                 indices: Indices::U32({uppercase_name}_INDICES),
                 ..Default::default()
             }},"
-                    ));
-                    constants.push_str(&format!(
-                        "
+                ));
+                constants.push_str(&format!(
+                    "
+#[allow(clippy::unreadable_literal)]
 const {uppercase_name}_POSITIONS: Vec<Vec3> = vec![
 {positions}];
+#[allow(clippy::unreadable_literal)]
 const {uppercase_name}_INDICES: Vec<u32> = vec![
 {indices}];
 "
-                    ));
-                }
+                ));
             }
         }
     }
@@ -72,10 +75,7 @@ fn constants_from_path(path: &Path) -> (String, String) {
     let mut positions = String::new();
     let mut indices = String::new();
 
-    for line in read_to_string(path)
-        .expect(&format!("failed to read file"))
-        .lines()
-    {
+    for line in read_to_string(path).expect("failed to read file").lines() {
         let mut iter = line.split_whitespace();
         match iter.next() {
             Some("v") => {
