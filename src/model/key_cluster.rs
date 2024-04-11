@@ -1,6 +1,5 @@
 use fidget::Context;
-use glam::{DAffine3, DVec3};
-use hex_color::HexColor;
+use glam::DVec3;
 
 use crate::{
     config::{Config, PositiveDVec2},
@@ -10,14 +9,12 @@ use crate::{
         key_positions::KeyPositions,
         primitives::{Bounds, Csg, HalfSpace, Result, Shape},
         thumb_cluster::ThumbCluster,
-        Component,
     },
 };
 
 pub struct KeyCluster {
-    shape: Shape,
-    color: HexColor,
-    key_positions: KeyPositions,
+    pub shape: Shape,
+    pub key_positions: KeyPositions,
 }
 
 impl KeyCluster {
@@ -55,27 +52,7 @@ impl KeyCluster {
 
         Ok(Self {
             shape,
-            color: config.colors.keyboard,
             key_positions,
         })
-    }
-
-    pub fn finger_key_positions(&self) -> Vec<DAffine3> {
-        self.key_positions
-            .columns
-            .iter()
-            .flat_map(|column| column.iter())
-            .copied()
-            .collect()
-    }
-
-    pub fn thumb_key_positions(&self) -> Vec<DAffine3> {
-        self.key_positions.thumb_keys.to_owned()
-    }
-}
-
-impl From<KeyCluster> for Component {
-    fn from(cluster: KeyCluster) -> Self {
-        Component::new(cluster.shape, cluster.color)
     }
 }
