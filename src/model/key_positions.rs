@@ -7,6 +7,8 @@ use crate::{
     model::geometry::zvec,
 };
 
+const CURVATURE_HEIGHT: f64 = 6.6;
+
 pub struct Column {
     pub column_type: ColumnType,
     entries: Vec<DAffine3>,
@@ -69,8 +71,6 @@ pub struct Columns(Vec<Column>);
 
 impl Columns {
     fn from_config(config: &FingerCluster) -> Self {
-        const CURVATURE_HEIGHT: f64 = 6.6;
-
         let key_distance: PositiveDVec2 = (&config.key_distance).into();
 
         let columns = config
@@ -190,8 +190,6 @@ pub struct ThumbKeys(Vec<DAffine3>);
 
 impl ThumbKeys {
     fn from_config(config: &ThumbCluster) -> Self {
-        const CURVATURE_HEIGHT: f64 = 6.6;
-
         let curvature_angle = config.curvature_angle.to_radians();
         let cluster_rotation = DQuat::from_euler(
             EulerRot::ZYX,
