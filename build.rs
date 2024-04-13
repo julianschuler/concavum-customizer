@@ -29,20 +29,23 @@ fn main() {
                 struct_implementation.push_str(&format!(
                     "
             {name}: CpuMesh {{
-                positions: Positions::F32({uppercase_name}_POSITIONS),
-                indices: Indices::U32({uppercase_name}_INDICES),
+                positions: Positions::F32({uppercase_name}_POSITIONS.to_vec()),
+                indices: Indices::U32({uppercase_name}_INDICES.to_vec()),
                 ..Default::default()
             }},"
                 ));
                 constants.push_str(&format!(
                     "
 #[allow(clippy::unreadable_literal)]
-const {uppercase_name}_POSITIONS: Vec<Vec3> = vec![
-{positions}];
-#[allow(clippy::unreadable_literal)]
-const {uppercase_name}_INDICES: Vec<u32> = vec![
-{indices}];
-"
+const {uppercase_name}_POSITIONS: [Vec3; {}] = [
+{}];
+const {uppercase_name}_INDICES: [u32; {}] = [
+{}];
+",
+                    { positions.length },
+                    { positions.entries },
+                    { indices.length * 3 },
+                    { indices.entries },
                 ));
             }
         }
@@ -71,9 +74,9 @@ impl Assets {{
         .expect("writing to the output file should always succeed");
 }
 
-fn constants_from_path(path: &Path) -> (String, String) {
-    let mut positions = String::new();
-    let mut indices = String::new();
+fn constants_from_path(path: &Path) -> (Constant, Constant) {
+    let mut positions = Constant::positions();
+    let mut indices = Constant::indicies();
 
     for line in read_to_string(path).expect("failed to read file").lines() {
         let mut iter = line.split_whitespace();
@@ -95,4 +98,30 @@ fn constants_from_path(path: &Path) -> (String, String) {
     }
 
     (positions, indices)
+}
+
+struct Constant {
+    entries: String,
+    length: usize,
+}
+
+impl Constant {
+    fn positions() -> Self {
+        // OBJ files are 1-indexed, we add an unused entry here to avoid parsing values
+        let entries = "    Vec3::new(0f32, 0f32, 0f32),\n".to_owned();
+
+        Self { entries, length: 1 }
+    }
+
+    fn indicies() -> Self {
+        Self {
+            entries: String::new(),
+            length: 0,
+        }
+    }
+
+    fn push_str(&mut self, string: &str) {
+        self.entries.push_str(string);
+        self.length += 1;
+    }
 }
