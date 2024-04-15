@@ -21,7 +21,7 @@ impl Scene {
         let switch_positions = model
             .finger_key_positions
             .iter()
-            .chain(&model.finger_key_positions)
+            .chain(&model.thumb_key_positions)
             .cloned()
             .collect();
 
