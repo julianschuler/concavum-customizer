@@ -1,3 +1,5 @@
+use std::num::NonZeroUsize;
+
 use glam::DMat4;
 use three_d::{CpuMesh, Indices, Mat4, Positions, Vec3};
 
@@ -23,7 +25,7 @@ pub trait IntoShape {
 impl IntoShape for model::Model {
     fn into_model(self) -> Model {
         let settings = MeshSettings {
-            threads: 12,
+            threads: NonZeroUsize::new(12).unwrap(),
             resolution: self.resolution,
         };
         let keyboard = Mesh::mesh(&self.keyboard, settings);
