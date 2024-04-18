@@ -1,4 +1,4 @@
-#![allow(unused)]
+// #![allow(unused)]
 
 use std::{
     f64::{INFINITY, NEG_INFINITY},
@@ -7,20 +7,14 @@ use std::{
 };
 
 use earcutr::earcut;
-use fidget::{
-    context::{IntoNode, Node},
-    Context,
-};
+use fidget::context::Tree;
 use glam::{dvec2, DVec2};
 
 use crate::{
     config::EPSILON,
     model::{
         geometry::counterclockwise_or_colinear,
-        primitives::{
-            vector::{Operations, Vec2, Vector},
-            Result,
-        },
+        primitives::vector::{Vec2, Vector},
     },
 };
 
@@ -36,12 +30,12 @@ impl Circle {
     }
 }
 
-impl IntoNode for Circle {
-    fn into_node(self, context: &mut Context) -> Result<Node> {
-        let point = Vec2::point(context);
-        let length = context.vec_length(point)?;
+impl From<Circle> for Tree {
+    fn from(circle: Circle) -> Self {
+        let point = Vec2::point();
+        let length = point.length();
 
-        context.sub(length, self.radius)
+        length - circle.radius
     }
 }
 
@@ -57,22 +51,21 @@ impl Rectangle {
     }
 }
 
-impl IntoNode for Rectangle {
-    fn into_node(self, context: &mut Context) -> Result<Node> {
-        let point = Vec2::point(context);
-        let size = Vec2::from_parameter(context, self.size / 2.0);
-        let abs = context.vec_abs(point)?;
-        let q = context.vec_sub(abs, size)?;
+impl From<Rectangle> for Tree {
+    fn from(rectangle: Rectangle) -> Self {
+        let point = Vec2::point();
+        let size = Vec2::from_parameter(rectangle.size / 2.0);
+        let abs = point.abs();
+        let q = abs.sub(size);
 
         // Use EPSILON instead of 0.0 to get well-behaved gradients
-        let zero = Vec2::from_node(context, EPSILON)?;
-        let max = context.vec_max(q, zero)?;
-        let outer = context.vec_length(max)?;
+        let max = q.max(EPSILON.into());
+        let outer = max.length();
 
-        let max_elem = context.vec_max_elem(q)?;
-        let inner = context.min(max_elem, 0.0)?;
+        let max_elem = q.max_elem();
+        let inner = max_elem.min(0.0);
 
-        context.add(outer, inner)
+        outer + inner
     }
 }
 
@@ -146,13 +139,13 @@ impl ConvexPolygon {
         }
     }
 
-    fn distances(self, context: &mut Context) -> Result<Distances> {
-        let point = Vec2::point(context);
+    fn distances(self) -> Distances {
+        let point = Vec2::point();
         let first = *self.vertices.first().unwrap();
         let last = *self.vertices.last().unwrap();
 
-        let mut squared = context.constant(INFINITY);
-        let mut inner = context.constant(NEG_INFINITY);
+        let mut squared = Tree::constant(INFINITY);
+        let mut inner = Tree::constant(NEG_INFINITY);
 
         for window in self
             .vertices
@@ -165,41 +158,41 @@ impl ConvexPolygon {
             let edge = previous_vertex - vertex;
             let edge_length = edge.length();
             let edge = edge.normalize_or_zero();
-            let normal = Vec2::from_parameter(context, dvec2(-edge.y, edge.x));
-            let edge = Vec2::from_parameter(context, edge);
-            let vertex = Vec2::from_parameter(context, vertex);
-            let diff = context.vec_sub(point, vertex)?;
+            let normal = Vec2::from_parameter(dvec2(-edge.y, edge.x));
+            let edge = Vec2::from_parameter(edge);
+            let vertex = Vec2::from_parameter(vertex);
+            let diff = point.sub(vertex);
 
             // Calculate shortest possible vector from point to edge
-            let edge_projection = context.vec_dot(diff, edge)?;
-            let max = context.max(edge_projection, 0.0)?;
-            let clamped_factor = context.min(max, edge_length)?;
-            let scaled_edge = context.vec_mul(clamped_factor, edge)?;
-            let shortest_diff = context.vec_sub(diff, scaled_edge)?;
+            let edge_projection = diff.dot(edge.clone());
+            let max = edge_projection.max(0.0);
+            let clamped_factor = max.min(edge_length);
+            let scaled_edge = edge.mul(clamped_factor);
+            let shortest_diff = diff.sub(scaled_edge);
 
-            let shortest_squared = context.vec_dot(shortest_diff, shortest_diff)?;
-            squared = context.min(squared, shortest_squared)?;
+            let shortest_squared = shortest_diff.squared_length();
+            squared = squared.min(shortest_squared);
 
             // Calculate inner distance
-            let dot = context.vec_dot(normal, diff)?;
-            let min = context.min(dot, 0.0)?;
-            inner = context.max(inner, min)?;
+            let dot = normal.dot(diff);
+            let min = dot.min(0.0);
+            inner = inner.max(min);
         }
 
-        Ok(Distances { squared, inner })
+        Distances { squared, inner }
     }
 }
 
-impl IntoNode for ConvexPolygon {
-    fn into_node(self, context: &mut Context) -> Result<Node> {
-        let Distances { squared, inner } = self.distances(context)?;
+impl From<ConvexPolygon> for Tree {
+    fn from(polygon: ConvexPolygon) -> Self {
+        let Distances { squared, inner } = polygon.distances();
 
         // Clamp to EPSILON to get well-behaved gradients
-        let clamped_squared = context.max(squared, EPSILON)?;
-        let absolute_distance = context.sqrt(clamped_squared)?;
-        let double_inner = context.mul(2.0, inner)?;
+        let clamped_squared = squared.max(EPSILON);
+        let absolute_distance = clamped_squared.sqrt();
+        let double_inner = 2.0 * inner;
 
-        context.add(absolute_distance, double_inner)
+        absolute_distance + double_inner
     }
 }
 
@@ -223,7 +216,6 @@ impl SimplePolygon {
     }
 
     fn split_into_convex_polygons(&self) -> Vec<ConvexPolygon> {
-        let n = self.vertices.len();
         let vertices: Vec<_> = self.vertices.iter().flat_map(DVec2::to_array).collect();
         let triangles =
             earcut(&vertices, &[], 2).expect("simple polygon should always have a triangulation");
@@ -246,15 +238,15 @@ impl SimplePolygon {
     }
 }
 
-impl IntoNode for SimplePolygon {
-    fn into_node(self, context: &mut Context) -> Result<Node> {
-        let point = Vec2::point(context);
-        let first = *self.vertices.first().unwrap();
-        let last = *self.vertices.last().unwrap();
+impl From<SimplePolygon> for Tree {
+    fn from(polygon: SimplePolygon) -> Self {
+        let point = Vec2::point();
+        let first = *polygon.vertices.first().unwrap();
+        let last = *polygon.vertices.last().unwrap();
 
-        let mut squared = context.constant(INFINITY);
+        let mut squared = Tree::constant(INFINITY);
 
-        for window in self
+        for window in polygon
             .vertices
             .windows(2)
             .chain(once([last, first].as_slice()))
@@ -265,47 +257,47 @@ impl IntoNode for SimplePolygon {
             let edge = previous_vertex - vertex;
             let edge_length = edge.length();
             let edge = edge.normalize_or_zero();
-            let edge = Vec2::from_parameter(context, edge);
-            let vertex = Vec2::from_parameter(context, vertex);
-            let diff = context.vec_sub(point, vertex)?;
+            let edge = Vec2::from_parameter(edge);
+            let vertex = Vec2::from_parameter(vertex);
+            let diff = point.sub(vertex);
 
             // Calculate shortest possible vector from point to edge
-            let edge_projection = context.vec_dot(diff, edge)?;
-            let max = context.max(edge_projection, 0.0)?;
-            let clamped_factor = context.min(max, edge_length)?;
-            let scaled_edge = context.vec_mul(clamped_factor, edge)?;
-            let shortest_diff = context.vec_sub(diff, scaled_edge)?;
+            let edge_projection = diff.dot(edge.clone());
+            let max = edge_projection.max(0.0);
+            let clamped_factor = max.min(edge_length);
+            let scaled_edge = edge.mul(clamped_factor);
+            let shortest_diff = diff.sub(scaled_edge);
 
-            let shortest_squared = context.vec_dot(shortest_diff, shortest_diff)?;
-            squared = context.min(squared, shortest_squared)?;
+            let shortest_squared = shortest_diff.squared_length();
+            squared = squared.min(shortest_squared);
         }
 
         // Calculate outer distance from outer distances of convex partition
-        let mut squared_outer_distance = context.constant(INFINITY);
-        for polygon in self.split_into_convex_polygons() {
-            let Distances { squared, inner } = polygon.distances(context)?;
-            let squared_inner = context.square(inner)?;
-            let squared_outer = context.sub(squared, squared_inner)?;
+        let mut squared_outer_distance = Tree::constant(INFINITY);
+        for polygon in polygon.split_into_convex_polygons() {
+            let Distances { squared, inner } = polygon.distances();
+            let squared_inner = inner.square();
+            let squared_outer = squared - squared_inner;
 
-            squared_outer_distance = context.min(squared_outer_distance, squared_outer)?;
+            squared_outer_distance = squared_outer_distance.min(squared_outer);
         }
 
         // Clamp to EPSILON to get well-behaved gradients
-        let clamped_squared_outer = context.max(squared_outer_distance, EPSILON)?;
-        let outer_distance = context.sqrt(clamped_squared_outer)?;
-        let double_outer = context.mul(2.0, outer_distance)?;
+        let clamped_squared_outer = squared_outer_distance.max(EPSILON);
+        let outer_distance = clamped_squared_outer.sqrt();
+        let double_outer = 2.0 * outer_distance;
 
         // Clamp to EPSILON to get well-behaved gradients
-        let clamped_squared = context.max(squared, EPSILON)?;
-        let absolute_distance = context.sqrt(clamped_squared)?;
+        let clamped_squared = squared.max(EPSILON);
+        let absolute_distance = clamped_squared.sqrt();
 
-        context.sub(double_outer, absolute_distance)
+        double_outer - absolute_distance
     }
 }
 
 struct Distances {
-    squared: Node,
-    inner: Node,
+    squared: Tree,
+    inner: Tree,
 }
 
 #[derive(PartialEq, Eq, Clone)]

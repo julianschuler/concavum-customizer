@@ -1,19 +1,13 @@
-#![allow(unused)]
+// #![allow(unused)]
 
-use fidget::{
-    context::{IntoNode, Node},
-    Context,
-};
+use fidget::context::Tree;
 use glam::DVec3;
 
 use crate::{
     config::EPSILON,
     model::{
         geometry::Plane,
-        primitives::{
-            vector::{Operations, Vec3, Vector},
-            Result,
-        },
+        primitives::vector::{Vec3, Vector},
     },
 };
 
@@ -29,12 +23,12 @@ impl Sphere {
     }
 }
 
-impl IntoNode for Sphere {
-    fn into_node(self, context: &mut Context) -> Result<Node> {
-        let point = Vec3::point(context);
-        let length = context.vec_length(point)?;
+impl From<Sphere> for Tree {
+    fn from(sphere: Sphere) -> Self {
+        let point = Vec3::point();
+        let length = point.length();
 
-        context.sub(length, self.radius)
+        length - sphere.radius
     }
 }
 
@@ -50,14 +44,14 @@ impl HalfSpace {
     }
 }
 
-impl IntoNode for HalfSpace {
-    fn into_node(self, context: &mut Context) -> Result<Node> {
-        let point = Vec3::point(context);
-        let normal = Vec3::from_parameter(context, self.plane.normal());
-        let plane_point = Vec3::from_parameter(context, self.plane.point());
+impl From<HalfSpace> for Tree {
+    fn from(half_space: HalfSpace) -> Self {
+        let point = Vec3::point();
+        let normal = Vec3::from_parameter(half_space.plane.normal());
+        let plane_point = Vec3::from_parameter(half_space.plane.point());
 
-        let difference = context.vec_sub(point, plane_point)?;
-        context.vec_dot(difference, normal)
+        let difference = point.sub(plane_point);
+        difference.dot(normal)
     }
 }
 
@@ -73,21 +67,20 @@ impl BoxShape {
     }
 }
 
-impl IntoNode for BoxShape {
-    fn into_node(self, context: &mut Context) -> Result<Node> {
-        let point = Vec3::point(context);
-        let size = Vec3::from_parameter(context, self.size / 2.0);
-        let abs = context.vec_abs(point)?;
-        let q = context.vec_sub(abs, size)?;
+impl From<BoxShape> for Tree {
+    fn from(box_shape: BoxShape) -> Self {
+        let point = Vec3::point();
+        let size = Vec3::from_parameter(box_shape.size / 2.0);
+        let abs = point.abs();
+        let q = abs.sub(size);
 
         // Use EPSILON instead of 0.0 to get well-behaved gradients
-        let zero = Vec3::from_node(context, EPSILON)?;
-        let max = context.vec_max(q, zero)?;
-        let outer = context.vec_length(max)?;
+        let max = q.max(EPSILON.into());
+        let outer = max.length();
 
-        let max_elem = context.vec_max_elem(q)?;
-        let inner = context.min(max_elem, 0.0)?;
+        let max_elem = q.max_elem();
+        let inner = max_elem.min(0.0);
 
-        context.add(outer, inner)
+        outer + inner
     }
 }

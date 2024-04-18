@@ -1,9 +1,9 @@
-use fidget::{context::Node, Context};
+use fidget::context::Tree;
 use glam::{dvec3, DAffine3, DQuat, DVec2, DVec3, Vec3Swizzles};
 
 use crate::model::{
     geometry::{zvec, Plane},
-    primitives::{Csg, Result, SimplePolygon, Transforms},
+    primitives::{Csg, SimplePolygon, Transforms},
 };
 
 /// Upper bound for the size of a mount
@@ -121,11 +121,10 @@ pub fn side_point(position: &DAffine3, side: Side, key_clearance: &DVec2) -> DVe
 ///
 /// The points must be in a counter-clockwise order.
 pub fn prism_from_projected_points(
-    context: &mut Context,
     points: impl IntoIterator<Item = DVec3>,
     plane: &Plane,
     height: f64,
-) -> Result<Node> {
+) -> Tree {
     let rotation = DQuat::from_rotation_arc(plane.normal(), DVec3::Z);
     let offset = (rotation * plane.point()).z;
 
@@ -134,11 +133,11 @@ pub fn prism_from_projected_points(
         .map(|point| (rotation * point).xy())
         .collect();
 
-    let polygon = SimplePolygon::new(vertices);
-    let prism = context.extrude(polygon, offset, offset + height)?;
+    let polygon: Tree = SimplePolygon::new(vertices).into();
+    let prism = polygon.extrude(offset, offset + height);
 
     let affine = DAffine3::from_quat(rotation.inverse());
-    context.affine(prism, affine)
+    prism.affine(affine)
 }
 
 /// Creates a sheared prism by projecting points to a plane, extruding to a
@@ -146,12 +145,11 @@ pub fn prism_from_projected_points(
 ///
 /// The points must be in a counter-clockwise order.
 pub fn sheared_prism_from_projected_points(
-    context: &mut Context,
     points: impl IntoIterator<Item = DVec3>,
     plane: &Plane,
     height: f64,
     direction: DVec3,
-) -> Result<Node> {
+) -> Tree {
     let rotation = DQuat::from_rotation_arc(plane.normal(), DVec3::Z);
     let offset = (rotation * plane.point()).z;
     let shearing_direction = rotation * direction;
@@ -161,10 +159,10 @@ pub fn sheared_prism_from_projected_points(
         .map(|point| (rotation * point).xy())
         .collect();
 
-    let polygon = SimplePolygon::new(vertices);
-    let prism = context.extrude(polygon, 0.0, height)?;
-    let prism = context.shear(prism, shearing_direction.xy(), shearing_direction.z)?;
+    let polygon: Tree = SimplePolygon::new(vertices).into();
+    let prism = polygon.extrude(0.0, height);
+    let prism = prism.shear(shearing_direction.xy(), shearing_direction.z);
 
     let affine = DAffine3::from_translation(zvec(offset)) * DAffine3::from_quat(rotation.inverse());
-    context.affine(prism, affine)
+    prism.affine(affine)
 }

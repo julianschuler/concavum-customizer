@@ -1,4 +1,4 @@
-use fidget::{context::Node, Context};
+use fidget::context::Tree;
 use glam::{dvec2, DVec2, DVec3, Vec3Swizzles};
 
 use crate::{
@@ -6,7 +6,7 @@ use crate::{
     model::{
         geometry::{Line, Plane},
         key_positions::ThumbKeys,
-        primitives::{ConvexPolygon, Csg, Result},
+        primitives::{ConvexPolygon, Csg},
         util::{
             corner_point, prism_from_projected_points, sheared_prism_from_projected_points,
             side_point, MountSize, Side, SideX, SideY,
@@ -15,17 +15,16 @@ use crate::{
 };
 
 pub struct ThumbCluster {
-    pub mount: Node,
-    pub key_clearance: Node,
+    pub mount: Tree,
+    pub key_clearance: Tree,
 }
 
 impl ThumbCluster {
     pub fn new(
-        context: &mut Context,
         thumb_keys: &ThumbKeys,
         key_distance: &PositiveDVec2,
         circumference_distance: f64,
-    ) -> Result<Self> {
+    ) -> Self {
         let key_clearance = dvec2(
             key_distance.x + KEY_CLEARANCE,
             1.5 * key_distance.y + KEY_CLEARANCE,
@@ -35,21 +34,21 @@ impl ThumbCluster {
             MountSize::from_positions(thumb_keys.iter(), &key_clearance, circumference_distance);
 
         let mount_outline = Self::mount_outline(thumb_keys, &key_clearance);
-        let outline = context.offset(mount_outline, circumference_distance)?;
-        let mount = context.extrude(outline, -size.height, size.height)?;
+        let outline = mount_outline.offset(circumference_distance);
+        let mount = outline.extrude(-size.height, size.height);
 
-        let mount_clearance = Self::mount_clearance(context, thumb_keys, &key_clearance, &size)?;
-        let mount = context.difference(mount, mount_clearance)?;
+        let mount_clearance = Self::mount_clearance(thumb_keys, &key_clearance, &size);
+        let mount = mount.difference(mount_clearance);
 
-        let key_clearance = Self::key_clearance(context, thumb_keys, &key_clearance, &size)?;
+        let key_clearance = Self::key_clearance(thumb_keys, &key_clearance, &size);
 
-        Ok(Self {
+        Self {
             mount,
             key_clearance,
-        })
+        }
     }
 
-    fn mount_outline(thumb_keys: &ThumbKeys, key_clearance: &DVec2) -> ConvexPolygon {
+    fn mount_outline(thumb_keys: &ThumbKeys, key_clearance: &DVec2) -> Tree {
         let first_thumb_key = thumb_keys.first();
         let last_thumb_key = thumb_keys.last();
 
@@ -63,15 +62,14 @@ impl ThumbCluster {
         .map(Vec3Swizzles::xy)
         .collect();
 
-        ConvexPolygon::new(points)
+        ConvexPolygon::new(points).into()
     }
 
     fn mount_clearance(
-        context: &mut Context,
         thumb_keys: &ThumbKeys,
         key_clearance: &DVec2,
         mount_size: &MountSize,
-    ) -> Result<Node> {
+    ) -> Tree {
         let first = thumb_keys.first();
         let last = thumb_keys.last();
 
@@ -109,36 +107,28 @@ impl ThumbCluster {
         let upper_plane = Plane::new(side_point(first, Side::Top, key_clearance), first.y_axis);
 
         let lower = sheared_prism_from_projected_points(
-            context,
             points.iter().copied(),
             &lower_plane,
             mount_size.length,
             DVec3::Y,
-        )?;
+        );
         let middle = prism_from_projected_points(
-            context,
             points.iter().copied(),
             &middle_plane,
             2.0 * (key_clearance.y + EPSILON),
-        )?;
-        let upper = sheared_prism_from_projected_points(
-            context,
-            points,
-            &upper_plane,
-            mount_size.length,
-            DVec3::Y,
-        )?;
+        );
+        let upper =
+            sheared_prism_from_projected_points(points, &upper_plane, mount_size.length, DVec3::Y);
 
-        let union = context.union(lower, middle)?;
-        context.union(union, upper)
+        let union = lower.union(middle);
+        union.union(upper)
     }
 
     fn key_clearance(
-        context: &mut Context,
         thumb_keys: &ThumbKeys,
         key_clearance: &DVec2,
         mount_size: &MountSize,
-    ) -> Result<Node> {
+    ) -> Tree {
         let first = thumb_keys.first();
         let last = thumb_keys.last();
 
@@ -163,6 +153,6 @@ impl ThumbCluster {
             ]);
 
         let plane = Plane::new(side_point(first, Side::Bottom, key_clearance), first.y_axis);
-        prism_from_projected_points(context, points, &plane, 2.0 * key_clearance.y)
+        prism_from_projected_points(points, &plane, 2.0 * key_clearance.y)
     }
 }
