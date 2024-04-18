@@ -5,8 +5,10 @@ mod vector;
 
 pub type Result<T> = std::result::Result<T, fidget::Error>;
 
+use std::num::NonZeroUsize;
+
 use fidget::{
-    context::Node,
+    context::Tree,
     eval::MathShape,
     jit::JitShape,
     mesh::{Mesh, Octree, Settings},
@@ -28,8 +30,10 @@ impl Shape {
     /// Creates a new shape from a context, root node and bounds.
     ///
     /// Returns [`fidget::Error`] if the root node does not belong to the same context.
-    pub fn new(context: &Context, root: Node, bounds: Bounds) -> Result<Self> {
-        let inner = JitShape::new(context, root)?;
+    pub fn new(tree: &Tree, bounds: Bounds) -> Result<Self> {
+        let mut context = Context::new();
+        let root = context.import(tree);
+        let inner = JitShape::new(&context, root)?;
         Ok(Self { inner, bounds })
     }
 
@@ -44,8 +48,7 @@ impl Shape {
         let bounds = shape::Bounds { center, size };
         let settings = Settings {
             threads: settings.threads,
-            min_depth: depth,
-            max_depth: depth,
+            depth,
             bounds,
         };
 
@@ -69,6 +72,6 @@ impl Bounds {
 /// Settings to use for meshing
 #[derive(Copy, Clone)]
 pub struct MeshSettings {
-    pub threads: u8,
+    pub threads: NonZeroUsize,
     pub resolution: f64,
 }

@@ -1,178 +1,147 @@
-use fidget::context::{Context, IntoNode, Node};
+use fidget::context::Tree;
 use glam::{DAffine3, DVec2, DVec3};
 
-use crate::model::primitives::{
-    vector::{Operations, Vec2, Vec3},
-    Result,
-};
+use crate::model::primitives::vector::{Vec2, Vec3};
+
+use super::vector::Vector;
 
 /// A trait defining Constructive Solid Geometry (CSG) operations.
 pub trait Csg {
     /// Performs the union between two shapes.
-    fn union<A, B>(&mut self, a: A, b: B) -> Result<Node>
-    where
-        A: IntoNode,
-        B: IntoNode;
+    fn union<T: Into<Tree>>(&self, other: T) -> Self;
 
     /// Performs the difference between two shapes.
-    fn difference<A, B>(&mut self, a: A, b: B) -> Result<Node>
-    where
-        A: IntoNode,
-        B: IntoNode;
+    fn difference<T: Into<Tree>>(&self, other: T) -> Self;
 
     /// Performs the intersection between two shapes.
-    fn intersection<A, B>(&mut self, a: A, b: B) -> Result<Node>
-    where
-        A: IntoNode,
-        B: IntoNode;
+    fn intersection<T: Into<Tree>>(&self, other: T) -> Self;
 
     /// Extrudes a 2D shape between two `z_min` and `z_max`.
-    fn extrude<T: IntoNode>(&mut self, shape: T, z_min: f64, z_max: f64) -> Result<Node>;
+    fn extrude(&self, z_min: f64, z_max: f64) -> Self;
 
     /// Offsets a shape by a given value.
-    fn offset<T: IntoNode>(&mut self, shape: T, offset: f64) -> Result<Node>;
+    fn offset(&self, offset: f64) -> Self;
 
     /// Creates a shell with a given thickness.
-    fn shell<T: IntoNode>(&mut self, shape: T, thickness: f64) -> Result<Node>;
+    fn shell(&self, thickness: f64) -> Self;
 }
 
-impl Csg for Context {
-    fn union<A, B>(&mut self, a: A, b: B) -> Result<Node>
-    where
-        A: IntoNode,
-        B: IntoNode,
-    {
-        self.min(a, b)
+impl Csg for Tree {
+    fn union<T: Into<Tree>>(&self, other: T) -> Self {
+        self.min(other)
     }
 
-    fn difference<A, B>(&mut self, a: A, b: B) -> Result<Node>
-    where
-        A: IntoNode,
-        B: IntoNode,
-    {
-        let neg_b = self.neg(b)?;
-        self.max(a, neg_b)
+    fn difference<T: Into<Tree>>(&self, other: T) -> Self {
+        self.max(other.into().neg())
     }
 
-    fn intersection<A, B>(&mut self, a: A, b: B) -> Result<Node>
-    where
-        A: IntoNode,
-        B: IntoNode,
-    {
-        self.max(a, b)
+    fn intersection<T: Into<Tree>>(&self, other: T) -> Self {
+        self.max(other)
     }
 
-    fn extrude<T: IntoNode>(&mut self, node: T, z_min: f64, z_max: f64) -> Result<Node> {
-        let z = self.z();
-        let dist_z_min = self.sub(z_min, z)?;
-        let dist_z_max = self.sub(z, z_max)?;
-        let dist_z = self.max(dist_z_min, dist_z_max)?;
+    fn extrude(&self, z_min: f64, z_max: f64) -> Self {
+        let z = Tree::z();
+        let dist_z_min = z_min - z.clone();
+        let dist_z_max = z - z_max;
+        let dist_z = dist_z_min.max(dist_z_max);
 
-        self.max(node, dist_z)
+        self.max(dist_z)
     }
 
-    fn offset<T: IntoNode>(&mut self, node: T, offset: f64) -> Result<Node> {
-        self.sub(node, offset)
+    fn offset(&self, offset: f64) -> Self {
+        self.clone() - offset
     }
 
-    fn shell<T: IntoNode>(&mut self, node: T, thickness: f64) -> Result<Node> {
-        let node = node.into_node(self)?;
-        let inner = self.offset(node, -thickness)?;
-
-        self.difference(node, inner)
+    fn shell(&self, thickness: f64) -> Self {
+        let inner = self.offset(-thickness);
+        self.difference(inner)
     }
 }
 
 /// A trait defining transform operations.
 pub trait Transforms {
     /// Translates a shape by a given vector.
-    fn translate<T: IntoNode>(&mut self, node: T, translation: DVec3) -> Result<Node>;
+    fn translate(&self, translation: DVec3) -> Tree;
 
     /// Rotates a shape around the x-axis by a given angle.
-    fn rotate_x<T: IntoNode>(&mut self, node: T, angle: f64) -> Result<Node>;
+    fn rotate_x(&self, angle: f64) -> Tree;
 
     /// Rotates a shape around the y-axis by a given angle.
-    fn rotate_y<T: IntoNode>(&mut self, node: T, angle: f64) -> Result<Node>;
+    fn rotate_y(&self, angle: f64) -> Tree;
 
     /// Rotates a shape around the z-axis by a given angle.
-    fn rotate_z<T: IntoNode>(&mut self, node: T, angle: f64) -> Result<Node>;
+    fn rotate_z(&self, angle: f64) -> Tree;
 
     /// Applies an affine linear transform.
-    fn affine<T: IntoNode>(&mut self, node: T, affine: DAffine3) -> Result<Node>;
+    fn affine(&self, affine: DAffine3) -> Tree;
 
     /// Tapers a shape to the given scale (in x/y) at the given height.
-    fn taper<T: IntoNode>(&mut self, node: T, scale: DVec2, height: f64) -> Result<Node>;
+    fn taper(&self, scale: DVec2, height: f64) -> Tree;
 
     /// Shears a shape to the given offset (in x/y) at the given height.
-    fn shear<T: IntoNode>(&mut self, node: T, offset: DVec2, height: f64) -> Result<Node>;
+    fn shear(&self, offset: DVec2, height: f64) -> Tree;
 }
 
-impl Transforms for Context {
-    fn translate<T: IntoNode>(&mut self, node: T, translation: DVec3) -> Result<Node> {
-        self.affine(node, DAffine3::from_translation(translation))
+impl Transforms for Tree {
+    fn translate(&self, translation: DVec3) -> Tree {
+        self.affine(DAffine3::from_translation(translation))
     }
 
-    fn rotate_x<T: IntoNode>(&mut self, node: T, angle: f64) -> Result<Node> {
-        self.affine(node, DAffine3::from_rotation_x(angle))
+    fn rotate_x(&self, angle: f64) -> Tree {
+        self.affine(DAffine3::from_rotation_x(angle))
     }
 
-    fn rotate_y<T: IntoNode>(&mut self, node: T, angle: f64) -> Result<Node> {
-        self.affine(node, DAffine3::from_rotation_y(angle))
+    fn rotate_y(&self, angle: f64) -> Tree {
+        self.affine(DAffine3::from_rotation_y(angle))
     }
 
-    fn rotate_z<T: IntoNode>(&mut self, node: T, angle: f64) -> Result<Node> {
-        self.affine(node, DAffine3::from_rotation_z(angle))
+    fn rotate_z(&self, angle: f64) -> Tree {
+        self.affine(DAffine3::from_rotation_z(angle))
     }
 
-    fn affine<T: IntoNode>(&mut self, node: T, affine: DAffine3) -> Result<Node> {
-        let root = node.into_node(self)?;
-        let point = Vec3::point(self);
+    fn affine(&self, affine: DAffine3) -> Tree {
+        let point = Vec3::point();
 
         // Apply the linear transform
         let matrix = affine.matrix3.inverse().transpose();
-        let x_axis = Vec3::from_parameter(self, matrix.x_axis);
-        let y_axis = Vec3::from_parameter(self, matrix.y_axis);
-        let z_axis = Vec3::from_parameter(self, matrix.z_axis);
+        let x_axis = Vec3::from_parameter(matrix.x_axis);
+        let y_axis = Vec3::from_parameter(matrix.y_axis);
+        let z_axis = Vec3::from_parameter(matrix.z_axis);
 
-        let x = self.vec_dot(point, x_axis)?;
-        let y = self.vec_dot(point, y_axis)?;
-        let z = self.vec_dot(point, z_axis)?;
+        let x = point.dot(x_axis);
+        let y = point.dot(y_axis);
+        let z = point.dot(z_axis);
 
         // Apply the translation
-        let x = self.sub(x, affine.translation.x)?;
-        let y = self.sub(y, affine.translation.y)?;
-        let z = self.sub(z, affine.translation.z)?;
+        let x = x - affine.translation.x;
+        let y = y - affine.translation.y;
+        let z = z - affine.translation.z;
 
-        self.remap_xyz(root, [x, y, z])
+        self.remap_xyz(x, y, z)
     }
 
-    fn taper<T: IntoNode>(&mut self, node: T, scale: DVec2, height: f64) -> Result<Node> {
-        let root = node.into_node(self)?;
-        let point = Vec3::point(self);
-        let alpha = self.div(point.z, height)?;
+    fn taper(&self, scale: DVec2, height: f64) -> Tree {
+        let point = Vec3::point();
+        let alpha = point.z.clone() / height;
 
-        // Scale x and y
-        let ones = Vec2::from_parameter(self, DVec2::ONE);
-        let scale = Vec2::from_parameter(self, scale - DVec2::ONE);
-        let scale = self.vec_mul(alpha, scale)?;
-        let scale = self.vec_add(scale, ones)?;
-        let x = self.div(point.x, scale.x)?;
-        let y = self.div(point.y, scale.y)?;
+        let scale = Vec2::from_parameter(scale - DVec2::ONE);
+        let scale = scale.mul(alpha);
+        let scale = scale.add(1.0.into());
+        let x = point.x / scale.x;
+        let y = point.y / scale.y;
 
-        self.remap_xyz(root, [x, y, point.z])
+        self.remap_xyz(x, y, point.z)
     }
 
-    fn shear<T: IntoNode>(&mut self, node: T, offset: DVec2, height: f64) -> Result<Node> {
-        let root = node.into_node(self)?;
-        let point = Vec3::point(self);
-        let alpha = self.div(point.z, height)?;
+    fn shear(&self, offset: DVec2, height: f64) -> Tree {
+        let point = Vec3::point();
+        let alpha = point.z.clone() / height;
 
-        // Shear along x and y
-        let offset = Vec2::from_parameter(self, offset);
-        let offset = self.vec_mul(alpha, offset)?;
-        let x = self.sub(point.x, offset.x)?;
-        let y = self.sub(point.y, offset.y)?;
+        let offset = Vec2::from_parameter(offset);
+        let offset = offset.mul(alpha);
+        let x = point.x - offset.x;
+        let y = point.y - offset.y;
 
-        self.remap_xyz(root, [x, y, point.z])
+        self.remap_xyz(x, y, point.z)
     }
 }
