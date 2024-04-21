@@ -649,6 +649,7 @@ dependencies = [
 [[package]]
 name = "fidget"
 version = "0.2.6"
+source = "git+https://github.com/julianschuler/fidget.git?branch=static-singular-value-truncation#31a1abdc925f04d3bc6736db0f1dea5c4a5089a5"
 dependencies = [
  "arrayvec",
  "bimap",
@@ -662,6 +663,7 @@ dependencies = [
  "num-derive",
  "num-traits",
  "ordered-float",
+ "serde",
  "static_assertions",
  "thiserror",
  "windows",
@@ -2538,6 +2540,7 @@ dependencies = [
 [[package]]
 name = "workspace-hack"
 version = "0.1.0"
+source = "git+https://github.com/julianschuler/fidget.git?branch=static-singular-value-truncation#31a1abdc925f04d3bc6736db0f1dea5c4a5089a5"
 dependencies = [
  "ahash",
  "bitflags 2.5.0",
@@ -2553,6 +2556,7 @@ dependencies = [
  "quote",
  "regex",
  "regex-automata",
+ "serde",
  "syn 1.0.109",
  "syn 2.0.55",
 ]
