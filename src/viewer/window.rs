@@ -13,7 +13,7 @@ use three_d::{
 use winit::event_loop::{EventLoop, EventLoopProxy};
 
 use crate::{
-    model::Error,
+    config::Error,
     viewer::{assets::Assets, model::Model, scene::Scene},
 };
 

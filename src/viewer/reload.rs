@@ -25,21 +25,13 @@ impl ModelReloader {
                 let start = Instant::now();
 
                 self.updater.send_event(ReloadEvent::Started);
-                let reload_event = match Model::try_from_config(config) {
-                    Ok(model) => {
-                        let model = model.into_model();
-                        eprintln!("Reloaded model in {:?}", start.elapsed());
+                let model = Model::from_config(config);
 
-                        ReloadEvent::Finished(model)
-                    }
-                    Err(error) => ReloadEvent::Error(Arc::new(error)),
-                };
-
-                self.updater.send_event(reload_event);
+                let model = model.into_model();
+                eprintln!("Reloaded model in {:?}", start.elapsed());
+                self.updater.send_event(ReloadEvent::Finished(model));
             }
-            Err(error) => self
-                .updater
-                .send_event(ReloadEvent::Error(Arc::new(error.into()))),
+            Err(error) => self.updater.send_event(ReloadEvent::Error(Arc::new(error))),
         }
     }
 }

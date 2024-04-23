@@ -6,7 +6,7 @@ use crate::{
         finger_cluster::FingerCluster,
         geometry::Plane,
         key_positions::KeyPositions,
-        primitives::{Bounds, Csg, HalfSpace, Result, Shape},
+        primitives::{Bounds, Csg, HalfSpace, Shape},
         thumb_cluster::ThumbCluster,
     },
 };
@@ -17,7 +17,7 @@ pub struct KeyCluster {
 }
 
 impl KeyCluster {
-    pub fn from_config(config: &Config) -> Result<Self> {
+    pub fn from_config(config: &Config) -> Self {
         let key_distance: PositiveDVec2 = (&config.finger_cluster.key_distance).into();
         let circumference_distance = *config.keyboard.circumference_distance;
         let key_positions = KeyPositions::from_config(config).tilt(config.keyboard.tilting_angle);
@@ -43,11 +43,11 @@ impl KeyCluster {
         let hollowed_cluster = combined_mount.shell(*config.keyboard.shell_thickness);
         let cluster = hollowed_cluster.intersection(half_space);
 
-        let shape = Shape::new(&cluster, Bounds::new(200.0, DVec3::ZERO))?;
+        let shape = Shape::new(&cluster, Bounds::new(200.0, DVec3::ZERO));
 
-        Ok(Self {
+        Self {
             shape,
             key_positions,
-        })
+        }
     }
 }
