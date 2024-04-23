@@ -21,7 +21,7 @@ pub trait IntoShape {
     fn mesh_settings(&self) -> Settings;
 
     /// Converts self into a model using the given mesh settings.
-    fn into_model(self, mesh_settings: Settings) -> Model;
+    fn into_model(&self, mesh_settings: Settings) -> Model;
 }
 
 impl IntoShape for model::Model {
@@ -29,7 +29,7 @@ impl IntoShape for model::Model {
         self.keyboard.mesh_settings(self.resolution)
     }
 
-    fn into_model(self, mesh_settings: Settings) -> Model {
+    fn into_model(&self, mesh_settings: Settings) -> Model {
         let keyboard = Mesh::mesh(&self.keyboard, mesh_settings);
         let light_positions = self
             .light_positions
@@ -63,7 +63,7 @@ impl IntoShape for model::Model {
             finger_key_positions,
             thumb_key_positions,
             light_positions,
-            colors: self.colors,
+            colors: self.colors.clone(),
         }
     }
 }

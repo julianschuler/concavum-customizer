@@ -20,6 +20,7 @@ use crate::{
 /// A reload event.
 pub enum ReloadEvent {
     Started,
+    Updated(Model),
     Finished(Model),
     Error(Arc<Error>),
 }
@@ -184,11 +185,14 @@ impl Application {
 
     /// Handles a reload event for the given context.
     fn handle_reload_event(&mut self, context: &Context, reload_event: ReloadEvent) {
-        self.show_spinner = matches!(&reload_event, ReloadEvent::Started);
+        self.show_spinner = matches!(
+            &reload_event,
+            ReloadEvent::Started | ReloadEvent::Updated(_)
+        );
 
         match reload_event {
             ReloadEvent::Started => {}
-            ReloadEvent::Finished(model) => {
+            ReloadEvent::Finished(model) | ReloadEvent::Updated(model) => {
                 self.scene = Scene::from_model(context, model, &self.assets)
             }
             ReloadEvent::Error(err) => eprintln!("Error:{:?}", Report::from(err.clone())),
