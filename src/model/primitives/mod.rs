@@ -3,8 +3,6 @@ mod shapes2d;
 mod shapes3d;
 mod vector;
 
-pub type Result<T> = std::result::Result<T, fidget::Error>;
-
 use std::num::NonZeroUsize;
 
 use fidget::{
@@ -30,11 +28,11 @@ impl Shape {
     /// Creates a new shape from a context, root node and bounds.
     ///
     /// Returns [`fidget::Error`] if the root node does not belong to the same context.
-    pub fn new(tree: &Tree, bounds: Bounds) -> Result<Self> {
+    pub fn new(tree: &Tree, bounds: Bounds) -> Self {
         let mut context = Context::new();
         let root = context.import(tree);
-        let inner = JitShape::new(&context, root)?;
-        Ok(Self { inner, bounds })
+        let inner = JitShape::new(&context, root).expect("root node should belong to same context");
+        Self { inner, bounds }
     }
 
     /// Meshes the shape.

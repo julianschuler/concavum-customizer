@@ -8,7 +8,7 @@ mod util;
 
 use glam::DVec3;
 
-use crate::config::{Colors, Config, Error as ConfigError};
+use crate::config::{Colors, Config};
 pub use primitives::{MeshSettings, Shape};
 
 use key_cluster::KeyCluster;
@@ -23,25 +23,15 @@ pub struct Model {
 }
 
 impl Model {
-    pub fn try_from_config(config: Config) -> Result<Self, Error> {
-        let key_cluster = KeyCluster::from_config(&config)?;
+    pub fn from_config(config: Config) -> Self {
+        let key_cluster = KeyCluster::from_config(&config);
 
-        Ok(Self {
+        Self {
             keyboard: key_cluster.shape,
             key_positions: key_cluster.key_positions,
             light_positions: config.preview.light_positions,
             resolution: *config.preview.resolution,
             colors: config.colors,
-        })
+        }
     }
-}
-
-#[derive(Debug, thiserror::Error)]
-pub enum Error {
-    /// Failed to parse config
-    #[error("failed to parse config")]
-    ParseConfig(#[from] ConfigError),
-    /// Failed to create model
-    #[error("failed to create model")]
-    CreateModel(#[from] fidget::Error),
 }
