@@ -9,7 +9,7 @@ mod util;
 use glam::DVec3;
 
 use crate::config::{Colors, Config};
-pub use primitives::{MeshSettings, Shape};
+pub use primitives::Shape;
 
 use key_cluster::KeyCluster;
 use key_positions::KeyPositions;

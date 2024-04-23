@@ -27,7 +27,9 @@ impl ModelReloader {
                 self.updater.send_event(ReloadEvent::Started);
                 let model = Model::from_config(config);
 
-                let model = model.into_model();
+                let mesh_settings = model.mesh_settings();
+
+                let model = model.into_model(mesh_settings);
                 eprintln!("Reloaded model in {:?}", start.elapsed());
                 self.updater.send_event(ReloadEvent::Finished(model));
             }
