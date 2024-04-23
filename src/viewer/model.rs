@@ -1,11 +1,10 @@
-use std::num::NonZeroUsize;
-
+use fidget::mesh::Settings;
 use glam::DMat4;
 use three_d::{CpuMesh, Indices, Mat4, Positions, Vec3};
 
 use crate::{
     config::Colors,
-    model::{self, MeshSettings, Shape},
+    model::{self, Shape},
 };
 
 pub struct Model {
@@ -18,17 +17,20 @@ pub struct Model {
 
 /// A trait for displaying a keyboard
 pub trait IntoShape {
-    /// Converts self into a model.
-    fn into_model(self) -> Model;
+    /// Returns the mesh settings for meshing at the set resolution.
+    fn mesh_settings(&self) -> Settings;
+
+    /// Converts self into a model using the given mesh settings.
+    fn into_model(self, mesh_settings: Settings) -> Model;
 }
 
 impl IntoShape for model::Model {
-    fn into_model(self) -> Model {
-        let settings = MeshSettings {
-            threads: NonZeroUsize::new(12).unwrap(),
-            resolution: self.resolution,
-        };
-        let keyboard = Mesh::mesh(&self.keyboard, settings);
+    fn mesh_settings(&self) -> Settings {
+        self.keyboard.mesh_settings(self.resolution)
+    }
+
+    fn into_model(self, mesh_settings: Settings) -> Model {
+        let keyboard = Mesh::mesh(&self.keyboard, mesh_settings);
         let light_positions = self
             .light_positions
             .iter()
@@ -68,12 +70,12 @@ impl IntoShape for model::Model {
 
 /// A trait for meshing a shape.
 trait Mesh {
-    /// Meshes the shape.
-    fn mesh(&self, settings: MeshSettings) -> CpuMesh;
+    /// Meshes the shape with the given settings.
+    fn mesh(&self, settings: Settings) -> CpuMesh;
 }
 
 impl Mesh for Shape {
-    fn mesh(&self, settings: MeshSettings) -> CpuMesh {
+    fn mesh(&self, settings: Settings) -> CpuMesh {
         let mesh = self.mesh(settings);
 
         let vertices = mesh
