@@ -35,7 +35,7 @@ impl FileWatcher {
     /// Starts watching the config file in a different thread.
     ///
     /// Returns [`Error`] if watching the file was unsuccessful.
-    pub fn watch(self) -> Result<RecommendedWatcher, Error> {
+    pub fn watch(mut self) -> Result<RecommendedWatcher, Error> {
         self.update_model();
 
         let config_path_parent = self.config_path.parent().unwrap().to_path_buf();
@@ -56,7 +56,7 @@ impl FileWatcher {
     }
 
     /// Parse the config file and reload the model from it.
-    fn update_model(&self) {
+    fn update_model(&mut self) {
         let config = Config::try_from_path(&self.config_path);
         self.model_reloader.reload(config);
     }
