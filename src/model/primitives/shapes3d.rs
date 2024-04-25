@@ -50,7 +50,7 @@ impl From<HalfSpace> for Tree {
         let normal = Vec3::from_parameter(half_space.plane.normal());
         let plane_point = Vec3::from_parameter(half_space.plane.point());
 
-        let difference = point.sub(plane_point);
+        let difference = point - plane_point;
         difference.dot(normal)
     }
 }
@@ -69,10 +69,9 @@ impl BoxShape {
 
 impl From<BoxShape> for Tree {
     fn from(box_shape: BoxShape) -> Self {
-        let point = Vec3::point();
         let size = Vec3::from_parameter(box_shape.size / 2.0);
-        let abs = point.abs();
-        let q = abs.sub(size);
+        let abs = Vec3::point().abs();
+        let q = abs - size;
 
         // Use EPSILON instead of 0.0 to get well-behaved gradients
         let max = q.max(EPSILON.into());

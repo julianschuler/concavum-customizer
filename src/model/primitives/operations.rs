@@ -125,8 +125,8 @@ impl Transforms for Tree {
         let alpha = point.z.clone() / height;
 
         let scale = Vec2::from_parameter(scale - DVec2::ONE);
-        let scale = scale.mul(alpha);
-        let scale = scale.add(1.0.into());
+        let scale = alpha * scale;
+        let scale = scale + 1.0.into();
         let x = point.x / scale.x;
         let y = point.y / scale.y;
 
@@ -138,7 +138,7 @@ impl Transforms for Tree {
         let alpha = point.z.clone() / height;
 
         let offset = Vec2::from_parameter(offset);
-        let offset = offset.mul(alpha);
+        let offset = alpha * offset;
         let x = point.x - offset.x;
         let y = point.y - offset.y;
 

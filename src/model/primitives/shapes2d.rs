@@ -56,7 +56,7 @@ impl From<Rectangle> for Tree {
         let point = Vec2::point();
         let size = Vec2::from_parameter(rectangle.size / 2.0);
         let abs = point.abs();
-        let q = abs.sub(size);
+        let q = abs - size;
 
         // Use EPSILON instead of 0.0 to get well-behaved gradients
         let max = q.max(EPSILON.into());
@@ -161,14 +161,14 @@ impl ConvexPolygon {
             let normal = Vec2::from_parameter(dvec2(-edge.y, edge.x));
             let edge = Vec2::from_parameter(edge);
             let vertex = Vec2::from_parameter(vertex);
-            let diff = point.sub(vertex);
+            let diff = point.clone() - vertex;
 
             // Calculate shortest possible vector from point to edge
             let edge_projection = diff.dot(edge.clone());
             let max = edge_projection.max(0.0);
             let clamped_factor = max.min(edge_length);
-            let scaled_edge = edge.mul(clamped_factor);
-            let shortest_diff = diff.sub(scaled_edge);
+            let scaled_edge = clamped_factor * edge;
+            let shortest_diff = diff.clone() - scaled_edge;
 
             let shortest_squared = shortest_diff.squared_length();
             squared = squared.min(shortest_squared);
@@ -259,14 +259,14 @@ impl From<SimplePolygon> for Tree {
             let edge = edge.normalize_or_zero();
             let edge = Vec2::from_parameter(edge);
             let vertex = Vec2::from_parameter(vertex);
-            let diff = point.sub(vertex);
+            let diff = point.clone() - vertex;
 
             // Calculate shortest possible vector from point to edge
             let edge_projection = diff.dot(edge.clone());
             let max = edge_projection.max(0.0);
             let clamped_factor = max.min(edge_length);
-            let scaled_edge = edge.mul(clamped_factor);
-            let shortest_diff = diff.sub(scaled_edge);
+            let scaled_edge = clamped_factor * edge;
+            let shortest_diff = diff - scaled_edge;
 
             let shortest_squared = shortest_diff.squared_length();
             squared = squared.min(shortest_squared);
