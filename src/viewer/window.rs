@@ -193,7 +193,7 @@ impl Application {
         match reload_event {
             ReloadEvent::Started => {}
             ReloadEvent::Finished(model) | ReloadEvent::Updated(model) => {
-                self.scene = Scene::from_model(context, model, &self.assets)
+                self.scene = Scene::from_model(context, model, &self.assets);
             }
             ReloadEvent::Error(err) => eprintln!("Error:{:?}", Report::from(err.clone())),
         }

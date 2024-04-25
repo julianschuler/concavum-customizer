@@ -22,14 +22,10 @@ impl Scene {
             .finger_key_positions
             .iter()
             .chain(&model.thumb_key_positions)
-            .cloned()
+            .copied()
             .collect();
 
-        let objects = vec![Object::new(
-            &context,
-            &model.keyboard,
-            model.colors.keyboard,
-        )];
+        let objects = vec![Object::new(context, &model.keyboard, model.colors.keyboard)];
         let instanced_objects = vec![
             InstancedObject::new(
                 context,
@@ -113,7 +109,7 @@ struct Object {
 
 impl Object {
     fn new(context: &Context, mesh: &CpuMesh, color: HexColor) -> Self {
-        let mesh = Mesh::new(context, &mesh);
+        let mesh = Mesh::new(context, mesh);
         let material = Physical::new(color);
 
         Self {
