@@ -1,11 +1,8 @@
-use fidget::mesh::Settings;
+use fidget::mesh::{Mesh as FidgetMesh, Settings};
 use glam::DMat4;
 use three_d::{CpuMesh, Indices, Mat4, Positions, Vec3};
 
-use crate::{
-    config::Colors,
-    model::{self, Shape},
-};
+use crate::{config::Colors, model};
 
 pub struct Model {
     pub keyboard: CpuMesh,
@@ -15,22 +12,24 @@ pub struct Model {
     pub colors: Colors,
 }
 
-/// A trait for displaying a keyboard
-pub trait IntoShape {
+/// A trait for meshing a model.
+pub trait Mesh {
     /// Returns the mesh settings for meshing at the set resolution.
     fn mesh_settings(&self) -> Settings;
 
-    /// Converts self into a model using the given mesh settings.
-    fn into_model(&self, mesh_settings: Settings) -> Model;
+    /// Converts self into a mesh model using the given mesh settings.
+    fn mesh(&self, settings: Settings) -> Model;
 }
 
-impl IntoShape for model::Model {
+impl Mesh for model::Model {
     fn mesh_settings(&self) -> Settings {
         self.keyboard.mesh_settings(self.resolution)
     }
 
-    fn into_model(&self, mesh_settings: Settings) -> Model {
-        let keyboard = Mesh::mesh(&self.keyboard, mesh_settings);
+    fn mesh(&self, settings: Settings) -> Model {
+        let mesh = self.keyboard.mesh(settings);
+        let keyboard = mesh.into_cpu_mesh();
+
         let light_positions = self
             .light_positions
             .iter()
@@ -68,17 +67,15 @@ impl IntoShape for model::Model {
     }
 }
 
-/// A trait for meshing a shape.
-trait Mesh {
-    /// Meshes the shape with the given settings.
-    fn mesh(&self, settings: Settings) -> CpuMesh;
+/// A trait for converting a mesh into a `CpuMesh`.
+trait IntoCpuMesh {
+    /// Converts self into a `CpuMesh`.
+    fn into_cpu_mesh(self) -> CpuMesh;
 }
 
-impl Mesh for Shape {
-    fn mesh(&self, settings: Settings) -> CpuMesh {
-        let mesh = self.mesh(settings);
-
-        let vertices = mesh
+impl IntoCpuMesh for FidgetMesh {
+    fn into_cpu_mesh(self) -> CpuMesh {
+        let vertices = self
             .vertices
             .iter()
             .map(|vertex| {
@@ -86,7 +83,7 @@ impl Mesh for Shape {
                 slice.into()
             })
             .collect();
-        let indices = mesh
+        let indices = self
             .triangles
             .iter()
             .flat_map(|triangle| {

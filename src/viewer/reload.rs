@@ -13,7 +13,7 @@ use crate::{
     config::{Config, Error},
     model::Model,
     viewer::{
-        model::IntoShape,
+        model::Mesh,
         window::{ModelUpdater, ReloadEvent},
     },
 };
@@ -54,7 +54,7 @@ impl ModelReloader {
                             bounds: mesh_settings.bounds,
                             threads: mesh_settings.threads,
                         };
-                        let model = model.into_model(mesh_settings);
+                        let model = model.mesh(mesh_settings);
 
                         cancelled = cancellation_token.cancelled();
                         if cancelled {
@@ -64,7 +64,7 @@ impl ModelReloader {
                     }
 
                     if !cancelled {
-                        let model = model.into_model(mesh_settings);
+                        let model = model.mesh(mesh_settings);
 
                         if !cancellation_token.cancelled() {
                             updater.send_event(ReloadEvent::Finished(model));
