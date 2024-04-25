@@ -15,7 +15,7 @@ use crate::{
 };
 
 pub struct ThumbCluster {
-    pub mount: Tree,
+    pub cluster: Tree,
     pub key_clearance: Tree,
 }
 
@@ -36,23 +36,21 @@ impl ThumbCluster {
             circumference_distance,
         );
 
-        let height = bounds.size.z;
-        let mount_outline = Self::mount_outline(thumb_keys, &key_clearance);
-        let outline = mount_outline.offset(circumference_distance);
-        let mount = outline.extrude(-height, height);
+        let outline = Self::outline(thumb_keys, &key_clearance);
+        let cluster_outline = outline.offset(circumference_distance);
 
-        let mount_clearance = Self::mount_clearance(thumb_keys, &key_clearance, &bounds);
-        let mount = mount.difference(mount_clearance);
+        let clearance = Self::clearance(thumb_keys, &key_clearance, &bounds);
+        let cluster = cluster_outline.difference(clearance);
 
         let key_clearance = Self::key_clearance(thumb_keys, &key_clearance, &bounds);
 
         Self {
-            mount,
+            cluster,
             key_clearance,
         }
     }
 
-    fn mount_outline(thumb_keys: &ThumbKeys, key_clearance: &DVec2) -> Tree {
+    fn outline(thumb_keys: &ThumbKeys, key_clearance: &DVec2) -> Tree {
         let first_thumb_key = thumb_keys.first();
         let last_thumb_key = thumb_keys.last();
 
@@ -69,11 +67,7 @@ impl ThumbCluster {
         ConvexPolygon::new(points).into()
     }
 
-    fn mount_clearance(
-        thumb_keys: &ThumbKeys,
-        key_clearance: &DVec2,
-        bounds: &ClusterBounds,
-    ) -> Tree {
+    fn clearance(thumb_keys: &ThumbKeys, key_clearance: &DVec2, bounds: &ClusterBounds) -> Tree {
         let width = bounds.size.x;
         let length = bounds.size.y;
         let height = bounds.size.z;
