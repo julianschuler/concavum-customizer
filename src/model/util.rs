@@ -1,9 +1,12 @@
 use fidget::context::Tree;
 use glam::{dvec2, dvec3, DAffine3, DQuat, DVec2, DVec3, Vec3Swizzles};
 
-use crate::model::{
-    geometry::{zvec, Plane},
-    primitives::{Csg, SimplePolygon, Transforms},
+use crate::{
+    config::EPSILON,
+    model::{
+        geometry::{zvec, Plane},
+        primitives::{Bounds, Csg, SimplePolygon, Transforms},
+    },
 };
 
 /// Bounded region containing a cluster.
@@ -35,6 +38,24 @@ impl ClusterBounds {
         let size = max - min;
 
         Self { min, max, size }
+    }
+
+    /// Combines two cluster bounds.
+    pub fn union(&self, other: &Self) -> Self {
+        let min = self.min.min(other.min);
+        let max = self.max.max(other.max);
+        let size = max - min;
+
+        Self { min, max, size }
+    }
+}
+
+impl From<ClusterBounds> for Bounds {
+    fn from(bounds: ClusterBounds) -> Self {
+        let center = (bounds.min + bounds.max) / 2.0;
+        let size = bounds.size.max_element() + 2.0 * EPSILON;
+
+        Self::new(size, center)
     }
 }
 

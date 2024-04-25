@@ -17,6 +17,7 @@ use crate::{
 pub struct ThumbCluster {
     pub cluster: Tree,
     pub key_clearance: Tree,
+    pub bounds: ClusterBounds,
 }
 
 impl ThumbCluster {
@@ -47,6 +48,7 @@ impl ThumbCluster {
         Self {
             cluster,
             key_clearance,
+            bounds,
         }
     }
 
