@@ -33,14 +33,17 @@ impl KeyCluster {
             circumference_distance,
         );
 
-        // Subtract key clearances from each other and combine the mounts
-        let finger_mount = finger_cluster.mount.difference(thumb_cluster.key_clearance);
-        let thumb_mount = thumb_cluster.mount.difference(finger_cluster.key_clearance);
-        let combined_mount = finger_mount.union(thumb_mount);
+        // Subtract key clearances from each other and combine the clusters
+        let finger_key_clearance = finger_cluster.key_clearance;
+        let finger_cluster = finger_cluster
+            .cluster
+            .difference(thumb_cluster.key_clearance);
+        let thumb_cluster = thumb_cluster.cluster.difference(finger_key_clearance);
+        let combined_cluster = finger_cluster.union(thumb_cluster);
 
-        // Hollow out the combined mount and cut off everthing below a z value of 0
+        // Hollow out the combined cluster and cut off everthing below a z value of 0
         let half_space = HalfSpace::new(Plane::new(DVec3::ZERO, DVec3::NEG_Z));
-        let hollowed_cluster = combined_mount.shell(*config.keyboard.shell_thickness);
+        let hollowed_cluster = combined_cluster.shell(*config.keyboard.shell_thickness);
         let cluster = hollowed_cluster.intersection(half_space);
 
         let shape = Shape::new(&cluster, Bounds::new(200.0, DVec3::ZERO));

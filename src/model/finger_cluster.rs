@@ -15,7 +15,7 @@ use crate::{
 };
 
 pub struct FingerCluster {
-    pub mount: Tree,
+    pub cluster: Tree,
     pub key_clearance: Tree,
 }
 
@@ -36,22 +36,22 @@ impl FingerCluster {
             circumference_distance,
         );
 
-        let mount_outline = Self::mount_outline(columns, &key_clearance);
-        let outline = mount_outline.offset(circumference_distance);
-        let prism = outline.extrude(-bounds.size.z, bounds.size.z);
+        let outline = Self::outline(columns, &key_clearance);
+        let cluster_outline = outline.offset(circumference_distance);
+        let cluster = cluster_outline.extrude(-bounds.size.z, bounds.size.z);
 
-        let mount_clearance = ClearanceBuilder::new(columns, &key_clearance, &bounds).build();
-        let mount = prism.difference(mount_clearance);
+        let clearance = ClearanceBuilder::new(columns, &key_clearance, &bounds).build();
+        let cluster = cluster.difference(clearance);
 
-        let key_clearance = mount_outline.extrude(-bounds.size.z, bounds.size.z);
+        let key_clearance = outline.extrude(-bounds.size.z, bounds.size.z);
 
         Self {
-            mount,
+            cluster,
             key_clearance,
         }
     }
 
-    fn mount_outline(columns: &Columns, key_clearance: &DVec2) -> Tree {
+    fn outline(columns: &Columns, key_clearance: &DVec2) -> Tree {
         let bottom_points = columns.windows(2).map(|window| {
             let first_left = window[0].first();
             let first_right = window[1].first();
