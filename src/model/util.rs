@@ -1,26 +1,25 @@
 use fidget::context::Tree;
-use glam::{dvec3, DAffine3, DQuat, DVec2, DVec3, Vec3Swizzles};
+use glam::{dvec2, dvec3, DAffine3, DQuat, DVec2, DVec3, Vec3Swizzles};
 
 use crate::model::{
     geometry::{zvec, Plane},
     primitives::{Csg, SimplePolygon, Transforms},
 };
 
-/// Upper bound for the size of a mount
-pub struct MountSize {
-    pub width: f64,
-    pub length: f64,
-    pub height: f64,
+/// Bounded region containing a cluster.
+pub struct ClusterBounds {
+    min: DVec3,
+    max: DVec3,
+    pub size: DVec3,
 }
 
-impl MountSize {
+impl ClusterBounds {
+    /// Creates a cluster bound from key positions.
     pub fn from_positions<'a>(
         positions: impl IntoIterator<Item = &'a DAffine3>,
         key_clearance: &DVec2,
         circumference_distance: f64,
     ) -> Self {
-        let padding = key_clearance.x + key_clearance.y;
-
         let (min, max) = positions.into_iter().fold(
             (
                 dvec3(f64::INFINITY, f64::INFINITY, f64::INFINITY),
@@ -29,15 +28,13 @@ impl MountSize {
             |(min, max), point| (min.min(point.translation), max.max(point.translation)),
         );
 
-        let width = max.x - min.x + 2.0 * circumference_distance + padding;
-        let length = max.y - min.y + 2.0 * circumference_distance + padding;
-        let height = max.z + padding;
+        let padding = dvec2(key_clearance.x, key_clearance.y).length();
+        let xy_padding = padding + circumference_distance;
+        let max = max + dvec3(xy_padding, xy_padding, padding);
+        let min = dvec3(min.x - xy_padding, min.y - xy_padding, 0.0);
+        let size = max - min;
 
-        Self {
-            width,
-            length,
-            height,
-        }
+        Self { min, max, size }
     }
 }
 

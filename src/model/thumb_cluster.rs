@@ -9,7 +9,7 @@ use crate::{
         primitives::{ConvexPolygon, Csg},
         util::{
             corner_point, prism_from_projected_points, sheared_prism_from_projected_points,
-            side_point, MountSize, Side, SideX, SideY,
+            side_point, ClusterBounds, Side, SideX, SideY,
         },
     },
 };
@@ -30,17 +30,21 @@ impl ThumbCluster {
             1.5 * key_distance.y + KEY_CLEARANCE,
         ) / 2.0;
 
-        let size =
-            MountSize::from_positions(thumb_keys.iter(), &key_clearance, circumference_distance);
+        let bounds = ClusterBounds::from_positions(
+            thumb_keys.iter(),
+            &key_clearance,
+            circumference_distance,
+        );
 
+        let height = bounds.size.z;
         let mount_outline = Self::mount_outline(thumb_keys, &key_clearance);
         let outline = mount_outline.offset(circumference_distance);
-        let mount = outline.extrude(-size.height, size.height);
+        let mount = outline.extrude(-height, height);
 
-        let mount_clearance = Self::mount_clearance(thumb_keys, &key_clearance, &size);
+        let mount_clearance = Self::mount_clearance(thumb_keys, &key_clearance, &bounds);
         let mount = mount.difference(mount_clearance);
 
-        let key_clearance = Self::key_clearance(thumb_keys, &key_clearance, &size);
+        let key_clearance = Self::key_clearance(thumb_keys, &key_clearance, &bounds);
 
         Self {
             mount,
@@ -68,17 +72,21 @@ impl ThumbCluster {
     fn mount_clearance(
         thumb_keys: &ThumbKeys,
         key_clearance: &DVec2,
-        mount_size: &MountSize,
+        bounds: &ClusterBounds,
     ) -> Tree {
+        let width = bounds.size.x;
+        let length = bounds.size.y;
+        let height = bounds.size.z;
+
         let first = thumb_keys.first();
         let last = thumb_keys.last();
 
         let first_point = side_point(first, Side::Left, key_clearance);
         let last_point = side_point(last, Side::Right, key_clearance);
-        let first_outwards_point = first_point + mount_size.width * DVec3::NEG_X;
-        let last_outwards_point = last_point + mount_size.width * DVec3::X;
-        let first_upwards_point = first_outwards_point + 2.0 * mount_size.height * DVec3::Z;
-        let last_upwards_point = last_outwards_point + 2.0 * mount_size.height * DVec3::Z;
+        let first_outwards_point = first_point + width * DVec3::NEG_X;
+        let last_outwards_point = last_point + width * DVec3::X;
+        let first_upwards_point = first_outwards_point + 2.0 * height * DVec3::Z;
+        let last_upwards_point = last_outwards_point + 2.0 * height * DVec3::Z;
 
         // All points in the center, if any
         let points: Vec<_> = thumb_keys
@@ -109,7 +117,7 @@ impl ThumbCluster {
         let lower = sheared_prism_from_projected_points(
             points.iter().copied(),
             &lower_plane,
-            mount_size.length,
+            length,
             DVec3::Y,
         );
         let middle = prism_from_projected_points(
@@ -117,8 +125,7 @@ impl ThumbCluster {
             &middle_plane,
             2.0 * (key_clearance.y + EPSILON),
         );
-        let upper =
-            sheared_prism_from_projected_points(points, &upper_plane, mount_size.length, DVec3::Y);
+        let upper = sheared_prism_from_projected_points(points, &upper_plane, length, DVec3::Y);
 
         let union = lower.union(middle);
         union.union(upper)
@@ -127,7 +134,7 @@ impl ThumbCluster {
     fn key_clearance(
         thumb_keys: &ThumbKeys,
         key_clearance: &DVec2,
-        mount_size: &MountSize,
+        bounds: &ClusterBounds,
     ) -> Tree {
         let first = thumb_keys.first();
         let last = thumb_keys.last();
@@ -147,8 +154,8 @@ impl ThumbCluster {
             })
             .chain([
                 last_point,
-                last_point + 2.0 * mount_size.height * DVec3::Z,
-                first_point + 2.0 * mount_size.height * DVec3::Z,
+                last_point + 2.0 * bounds.size.z * DVec3::Z,
+                first_point + 2.0 * bounds.size.z * DVec3::Z,
                 first_point,
             ]);
 
