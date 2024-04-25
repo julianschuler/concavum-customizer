@@ -1,3 +1,5 @@
+use std::ops::{Add, Mul, Sub};
+
 use fidget::context::Tree;
 use glam::{DVec2, DVec3};
 
@@ -22,21 +24,6 @@ pub trait Vector: Sized {
     /// Calculates the element-wise absolute value.
     fn abs(&self) -> Self {
         self.map_unary(Tree::abs)
-    }
-
-    /// Calculates the element-wise addition.
-    fn add(&self, other: Self) -> Self {
-        self.map_binary(other, |a, b| a.clone() + b)
-    }
-
-    /// Calculates the element-wise subtraction.
-    fn sub(&self, other: Self) -> Self {
-        self.map_binary(other, |a, b| a.clone() - b)
-    }
-
-    /// Calculates the scalar multiplication.
-    fn mul(&self, scalar: Tree) -> Self {
-        self.map_unary(|tree| scalar.clone() * tree.clone())
     }
 
     /// Squares each element of a Vector.
@@ -155,6 +142,42 @@ impl Vector for Vec3 {
     }
 }
 
+impl Add for Vec3 {
+    type Output = Self;
+
+    fn add(self, rhs: Self) -> Self {
+        let x = self.x + rhs.x;
+        let y = self.y + rhs.y;
+        let z = self.z + rhs.z;
+
+        Self { x, y, z }
+    }
+}
+
+impl Sub for Vec3 {
+    type Output = Self;
+
+    fn sub(self, rhs: Self) -> Self {
+        let x = self.x - rhs.x;
+        let y = self.y - rhs.y;
+        let z = self.z - rhs.z;
+
+        Self { x, y, z }
+    }
+}
+
+impl Mul<Vec3> for Tree {
+    type Output = Vec3;
+
+    fn mul(self, rhs: Vec3) -> Self::Output {
+        let x = self.clone() * rhs.x;
+        let y = self.clone() * rhs.y;
+        let z = self * rhs.z;
+
+        Self::Output { x, y, z }
+    }
+}
+
 /// A 2-dimensional vector of nodes.
 #[derive(Clone)]
 pub struct Vec2 {
@@ -215,5 +238,38 @@ impl Vector for Vec2 {
         F: Fn(&Tree, Tree) -> Tree,
     {
         f(&self.x, self.y.clone())
+    }
+}
+
+impl Add for Vec2 {
+    type Output = Self;
+
+    fn add(self, rhs: Self) -> Self {
+        let x = self.x + rhs.x;
+        let y = self.y + rhs.y;
+
+        Self { x, y }
+    }
+}
+
+impl Sub for Vec2 {
+    type Output = Self;
+
+    fn sub(self, rhs: Self) -> Self {
+        let x = self.x - rhs.x;
+        let y = self.y - rhs.y;
+
+        Self { x, y }
+    }
+}
+
+impl Mul<Vec2> for Tree {
+    type Output = Vec2;
+
+    fn mul(self, rhs: Vec2) -> Self::Output {
+        let x = self.clone() * rhs.x;
+        let y = self * rhs.y;
+
+        Self::Output { x, y }
     }
 }
