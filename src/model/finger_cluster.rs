@@ -8,7 +8,8 @@ use crate::{
         key_positions::{Column, ColumnType, Columns},
         primitives::{Csg, SimplePolygon},
         util::{
-            corner_point, prism_from_projected_points, side_point, MountSize, Side, SideX, SideY,
+            corner_point, prism_from_projected_points, side_point, ClusterBounds, Side, SideX,
+            SideY,
         },
     },
 };
@@ -29,7 +30,7 @@ impl FingerCluster {
             key_distance.y + KEY_CLEARANCE,
         ) / 2.0;
 
-        let size = MountSize::from_positions(
+        let bounds = ClusterBounds::from_positions(
             columns.iter().flat_map(|column| column.iter()),
             &key_clearance,
             circumference_distance,
@@ -37,12 +38,12 @@ impl FingerCluster {
 
         let mount_outline = Self::mount_outline(columns, &key_clearance);
         let outline = mount_outline.offset(circumference_distance);
-        let prism = outline.extrude(-size.height, size.height);
+        let prism = outline.extrude(-bounds.size.z, bounds.size.z);
 
-        let mount_clearance = ClearanceBuilder::new(columns, &key_clearance, &size).build();
+        let mount_clearance = ClearanceBuilder::new(columns, &key_clearance, &bounds).build();
         let mount = prism.difference(mount_clearance);
 
-        let key_clearance = mount_outline.extrude(-size.height, size.height);
+        let key_clearance = mount_outline.extrude(-bounds.size.z, bounds.size.z);
 
         Self {
             mount,
@@ -149,18 +150,18 @@ impl FingerCluster {
 struct ClearanceBuilder<'a> {
     columns: &'a Columns,
     key_clearance: &'a DVec2,
-    mount_size: &'a MountSize,
+    bounds: &'a ClusterBounds,
     support_planes: SupportPlanes,
 }
 
 impl<'a> ClearanceBuilder<'a> {
-    fn new(columns: &'a Columns, key_clearance: &'a DVec2, mount_size: &'a MountSize) -> Self {
+    fn new(columns: &'a Columns, key_clearance: &'a DVec2, bounds: &'a ClusterBounds) -> Self {
         let support_planes = SupportPlanes::from_columns(columns, key_clearance);
 
         Self {
             columns,
             key_clearance,
-            mount_size,
+            bounds,
             support_planes,
         }
     }
@@ -246,11 +247,13 @@ impl<'a> ClearanceBuilder<'a> {
         } else {
             // Bound side clearance since it is combined by union and can interfere with other columns
             let plane = Plane::new(translation - normal_offset * normal, normal);
+            let length = self.bounds.size.y;
+            let height = self.bounds.size.z;
             let points = [
-                dvec3(0.0, -self.mount_size.length, 0.0),
-                dvec3(0.0, self.mount_size.length, 0.0),
-                dvec3(0.0, self.mount_size.length, 2.0 * self.mount_size.height),
-                dvec3(0.0, -self.mount_size.length, 2.0 * self.mount_size.height),
+                dvec3(0.0, -length, 0.0),
+                dvec3(0.0, length, 0.0),
+                dvec3(0.0, length, 2.0 * height),
+                dvec3(0.0, -length, 2.0 * height),
             ];
             let side_bounding_shape = prism_from_projected_points(points, &plane, extrusion_height);
 
@@ -260,6 +263,10 @@ impl<'a> ClearanceBuilder<'a> {
     }
 
     fn side_clearance(&mut self, side_x: SideX) -> Tree {
+        let width = self.bounds.size.x;
+        let length = self.bounds.size.y;
+        let height = self.bounds.size.z;
+
         let column = match side_x {
             SideX::Left => self.columns.first(),
             SideX::Right => self.columns.last(),
@@ -270,10 +277,10 @@ impl<'a> ClearanceBuilder<'a> {
 
         let lower_corner = corner_point(first, side_x, SideY::Bottom, self.key_clearance);
         let upper_corner = corner_point(last, side_x, SideY::Top, self.key_clearance);
-        let outwards_bottom_point = lower_corner - self.mount_size.length * DVec3::Y;
-        let outwards_top_point = upper_corner + self.mount_size.length * DVec3::Y;
-        let upwards_bottom_point = outwards_bottom_point + 2.0 * self.mount_size.height * DVec3::Z;
-        let upwards_top_point = outwards_top_point + 2.0 * self.mount_size.height * DVec3::Z;
+        let outwards_bottom_point = lower_corner - length * DVec3::Y;
+        let outwards_top_point = upper_corner + length * DVec3::Y;
+        let upwards_bottom_point = outwards_bottom_point + 2.0 * height * DVec3::Z;
+        let upwards_top_point = outwards_top_point + 2.0 * height * DVec3::Z;
 
         let points: Vec<_> = column
             .windows(2)
@@ -288,8 +295,8 @@ impl<'a> ClearanceBuilder<'a> {
             ])
             .collect();
 
-        let plane = Plane::new(self.mount_size.width * DVec3::NEG_X, DVec3::X);
-        prism_from_projected_points(points, &plane, 2.0 * self.mount_size.width)
+        let plane = Plane::new(width * DVec3::NEG_X, DVec3::X);
+        prism_from_projected_points(points, &plane, 2.0 * width)
     }
 
     fn side_point(&self, bottom: &DAffine3, top: &DAffine3, side_x: SideX) -> Option<DVec3> {
@@ -335,7 +342,7 @@ impl<'a> ClearanceBuilder<'a> {
             Side::Bottom,
             &column.column_type,
             self.key_clearance,
-            self.mount_size,
+            self.bounds,
         );
         lower_support_points.reverse();
         let upper_support_points = self.support_planes.calculate_support_points(
@@ -343,7 +350,7 @@ impl<'a> ClearanceBuilder<'a> {
             Side::Top,
             &column.column_type,
             self.key_clearance,
-            self.mount_size,
+            self.bounds,
         );
 
         // Combine upper and lower support points with clearance points to polygon points
@@ -406,7 +413,7 @@ impl SupportPlanes {
         side: Side,
         column_type: &ColumnType,
         key_clearance: &DVec2,
-        mount_size: &MountSize,
+        bounds: &ClusterBounds,
     ) -> Vec<DVec3> {
         const ALLOWED_DEVIATION: f64 = 1.0;
 
@@ -448,8 +455,8 @@ impl SupportPlanes {
             points.push(projected_point);
         }
 
-        let outwards_point = projected_point + sign * mount_size.length * DVec3::Y;
-        let upwards_point = outwards_point + 2.0 * mount_size.height * DVec3::Z;
+        let outwards_point = projected_point + sign * bounds.size.y * DVec3::Y;
+        let upwards_point = outwards_point + 2.0 * bounds.size.y * DVec3::Z;
         points.extend([outwards_point, upwards_point]);
 
         points
