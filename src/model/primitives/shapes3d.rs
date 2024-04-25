@@ -1,5 +1,3 @@
-// #![allow(unused)]
-
 use fidget::context::Tree;
 use glam::DVec3;
 
@@ -25,10 +23,7 @@ impl Sphere {
 
 impl From<Sphere> for Tree {
     fn from(sphere: Sphere) -> Self {
-        let point = Vec3::point();
-        let length = point.length();
-
-        length - sphere.radius
+        Vec3::point().length() - sphere.radius
     }
 }
 
@@ -46,11 +41,9 @@ impl HalfSpace {
 
 impl From<HalfSpace> for Tree {
     fn from(half_space: HalfSpace) -> Self {
-        let point = Vec3::point();
         let normal = Vec3::from_parameter(half_space.plane.normal());
-        let plane_point = Vec3::from_parameter(half_space.plane.point());
+        let difference = Vec3::point() - Vec3::from_parameter(half_space.plane.point());
 
-        let difference = point - plane_point;
         difference.dot(normal)
     }
 }
@@ -70,15 +63,11 @@ impl BoxShape {
 impl From<BoxShape> for Tree {
     fn from(box_shape: BoxShape) -> Self {
         let size = Vec3::from_parameter(box_shape.size / 2.0);
-        let abs = Vec3::point().abs();
-        let q = abs - size;
+        let q = Vec3::point().abs() - size;
 
         // Use EPSILON instead of 0.0 to get well-behaved gradients
-        let max = q.max(EPSILON.into());
-        let outer = max.length();
-
-        let max_elem = q.max_elem();
-        let inner = max_elem.min(0.0);
+        let outer = q.max(EPSILON.into()).length();
+        let inner = q.max_elem().min(0.0);
 
         outer + inner
     }

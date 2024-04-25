@@ -1,5 +1,3 @@
-// #![allow(unused)]
-
 use std::{
     f64::{INFINITY, NEG_INFINITY},
     iter::once,
@@ -53,17 +51,12 @@ impl Rectangle {
 
 impl From<Rectangle> for Tree {
     fn from(rectangle: Rectangle) -> Self {
-        let point = Vec2::point();
         let size = Vec2::from_parameter(rectangle.size / 2.0);
-        let abs = point.abs();
-        let q = abs - size;
+        let q = Vec2::point().abs() - size;
 
         // Use EPSILON instead of 0.0 to get well-behaved gradients
-        let max = q.max(EPSILON.into());
-        let outer = max.length();
-
-        let max_elem = q.max_elem();
-        let inner = max_elem.min(0.0);
+        let outer = q.max(EPSILON.into()).length();
+        let inner = q.max_elem().min(0.0);
 
         outer + inner
     }
@@ -160,23 +153,15 @@ impl ConvexPolygon {
             let edge = edge.normalize_or_zero();
             let normal = Vec2::from_parameter(dvec2(-edge.y, edge.x));
             let edge = Vec2::from_parameter(edge);
-            let vertex = Vec2::from_parameter(vertex);
-            let diff = point.clone() - vertex;
+            let diff = point.clone() - Vec2::from_parameter(vertex);
 
             // Calculate shortest possible vector from point to edge
             let edge_projection = diff.dot(edge.clone());
-            let max = edge_projection.max(0.0);
-            let clamped_factor = max.min(edge_length);
-            let scaled_edge = clamped_factor * edge;
-            let shortest_diff = diff.clone() - scaled_edge;
+            let clamped_factor = edge_projection.max(0.0).min(edge_length);
+            let shortest_diff = diff.clone() - clamped_factor * edge;
 
-            let shortest_squared = shortest_diff.squared_length();
-            squared = squared.min(shortest_squared);
-
-            // Calculate inner distance
-            let dot = normal.dot(diff);
-            let min = dot.min(0.0);
-            inner = inner.max(min);
+            squared = squared.min(shortest_diff.squared_length());
+            inner = inner.max(normal.dot(diff).min(0.0));
         }
 
         Distances { squared, inner }
@@ -188,11 +173,7 @@ impl From<ConvexPolygon> for Tree {
         let Distances { squared, inner } = polygon.distances();
 
         // Clamp to EPSILON to get well-behaved gradients
-        let clamped_squared = squared.max(EPSILON);
-        let absolute_distance = clamped_squared.sqrt();
-        let double_inner = 2.0 * inner;
-
-        absolute_distance + double_inner
+        squared.max(EPSILON).sqrt() + 2.0 * inner
     }
 }
 
@@ -258,40 +239,29 @@ impl From<SimplePolygon> for Tree {
             let edge_length = edge.length();
             let edge = edge.normalize_or_zero();
             let edge = Vec2::from_parameter(edge);
-            let vertex = Vec2::from_parameter(vertex);
-            let diff = point.clone() - vertex;
+            let diff = point.clone() - Vec2::from_parameter(vertex);
 
             // Calculate shortest possible vector from point to edge
             let edge_projection = diff.dot(edge.clone());
-            let max = edge_projection.max(0.0);
-            let clamped_factor = max.min(edge_length);
-            let scaled_edge = clamped_factor * edge;
-            let shortest_diff = diff - scaled_edge;
+            let clamped_factor = edge_projection.max(0.0).min(edge_length);
+            let shortest_diff = diff - clamped_factor * edge;
 
-            let shortest_squared = shortest_diff.squared_length();
-            squared = squared.min(shortest_squared);
+            squared = squared.min(shortest_diff.squared_length());
         }
 
         // Calculate outer distance from outer distances of convex partition
         let mut squared_outer_distance = Tree::constant(INFINITY);
         for polygon in polygon.split_into_convex_polygons() {
             let Distances { squared, inner } = polygon.distances();
-            let squared_inner = inner.square();
-            let squared_outer = squared - squared_inner;
 
-            squared_outer_distance = squared_outer_distance.min(squared_outer);
+            squared_outer_distance = squared_outer_distance.min(squared - inner.square());
         }
 
         // Clamp to EPSILON to get well-behaved gradients
-        let clamped_squared_outer = squared_outer_distance.max(EPSILON);
-        let outer_distance = clamped_squared_outer.sqrt();
-        let double_outer = 2.0 * outer_distance;
+        let outer_distance = squared_outer_distance.max(EPSILON).sqrt();
+        let absolute_distance = squared.max(EPSILON).sqrt();
 
-        // Clamp to EPSILON to get well-behaved gradients
-        let clamped_squared = squared.max(EPSILON);
-        let absolute_distance = clamped_squared.sqrt();
-
-        double_outer - absolute_distance
+        2.0 * outer_distance - absolute_distance
     }
 }
 
