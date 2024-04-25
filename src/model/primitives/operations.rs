@@ -40,12 +40,7 @@ impl Csg for Tree {
     }
 
     fn extrude(&self, z_min: f64, z_max: f64) -> Self {
-        let z = Tree::z();
-        let dist_z_min = z_min - z.clone();
-        let dist_z_max = z - z_max;
-        let dist_z = dist_z_min.max(dist_z_max);
-
-        self.max(dist_z)
+        self.max((z_min - Tree::z()).max(Tree::z() - z_max))
     }
 
     fn offset(&self, offset: f64) -> Self {
@@ -53,8 +48,7 @@ impl Csg for Tree {
     }
 
     fn shell(&self, thickness: f64) -> Self {
-        let inner = self.offset(-thickness);
-        self.difference(inner)
+        self.difference(self.offset(-thickness))
     }
 }
 
@@ -102,20 +96,14 @@ impl Transforms for Tree {
     fn affine(&self, affine: DAffine3) -> Tree {
         let point = Vec3::point();
 
-        // Apply the linear transform
         let matrix = affine.matrix3.inverse().transpose();
         let x_axis = Vec3::from_parameter(matrix.x_axis);
         let y_axis = Vec3::from_parameter(matrix.y_axis);
         let z_axis = Vec3::from_parameter(matrix.z_axis);
 
-        let x = point.dot(x_axis);
-        let y = point.dot(y_axis);
-        let z = point.dot(z_axis);
-
-        // Apply the translation
-        let x = x - affine.translation.x;
-        let y = y - affine.translation.y;
-        let z = z - affine.translation.z;
+        let x = point.dot(x_axis) - affine.translation.x;
+        let y = point.dot(y_axis) - affine.translation.y;
+        let z = point.dot(z_axis) - affine.translation.z;
 
         self.remap_xyz(x, y, z)
     }
@@ -124,9 +112,7 @@ impl Transforms for Tree {
         let point = Vec3::point();
         let alpha = point.z.clone() / height;
 
-        let scale = Vec2::from_parameter(scale - DVec2::ONE);
-        let scale = alpha * scale;
-        let scale = scale + 1.0.into();
+        let scale = alpha * Vec2::from_parameter(scale - DVec2::ONE) + 1.0.into();
         let x = point.x / scale.x;
         let y = point.y / scale.y;
 
