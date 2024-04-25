@@ -17,6 +17,7 @@ use crate::{
 pub struct FingerCluster {
     pub cluster: Tree,
     pub key_clearance: Tree,
+    pub bounds: ClusterBounds,
 }
 
 impl FingerCluster {
@@ -48,6 +49,7 @@ impl FingerCluster {
         Self {
             cluster,
             key_clearance,
+            bounds,
         }
     }
 

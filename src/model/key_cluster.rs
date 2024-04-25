@@ -6,7 +6,7 @@ use crate::{
         finger_cluster::FingerCluster,
         geometry::Plane,
         key_positions::KeyPositions,
-        primitives::{Bounds, Csg, HalfSpace, Shape},
+        primitives::{Csg, HalfSpace, Shape},
         thumb_cluster::ThumbCluster,
     },
 };
@@ -32,6 +32,7 @@ impl KeyCluster {
             &key_distance,
             circumference_distance,
         );
+        let bounds = finger_cluster.bounds.union(&thumb_cluster.bounds);
 
         // Subtract key clearances from each other and combine the clusters
         let finger_key_clearance = finger_cluster.key_clearance;
@@ -46,7 +47,7 @@ impl KeyCluster {
         let hollowed_cluster = combined_cluster.shell(*config.keyboard.shell_thickness);
         let cluster = hollowed_cluster.intersection(half_space);
 
-        let shape = Shape::new(&cluster, Bounds::new(200.0, DVec3::ZERO));
+        let shape = Shape::new(&cluster, bounds.into());
 
         Self {
             shape,
