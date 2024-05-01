@@ -1,8 +1,4 @@
-use std::{
-    f64::{INFINITY, NEG_INFINITY},
-    iter::once,
-    vec::Vec,
-};
+use std::{iter::once, vec::Vec};
 
 use earcutr::earcut;
 use fidget::context::Tree;
@@ -137,34 +133,32 @@ impl ConvexPolygon {
         let first = *self.vertices.first().unwrap();
         let last = *self.vertices.last().unwrap();
 
-        let mut squared = Tree::constant(INFINITY);
-        let mut inner = Tree::constant(NEG_INFINITY);
-
-        for window in self
-            .vertices
+        self.vertices
             .windows(2)
             .chain(once([last, first].as_slice()))
-        {
-            let previous_vertex = window[0];
-            let vertex = window[1];
+            .map(|window| {
+                let previous_vertex = window[0];
+                let vertex = window[1];
 
-            let edge = previous_vertex - vertex;
-            let edge_length = edge.length();
-            let edge = edge.normalize_or_zero();
-            let normal = Vec2::from_parameter(dvec2(-edge.y, edge.x));
-            let edge = Vec2::from_parameter(edge);
-            let diff = point.clone() - Vec2::from_parameter(vertex);
+                let edge = previous_vertex - vertex;
+                let edge_length = edge.length();
+                let edge = edge.normalize_or_zero();
+                let normal = Vec2::from_parameter(dvec2(-edge.y, edge.x));
+                let edge = Vec2::from_parameter(edge);
+                let diff = point.clone() - Vec2::from_parameter(vertex);
 
-            // Calculate shortest possible vector from point to edge
-            let edge_projection = diff.dot(edge.clone());
-            let clamped_factor = edge_projection.max(0.0).min(edge_length);
-            let shortest_diff = diff.clone() - clamped_factor * edge;
+                // Calculate shortest possible vector from point to edge
+                let edge_projection = diff.dot(edge.clone());
+                let clamped_factor = edge_projection.max(0.0).min(edge_length);
+                let shortest_diff = diff.clone() - clamped_factor * edge;
 
-            squared = squared.min(shortest_diff.squared_length());
-            inner = inner.max(normal.dot(diff).min(0.0));
-        }
+                let squared = shortest_diff.squared_length();
+                let inner = normal.dot(diff).min(0.0);
 
-        Distances { squared, inner }
+                Distances { squared, inner }
+            })
+            .reduce(Distances::combine)
+            .expect("there is always a vertex")
     }
 }
 
@@ -225,37 +219,40 @@ impl From<SimplePolygon> for Tree {
         let first = *polygon.vertices.first().unwrap();
         let last = *polygon.vertices.last().unwrap();
 
-        let mut squared = Tree::constant(INFINITY);
-
-        for window in polygon
+        let squared = polygon
             .vertices
             .windows(2)
             .chain(once([last, first].as_slice()))
-        {
-            let previous_vertex = window[0];
-            let vertex = window[1];
+            .map(|window| {
+                let previous_vertex = window[0];
+                let vertex = window[1];
 
-            let edge = previous_vertex - vertex;
-            let edge_length = edge.length();
-            let edge = edge.normalize_or_zero();
-            let edge = Vec2::from_parameter(edge);
-            let diff = point.clone() - Vec2::from_parameter(vertex);
+                let edge = previous_vertex - vertex;
+                let edge_length = edge.length();
+                let edge = edge.normalize_or_zero();
+                let edge = Vec2::from_parameter(edge);
+                let diff = point.clone() - Vec2::from_parameter(vertex);
 
-            // Calculate shortest possible vector from point to edge
-            let edge_projection = diff.dot(edge.clone());
-            let clamped_factor = edge_projection.max(0.0).min(edge_length);
-            let shortest_diff = diff - clamped_factor * edge;
+                // Calculate shortest possible vector from point to edge
+                let edge_projection = diff.dot(edge.clone());
+                let clamped_factor = edge_projection.max(0.0).min(edge_length);
+                let shortest_diff = diff - clamped_factor * edge;
 
-            squared = squared.min(shortest_diff.squared_length());
-        }
+                shortest_diff.squared_length()
+            })
+            .reduce(|a, b| a.min(b))
+            .expect("there is always a vertex");
 
         // Calculate outer distance from outer distances of convex partition
-        let mut squared_outer_distance = Tree::constant(INFINITY);
-        for polygon in polygon.split_into_convex_polygons() {
-            let Distances { squared, inner } = polygon.distances();
-
-            squared_outer_distance = squared_outer_distance.min(squared - inner.square());
-        }
+        let squared_outer_distance = polygon
+            .split_into_convex_polygons()
+            .into_iter()
+            .map(|polygon| {
+                let Distances { squared, inner } = polygon.distances();
+                squared - inner.square()
+            })
+            .reduce(|a, b| a.min(b))
+            .expect("there is always a polygon");
 
         // Clamp to EPSILON to get well-behaved gradients
         let outer_distance = squared_outer_distance.max(EPSILON).sqrt();
@@ -268,6 +265,15 @@ impl From<SimplePolygon> for Tree {
 struct Distances {
     squared: Tree,
     inner: Tree,
+}
+
+impl Distances {
+    fn combine(self, other: Self) -> Self {
+        Distances {
+            squared: self.squared.min(other.squared),
+            inner: self.inner.max(other.inner),
+        }
+    }
 }
 
 #[derive(PartialEq, Eq, Clone)]
