@@ -262,6 +262,52 @@ impl From<SimplePolygon> for Tree {
     }
 }
 
+/// A corner at the origin with two outgoing edges.
+pub struct Corner {
+    edge1: DVec2,
+    edge2: DVec2,
+}
+
+impl Corner {
+    /// Creates a new corner at the origin given by two outgoing edges.
+    /// The left side of the first edge is considered the exterior.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the edges have length zero and `glam_assert` is enabled.
+    pub fn new(edge1: DVec2, edge2: DVec2) -> Self {
+        Self {
+            edge1: edge1.normalize(),
+            edge2: edge2.normalize(),
+        }
+    }
+}
+
+impl From<Corner> for Tree {
+    fn from(corner: Corner) -> Self {
+        let point = Vec2::point();
+        let edge1 = Vec2::from_parameter(corner.edge1);
+        let edge2 = Vec2::from_parameter(corner.edge2);
+        let normal1 = Vec2::from_parameter(rotate_90_degrees(-corner.edge1));
+        let normal2 = Vec2::from_parameter(rotate_90_degrees(corner.edge2));
+
+        let Distances { squared, inner } = [(edge1, normal1), (edge2, normal2)]
+            .into_iter()
+            .map(|(edge, normal)| {
+                let edge_projection = point.dot(edge.clone());
+                let shortest_diff = point.clone() - edge_projection.max(0.0) * edge;
+                let squared = shortest_diff.squared_length();
+                let inner = point.dot(normal).min(0.0);
+
+                Distances { squared, inner }
+            })
+            .reduce(Distances::combine)
+            .expect("there are 2 edge normal pairs");
+
+        squared.max(EPSILON).sqrt() + 2.0 * inner
+    }
+}
+
 struct Distances {
     squared: Tree,
     inner: Tree,
