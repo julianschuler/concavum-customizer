@@ -2,12 +2,12 @@ use std::{iter::once, vec::Vec};
 
 use earcutr::earcut;
 use fidget::context::Tree;
-use glam::{dvec2, DVec2};
+use glam::DVec2;
 
 use crate::{
     config::EPSILON,
     model::{
-        geometry::counterclockwise_or_colinear,
+        geometry::{counterclockwise_or_colinear, rotate_90_degrees},
         primitives::vector::{Vec2, Vector},
     },
 };
@@ -143,7 +143,7 @@ impl ConvexPolygon {
                 let edge = previous_vertex - vertex;
                 let edge_length = edge.length();
                 let edge = edge.normalize_or_zero();
-                let normal = Vec2::from_parameter(dvec2(-edge.y, edge.x));
+                let normal = Vec2::from_parameter(rotate_90_degrees(edge));
                 let edge = Vec2::from_parameter(edge);
                 let diff = point.clone() - Vec2::from_parameter(vertex);
 

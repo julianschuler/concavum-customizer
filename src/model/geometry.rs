@@ -1,8 +1,13 @@
-use glam::{dvec3, DVec2, DVec3};
+use glam::{dvec2, dvec3, DVec2, DVec3};
 
 /// Returns a vector along the z-axis with the given z-value.
 pub fn zvec(z: f64) -> DVec3 {
     dvec3(0.0, 0.0, z)
+}
+
+/// Rotates a vector 90 degrees counterclockwise.
+pub fn rotate_90_degrees(vector: DVec2) -> DVec2 {
+    dvec2(-vector.y, vector.x)
 }
 
 /// A line in 3D space.
