@@ -2,9 +2,10 @@ use fidget::context::Tree;
 use glam::{dvec2, DVec2, DVec3, Vec3Swizzles};
 
 use crate::{
-    config::{PositiveDVec2, EPSILON, KEY_CLEARANCE},
+    config::{Keyboard, PositiveDVec2, EPSILON, KEY_CLEARANCE},
     model::{
         geometry::{Line, Plane},
+        insert_holder::InsertHolder,
         key_positions::ThumbKeys,
         primitives::{ConvexPolygon, Csg},
         util::{
@@ -17,15 +18,12 @@ use crate::{
 pub struct ThumbCluster {
     pub cluster: Tree,
     pub key_clearance: Tree,
+    pub insert_holder: Tree,
     pub bounds: ClusterBounds,
 }
 
 impl ThumbCluster {
-    pub fn new(
-        thumb_keys: &ThumbKeys,
-        key_distance: &PositiveDVec2,
-        circumference_distance: f64,
-    ) -> Self {
+    pub fn new(thumb_keys: &ThumbKeys, key_distance: &PositiveDVec2, config: &Keyboard) -> Self {
         let key_clearance = dvec2(
             key_distance.x + KEY_CLEARANCE,
             1.5 * key_distance.y + KEY_CLEARANCE,
@@ -34,29 +32,37 @@ impl ThumbCluster {
         let bounds = ClusterBounds::from_positions(
             thumb_keys.iter(),
             &key_clearance,
-            circumference_distance,
+            *config.circumference_distance,
         );
 
-        let outline = Self::outline(thumb_keys, &key_clearance);
-        let cluster_outline = outline.offset(circumference_distance);
+        let (outline, insert_holder) =
+            Self::outline_and_insert_holder(thumb_keys, &key_clearance, config);
+        let cluster_outline = outline.offset(*config.circumference_distance);
 
         let clearance = Self::clearance(thumb_keys, &key_clearance, &bounds);
         let cluster = cluster_outline.difference(clearance);
 
         let key_clearance = Self::key_clearance(thumb_keys, &key_clearance, &bounds);
 
+        let insert_holder = cluster_outline.intersection(insert_holder);
+
         Self {
             cluster,
             key_clearance,
+            insert_holder,
             bounds,
         }
     }
 
-    fn outline(thumb_keys: &ThumbKeys, key_clearance: &DVec2) -> Tree {
+    fn outline_and_insert_holder(
+        thumb_keys: &ThumbKeys,
+        key_clearance: &DVec2,
+        config: &Keyboard,
+    ) -> (Tree, InsertHolder) {
         let first_thumb_key = thumb_keys.first();
         let last_thumb_key = thumb_keys.last();
 
-        let points = [
+        let points: Vec<_> = [
             corner_point(first_thumb_key, SideX::Left, SideY::Top, key_clearance),
             corner_point(first_thumb_key, SideX::Left, SideY::Bottom, key_clearance),
             corner_point(last_thumb_key, SideX::Right, SideY::Bottom, key_clearance),
@@ -66,7 +72,9 @@ impl ThumbCluster {
         .map(Vec3Swizzles::xy)
         .collect();
 
-        ConvexPolygon::new(points).into()
+        let insert_holder = InsertHolder::from_vertices(&points, 1, config);
+
+        (ConvexPolygon::new(points).into(), insert_holder)
     }
 
     fn clearance(thumb_keys: &ThumbKeys, key_clearance: &DVec2, bounds: &ClusterBounds) -> Tree {
