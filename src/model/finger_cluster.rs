@@ -2,9 +2,10 @@ use fidget::context::Tree;
 use glam::{dvec2, dvec3, DAffine3, DVec2, DVec3, Vec3Swizzles};
 
 use crate::{
-    config::{PositiveDVec2, EPSILON, KEY_CLEARANCE},
+    config::{Keyboard, PositiveDVec2, EPSILON, KEY_CLEARANCE},
     model::{
         geometry::{Line, Plane, Project},
+        insert_holder::InsertHolder,
         key_positions::{Column, ColumnType, Columns},
         primitives::{Csg, SimplePolygon},
         util::{
@@ -17,15 +18,12 @@ use crate::{
 pub struct FingerCluster {
     pub cluster: Tree,
     pub key_clearance: Tree,
+    pub insert_holders: Tree,
     pub bounds: ClusterBounds,
 }
 
 impl FingerCluster {
-    pub fn new(
-        columns: &Columns,
-        key_distance: &PositiveDVec2,
-        circumference_distance: f64,
-    ) -> Self {
+    pub fn new(columns: &Columns, key_distance: &PositiveDVec2, config: &Keyboard) -> Self {
         let key_clearance = dvec2(
             key_distance.x + KEY_CLEARANCE,
             key_distance.y + KEY_CLEARANCE,
@@ -34,11 +32,12 @@ impl FingerCluster {
         let bounds = ClusterBounds::from_positions(
             columns.iter().flat_map(|column| column.iter()),
             &key_clearance,
-            circumference_distance,
+            *config.circumference_distance,
         );
 
-        let outline = Self::outline(columns, &key_clearance);
-        let cluster_outline = outline.offset(circumference_distance);
+        let (outline, insert_holders) =
+            Self::outline_and_insert_holders(columns, &key_clearance, config);
+        let cluster_outline = outline.offset(*config.circumference_distance);
         let cluster = cluster_outline.extrude(-bounds.size.z, bounds.size.z);
 
         let clearance = ClearanceBuilder::new(columns, &key_clearance, &bounds).build();
@@ -46,14 +45,26 @@ impl FingerCluster {
 
         let key_clearance = outline.extrude(-bounds.size.z, bounds.size.z);
 
+        let insert_holders = insert_holders
+            .into_iter()
+            .map(Into::into)
+            .reduce(|holders: Tree, holder| holders.union(holder))
+            .expect("there is more than one insert holder for the finger cluster")
+            .intersection(cluster_outline);
+
         Self {
             cluster,
             key_clearance,
+            insert_holders,
             bounds,
         }
     }
 
-    fn outline(columns: &Columns, key_clearance: &DVec2) -> Tree {
+    fn outline_and_insert_holders(
+        columns: &Columns,
+        key_clearance: &DVec2,
+        config: &Keyboard,
+    ) -> (Tree, [InsertHolder; 3]) {
         let bottom_points = columns.windows(2).map(|window| {
             let first_left = window[0].first();
             let first_right = window[1].first();
@@ -76,7 +87,16 @@ impl FingerCluster {
             .map(Vec3Swizzles::xy)
             .collect();
 
-        SimplePolygon::new(vertices).into()
+        let first_index = columns.len() - 1;
+        let second_index = first_index + columns.first().len();
+        let third_index = second_index + columns.len();
+        let insert_holders = [
+            InsertHolder::from_vertices(&vertices, first_index, config),
+            InsertHolder::from_vertices(&vertices, second_index, config),
+            InsertHolder::from_vertices(&vertices, third_index, config),
+        ];
+
+        (SimplePolygon::new(vertices).into(), insert_holders)
     }
 
     fn circumference_point(

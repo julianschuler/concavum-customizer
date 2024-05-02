@@ -1,5 +1,6 @@
 mod finger_cluster;
 mod geometry;
+mod insert_holder;
 mod key_cluster;
 mod key_positions;
 mod primitives;
