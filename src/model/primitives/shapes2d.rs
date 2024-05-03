@@ -47,8 +47,7 @@ impl Rectangle {
 
 impl From<Rectangle> for Tree {
     fn from(rectangle: Rectangle) -> Self {
-        let size = Vec2::from_parameter(rectangle.size / 2.0);
-        let q = Vec2::point().abs() - size;
+        let q = Vec2::point().abs() - (rectangle.size / 2.0).into();
 
         // Use EPSILON instead of 0.0 to get well-behaved gradients
         let outer = q.max(EPSILON.into()).length();
@@ -143,9 +142,9 @@ impl ConvexPolygon {
                 let edge = previous_vertex - vertex;
                 let edge_length = edge.length();
                 let edge = edge.normalize_or_zero();
-                let normal = Vec2::from_parameter(rotate_90_degrees(edge));
-                let edge = Vec2::from_parameter(edge);
-                let diff = point.clone() - Vec2::from_parameter(vertex);
+                let normal: Vec2 = rotate_90_degrees(edge).into();
+                let edge: Vec2 = edge.into();
+                let diff = point.clone() - vertex.into();
 
                 // Calculate shortest possible vector from point to edge
                 let edge_projection = diff.dot(edge.clone());
@@ -230,8 +229,8 @@ impl From<SimplePolygon> for Tree {
                 let edge = previous_vertex - vertex;
                 let edge_length = edge.length();
                 let edge = edge.normalize_or_zero();
-                let edge = Vec2::from_parameter(edge);
-                let diff = point.clone() - Vec2::from_parameter(vertex);
+                let edge: Vec2 = edge.into();
+                let diff = point.clone() - vertex.into();
 
                 // Calculate shortest possible vector from point to edge
                 let edge_projection = diff.dot(edge.clone());
@@ -286,10 +285,10 @@ impl Corner {
 impl From<Corner> for Tree {
     fn from(corner: Corner) -> Self {
         let point = Vec2::point();
-        let edge1 = Vec2::from_parameter(corner.edge1);
-        let edge2 = Vec2::from_parameter(corner.edge2);
-        let normal1 = Vec2::from_parameter(rotate_90_degrees(-corner.edge1));
-        let normal2 = Vec2::from_parameter(rotate_90_degrees(corner.edge2));
+        let edge1: Vec2 = corner.edge1.into();
+        let edge2: Vec2 = corner.edge2.into();
+        let normal1 = rotate_90_degrees(-corner.edge1).into();
+        let normal2 = rotate_90_degrees(corner.edge2).into();
 
         let Distances { squared, inner } = [(edge1, normal1), (edge2, normal2)]
             .into_iter()

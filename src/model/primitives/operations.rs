@@ -94,12 +94,12 @@ impl Transforms for Tree {
     }
 
     fn affine(&self, affine: DAffine3) -> Tree {
-        let point = Vec3::point() - Vec3::from_parameter(affine.translation);
+        let point = Vec3::point() - affine.translation.into();
 
         let matrix = affine.matrix3.inverse().transpose();
-        let x = point.dot(Vec3::from_parameter(matrix.x_axis));
-        let y = point.dot(Vec3::from_parameter(matrix.y_axis));
-        let z = point.dot(Vec3::from_parameter(matrix.z_axis));
+        let x = point.dot(matrix.x_axis.into());
+        let y = point.dot(matrix.y_axis.into());
+        let z = point.dot(matrix.z_axis.into());
 
         self.remap_xyz(x, y, z)
     }
@@ -108,7 +108,7 @@ impl Transforms for Tree {
         let point = Vec3::point();
         let alpha = point.z.clone() / height;
 
-        let scale = alpha * Vec2::from_parameter(scale - DVec2::ONE) + 1.0.into();
+        let scale = alpha * Vec2::from(scale - DVec2::ONE) + 1.0.into();
         let x = point.x / scale.x;
         let y = point.y / scale.y;
 
@@ -119,8 +119,7 @@ impl Transforms for Tree {
         let point = Vec3::point();
         let alpha = point.z.clone() / height;
 
-        let offset = Vec2::from_parameter(offset);
-        let offset = alpha * offset;
+        let offset = alpha * Vec2::from(offset);
         let x = point.x - offset.x;
         let y = point.y - offset.y;
 
