@@ -26,29 +26,34 @@ impl Scene {
             .collect();
 
         let objects = vec![Object::new(context, &model.keyboard, model.colors.keyboard)];
-        let instanced_objects = vec![
-            InstancedObject::new(
-                context,
-                &assets.switch,
-                model.colors.switch,
-                switch_positions,
-            ),
-            InstancedObject::new(
-                context,
-                &assets.keycap_1u,
-                model.colors.keycap,
-                model.finger_key_positions,
-            ),
-            InstancedObject::new(
-                context,
-                &assets.keycap_1_5u,
-                model.colors.keycap,
-                model.thumb_key_positions,
-            ),
-        ];
+        let instanced_objects = if model.settings.show_keys {
+            vec![
+                InstancedObject::new(
+                    context,
+                    &assets.switch,
+                    model.colors.switch,
+                    switch_positions,
+                ),
+                InstancedObject::new(
+                    context,
+                    &assets.keycap_1u,
+                    model.colors.keycap,
+                    model.finger_key_positions,
+                ),
+                InstancedObject::new(
+                    context,
+                    &assets.keycap_1_5u,
+                    model.colors.keycap,
+                    model.thumb_key_positions,
+                ),
+            ]
+        } else {
+            Vec::new()
+        };
 
         let ambient = AmbientLight::new(context, 0.05, Srgba::WHITE);
         let lights = model
+            .settings
             .light_positions
             .iter()
             .map(|direction| {
@@ -56,7 +61,7 @@ impl Scene {
                     context,
                     1.0,
                     Srgba::WHITE,
-                    direction,
+                    &direction.as_vec3().to_array().into(),
                     Attenuation::default(),
                 )
             })

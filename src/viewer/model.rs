@@ -1,15 +1,18 @@
 use fidget::mesh::{Mesh as FidgetMesh, Settings};
 use glam::DMat4;
-use three_d::{CpuMesh, Indices, Mat4, Positions, Vec3};
+use three_d::{CpuMesh, Indices, Mat4, Positions};
 
-use crate::{config::Colors, model};
+use crate::{
+    config::{Colors, Preview},
+    model,
+};
 
 pub struct Model {
     pub keyboard: CpuMesh,
     pub finger_key_positions: Vec<Mat4>,
     pub thumb_key_positions: Vec<Mat4>,
-    pub light_positions: Vec<Vec3>,
     pub colors: Colors,
+    pub settings: Preview,
 }
 
 /// A trait for meshing a model.
@@ -23,18 +26,12 @@ pub trait Mesh {
 
 impl Mesh for model::Model {
     fn mesh_settings(&self) -> Settings {
-        self.keyboard.mesh_settings(self.resolution)
+        self.keyboard.mesh_settings(*self.settings.resolution)
     }
 
     fn mesh(&self, settings: Settings) -> Model {
         let mesh = self.keyboard.mesh(settings);
         let keyboard = mesh.into_cpu_mesh();
-
-        let light_positions = self
-            .light_positions
-            .iter()
-            .map(|position| position.as_vec3().to_array().into())
-            .collect();
 
         let finger_key_positions = self
             .key_positions
@@ -61,8 +58,8 @@ impl Mesh for model::Model {
             keyboard,
             finger_key_positions,
             thumb_key_positions,
-            light_positions,
             colors: self.colors.clone(),
+            settings: self.settings.clone(),
         }
     }
 }
