@@ -1,4 +1,5 @@
-use glam::DVec3;
+use fidget::context::Tree;
+use glam::{dvec3, DVec3};
 
 use crate::{
     config::{Config, PositiveDVec2},
@@ -6,7 +7,7 @@ use crate::{
         finger_cluster::FingerCluster,
         geometry::Plane,
         key_positions::KeyPositions,
-        primitives::{Csg, HalfSpace, Shape},
+        primitives::{BoxShape, Csg, HalfSpace, Shape, Transforms},
         thumb_cluster::ThumbCluster,
     },
 };
@@ -43,8 +44,9 @@ impl KeyCluster {
         let hollowed_cluster = combined_cluster.shell(*config.keyboard.shell_thickness);
         let cluster = hollowed_cluster.intersection(half_space);
 
-        // Add the insert holders
+        // Add the insert holders and cutouts
         let cluster = cluster.union(inserts);
+        let cluster = cluster.difference(Self::key_cutouts(&key_positions));
 
         let shape = Shape::new(&cluster, bounds.into());
 
@@ -52,5 +54,18 @@ impl KeyCluster {
             shape,
             key_positions,
         }
+    }
+
+    fn key_cutouts(key_positions: &KeyPositions) -> Tree {
+        let key_cutout: Tree = BoxShape::new(dvec3(14.0, 14.0, 10.0)).into();
+
+        key_positions
+            .columns
+            .iter()
+            .flat_map(|column| column.iter())
+            .chain(key_positions.thumb_keys.iter())
+            .map(|&position| key_cutout.affine(position))
+            .reduce(|a, b| a.union(b))
+            .expect("there is more than one key")
     }
 }
