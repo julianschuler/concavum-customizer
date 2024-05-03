@@ -94,16 +94,12 @@ impl Transforms for Tree {
     }
 
     fn affine(&self, affine: DAffine3) -> Tree {
-        let point = Vec3::point();
+        let point = Vec3::point() - Vec3::from_parameter(affine.translation);
 
         let matrix = affine.matrix3.inverse().transpose();
-        let x_axis = Vec3::from_parameter(matrix.x_axis);
-        let y_axis = Vec3::from_parameter(matrix.y_axis);
-        let z_axis = Vec3::from_parameter(matrix.z_axis);
-
-        let x = point.dot(x_axis) - affine.translation.x;
-        let y = point.dot(y_axis) - affine.translation.y;
-        let z = point.dot(z_axis) - affine.translation.z;
+        let x = point.dot(Vec3::from_parameter(matrix.x_axis));
+        let y = point.dot(Vec3::from_parameter(matrix.y_axis));
+        let z = point.dot(Vec3::from_parameter(matrix.z_axis));
 
         self.remap_xyz(x, y, z)
     }
