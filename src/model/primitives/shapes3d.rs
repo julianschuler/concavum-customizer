@@ -1,12 +1,9 @@
 use fidget::context::Tree;
 use glam::DVec3;
 
-use crate::{
-    config::EPSILON,
-    model::{
-        geometry::Plane,
-        primitives::vector::{Vec3, Vector},
-    },
+use crate::model::{
+    geometry::Plane,
+    primitives::vector::{Vec3, Vector},
 };
 
 /// A sphere centered at the origin.
@@ -61,12 +58,8 @@ impl BoxShape {
 
 impl From<BoxShape> for Tree {
     fn from(box_shape: BoxShape) -> Self {
-        let q = Vec3::point().abs() - (box_shape.size / 2.0).into();
+        let distances = Vec3::point().abs() - (box_shape.size / 2.0).into();
 
-        // Use EPSILON instead of 0.0 to get well-behaved gradients
-        let outer = q.max(EPSILON.into()).length();
-        let inner = q.max_elem().min(0.0);
-
-        outer + inner
+        distances.max_elem()
     }
 }
