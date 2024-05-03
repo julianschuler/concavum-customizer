@@ -7,9 +7,7 @@ mod primitives;
 mod thumb_cluster;
 mod util;
 
-use glam::DVec3;
-
-use crate::config::{Colors, Config};
+use crate::config::{Colors, Config, Preview};
 pub use primitives::Shape;
 
 use key_cluster::KeyCluster;
@@ -18,9 +16,8 @@ use key_positions::KeyPositions;
 pub struct Model {
     pub keyboard: Shape,
     pub key_positions: KeyPositions,
-    pub light_positions: Vec<DVec3>,
-    pub resolution: f64,
     pub colors: Colors,
+    pub settings: Preview,
 }
 
 impl Model {
@@ -30,9 +27,8 @@ impl Model {
         Self {
             keyboard: key_cluster.shape,
             key_positions: key_cluster.key_positions,
-            light_positions: config.preview.light_positions,
-            resolution: *config.preview.resolution,
             colors: config.colors,
+            settings: config.preview,
         }
     }
 }

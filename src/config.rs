@@ -19,7 +19,7 @@ pub struct Config {
     pub colors: Colors,
 }
 
-#[derive(Deserialize)]
+#[derive(Clone, Deserialize)]
 pub struct Preview {
     pub show_keys: bool,
     pub show_interface_pcb: bool,
