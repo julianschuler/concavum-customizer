@@ -649,7 +649,7 @@ dependencies = [
 [[package]]
 name = "fidget"
 version = "0.2.6"
-source = "git+https://github.com/julianschuler/fidget.git?branch=static-singular-value-truncation#31a1abdc925f04d3bc6736db0f1dea5c4a5089a5"
+source = "git+https://github.com/julianschuler/fidget.git?branch=static-singular-value-truncation#8ee825e50ffd07de2e40e6a256c382d777b8e99c"
 dependencies = [
  "arrayvec",
  "bimap",
@@ -1091,7 +1091,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0c2a198fb6b0eada2a8df47933734e6d35d350665a33a3593d7164fa52c75c19"
 dependencies = [
  "cfg-if",
- "windows-targets 0.52.5",
+ "windows-targets 0.48.5",
 ]
 
 [[package]]
@@ -2540,7 +2540,7 @@ dependencies = [
 [[package]]
 name = "workspace-hack"
 version = "0.1.0"
-source = "git+https://github.com/julianschuler/fidget.git?branch=static-singular-value-truncation#31a1abdc925f04d3bc6736db0f1dea5c4a5089a5"
+source = "git+https://github.com/julianschuler/fidget.git?branch=static-singular-value-truncation#8ee825e50ffd07de2e40e6a256c382d777b8e99c"
 dependencies = [
  "ahash",
  "bitflags 2.5.0",
