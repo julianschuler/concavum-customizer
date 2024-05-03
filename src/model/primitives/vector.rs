@@ -82,20 +82,11 @@ pub struct Vec3 {
 }
 
 impl Vec3 {
-    /// Creates a vector from the x, y and z variables of context.
+    /// Creates a vector from the x, y and z variables.
     pub fn point() -> Self {
         let x = Tree::x();
         let y = Tree::y();
         let z = Tree::z();
-
-        Self { x, y, z }
-    }
-
-    /// Creates a node using a given parameter as content.
-    pub fn from_parameter(parameter: DVec3) -> Self {
-        let x = Tree::constant(parameter.x);
-        let y = Tree::constant(parameter.y);
-        let z = Tree::constant(parameter.z);
 
         Self { x, y, z }
     }
@@ -108,6 +99,16 @@ impl From<f64> for Vec3 {
             y: value.into(),
             z: value.into(),
         }
+    }
+}
+
+impl From<DVec3> for Vec3 {
+    fn from(vector: DVec3) -> Self {
+        let x = Tree::constant(vector.x);
+        let y = Tree::constant(vector.y);
+        let z = Tree::constant(vector.z);
+
+        Self { x, y, z }
     }
 }
 
@@ -186,18 +187,10 @@ pub struct Vec2 {
 }
 
 impl Vec2 {
-    /// Creates a vector from the x and y variables of context.
+    /// Creates a vector from the x and y variables.
     pub fn point() -> Self {
         let x = Tree::x();
         let y = Tree::y();
-
-        Self { x, y }
-    }
-
-    /// Creates a node using a given parameter as content.
-    pub fn from_parameter(parameter: DVec2) -> Self {
-        let x = Tree::constant(parameter.x);
-        let y = Tree::constant(parameter.y);
 
         Self { x, y }
     }
@@ -209,6 +202,15 @@ impl From<f64> for Vec2 {
             x: value.into(),
             y: value.into(),
         }
+    }
+}
+
+impl From<DVec2> for Vec2 {
+    fn from(vector: DVec2) -> Self {
+        let x = Tree::constant(vector.x);
+        let y = Tree::constant(vector.y);
+
+        Self { x, y }
     }
 }
 
