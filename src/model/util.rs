@@ -181,6 +181,6 @@ pub fn sheared_prism_from_projected_points(
     let prism = polygon.extrude(0.0, height);
     let prism = prism.shear(shearing_direction.xy(), shearing_direction.z);
 
-    let affine = DAffine3::from_translation(zvec(offset)) * DAffine3::from_quat(rotation.inverse());
+    let affine = DAffine3::from_quat(rotation.inverse()) * DAffine3::from_translation(zvec(offset));
     prism.affine(affine)
 }
