@@ -38,7 +38,7 @@ pub trait Vector: Sized {
 
     /// Calculates the element-wise maximum.
     fn max(&self, other: Self) -> Self {
-        self.map_binary(other, Tree::min)
+        self.map_binary(other, Tree::max)
     }
 
     /// Calculates the minimum value of all elements.
