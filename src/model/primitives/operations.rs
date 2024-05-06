@@ -1,9 +1,7 @@
 use fidget::context::Tree;
 use glam::{DAffine3, DVec2, DVec3};
 
-use crate::model::primitives::vector::{Vec2, Vec3};
-
-use super::vector::Vector;
+use crate::model::primitives::vector::{Vec2, Vec3, Vector};
 
 /// A trait defining Constructive Solid Geometry (CSG) operations.
 pub trait Csg {

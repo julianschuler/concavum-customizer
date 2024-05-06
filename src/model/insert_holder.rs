@@ -5,11 +5,9 @@ use crate::{
     config::Keyboard,
     model::{
         geometry::rotate_90_degrees,
-        primitives::{Circle, Corner, Transforms},
+        primitives::{Circle, Corner, Csg, Transforms},
     },
 };
-
-use super::primitives::Csg;
 
 pub struct InsertHolder(Tree);
 
