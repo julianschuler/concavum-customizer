@@ -7,7 +7,7 @@ use crate::{
         geometry::{Line, Plane, Project},
         insert_holder::InsertHolder,
         key_positions::{Column, ColumnType, Columns},
-        primitives::{Csg, SimplePolygon},
+        primitives::{Csg, RoundedCsg, SimplePolygon},
         util::{
             corner_point, prism_from_projected_points, side_point, ClusterBounds, Side, SideX,
             SideY,
@@ -41,7 +41,7 @@ impl FingerCluster {
         let cluster = cluster_outline.extrude(-bounds.size.z, bounds.size.z);
 
         let clearance = ClearanceBuilder::new(columns, &key_clearance, &bounds).build();
-        let cluster = cluster.difference(clearance);
+        let cluster = cluster.rounded_difference(clearance, config.rounding_radius);
 
         let key_clearance = outline.extrude(-bounds.size.z, bounds.size.z);
 
