@@ -7,7 +7,7 @@ use crate::{
         geometry::{Line, Plane},
         insert_holder::InsertHolder,
         key_positions::ThumbKeys,
-        primitives::{ConvexPolygon, Csg},
+        primitives::{ConvexPolygon, Csg, RoundedCsg},
         util::{
             corner_point, prism_from_projected_points, sheared_prism_from_projected_points,
             side_point, ClusterBounds, Side, SideX, SideY,
@@ -40,7 +40,7 @@ impl ThumbCluster {
         let cluster_outline = outline.offset(*config.circumference_distance);
 
         let clearance = Self::clearance(thumb_keys, &key_clearance, &bounds);
-        let cluster = cluster_outline.difference(clearance);
+        let cluster = cluster_outline.rounded_difference(clearance, config.rounding_radius);
 
         let key_clearance = Self::key_clearance(thumb_keys, &key_clearance, &bounds);
 

@@ -51,7 +51,9 @@ resting_key_index = 1
 # Keyboard tilting angle along X and Y
 tilting_angle = [15, 20]
 # Space around key cluster
-circumference_distance = 5
+circumference_distance = 7
+# Rounding radius of the top keyboard edges
+rounding_radius = 3
 # Thickness of the keyboard shell
 shell_thickness = 2.1
 # Thickness of the bottom plate

@@ -62,6 +62,7 @@ pub struct ThumbCluster {
 pub struct Keyboard {
     pub tilting_angle: DVec2,
     pub circumference_distance: PositiveFloat,
+    pub rounding_radius: f64,
     pub shell_thickness: PositiveFloat,
     pub bottom_plate_thickness: PositiveFloat,
 }
