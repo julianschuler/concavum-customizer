@@ -54,6 +54,7 @@ impl Csg for Tree {
 }
 
 /// A trait defining rounded Constructive Solid Geometry (CSG) operations.
+#[allow(dead_code)]
 pub trait RoundedCsg {
     /// Performs the union between two shapes while rounding the new edges.
     fn rounded_union<T: Into<Tree>>(&self, other: T, radius: f64) -> Self;
@@ -90,6 +91,7 @@ impl RoundedCsg for Tree {
 }
 
 /// A trait defining transform operations.
+#[allow(dead_code)]
 pub trait Transforms {
     /// Translates a shape by a given vector.
     fn translate(&self, translation: DVec3) -> Tree;
