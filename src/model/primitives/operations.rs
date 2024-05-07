@@ -1,7 +1,10 @@
 use fidget::context::Tree;
 use glam::{DAffine3, DVec2, DVec3};
 
-use crate::model::primitives::vector::{Vec2, Vec3, Vector};
+use crate::{
+    config::EPSILON,
+    model::primitives::vector::{Vec2, Vec3, Vector},
+};
 
 /// A trait defining Constructive Solid Geometry (CSG) operations.
 pub trait Csg {
@@ -47,6 +50,42 @@ impl Csg for Tree {
 
     fn shell(&self, thickness: f64) -> Self {
         self.difference(self.offset(-thickness))
+    }
+}
+
+/// A trait defining rounded Constructive Solid Geometry (CSG) operations.
+pub trait RoundedCsg {
+    /// Performs the union between two shapes while rounding the new edges.
+    fn rounded_union<T: Into<Tree>>(&self, other: T, radius: f64) -> Self;
+
+    /// Performs the difference between two shapes while rounding the new edges.
+    fn rounded_difference<T: Into<Tree>>(&self, other: T, radius: f64) -> Self;
+
+    /// Performs the intersection between two shapes while rounding the new edges.
+    fn rounded_intersection<T: Into<Tree>>(&self, other: T, radius: f64) -> Self;
+}
+
+impl RoundedCsg for Tree {
+    fn rounded_union<T: Into<Tree>>(&self, other: T, radius: f64) -> Self {
+        self.neg()
+            .rounded_intersection(other.into().neg(), radius)
+            .neg()
+    }
+
+    fn rounded_difference<T: Into<Tree>>(&self, other: T, radius: f64) -> Self {
+        self.rounded_intersection(other.into().neg(), radius)
+    }
+
+    fn rounded_intersection<T: Into<Tree>>(&self, other: T, radius: f64) -> Self {
+        let vector = Vec2 {
+            x: self.clone() + radius,
+            y: other.into() + radius,
+        };
+
+        let outer = vector.max(EPSILON.into()).length();
+        let inner = vector.max_elem().min(0.0);
+
+        outer + inner - radius
     }
 }
 
