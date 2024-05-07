@@ -4,6 +4,7 @@ use fidget::context::Tree;
 use glam::{DVec2, DVec3};
 
 /// A trait defining operations on a vector.
+#[allow(dead_code)]
 pub trait Vector: Sized {
     /// Applies a unary function element-wise.
     fn map_unary<F>(&self, f: F) -> Self
