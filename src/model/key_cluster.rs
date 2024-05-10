@@ -7,7 +7,7 @@ use crate::{
         finger_cluster::FingerCluster,
         geometry::Plane,
         key_positions::KeyPositions,
-        primitives::{BoxShape, Csg, HalfSpace, Shape, Transforms},
+        primitives::{BoxShape, Csg, HalfSpace, RoundedCsg, Shape, Transforms},
         thumb_cluster::ThumbCluster,
     },
 };
@@ -29,11 +29,14 @@ impl KeyCluster {
             .union(thumb_cluster.insert_holder);
 
         // Subtract key clearances from each other and combine the clusters
+        let rounding_radius = config.keyboard.rounding_radius;
         let finger_key_clearance = finger_cluster.key_clearance;
         let finger_cluster = finger_cluster
             .cluster
-            .difference(thumb_cluster.key_clearance);
-        let thumb_cluster = thumb_cluster.cluster.difference(finger_key_clearance);
+            .rounded_difference(thumb_cluster.key_clearance, rounding_radius);
+        let thumb_cluster = thumb_cluster
+            .cluster
+            .rounded_difference(finger_key_clearance, rounding_radius);
         let combined_cluster = finger_cluster.union(thumb_cluster);
 
         // Hollow out the combined cluster and cut off everthing below a z value of 0
