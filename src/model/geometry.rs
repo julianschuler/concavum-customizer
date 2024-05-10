@@ -67,6 +67,11 @@ impl Plane {
     pub fn point(&self) -> DVec3 {
         self.point
     }
+
+    /// Projects a vector to the plane.
+    pub fn project_vector(&self, vector: DVec3) -> DVec3 {
+        vector - self.normal.dot(vector) * self.normal
+    }
 }
 
 /// A trait for projecting objects onto others.

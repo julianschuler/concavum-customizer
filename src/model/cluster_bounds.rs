@@ -1,8 +1,9 @@
-use glam::{dvec3, DAffine3, DVec2, DVec3};
+use glam::{dvec3, DAffine3, DMat3, DVec2, DVec3};
 
 use crate::{
     config::EPSILON,
     model::{
+        geometry::Plane,
         key_positions::{Columns, ThumbKeys},
         primitives::Bounds,
     },
@@ -12,7 +13,7 @@ use crate::{
 pub struct ClusterBounds {
     min: DVec3,
     max: DVec3,
-    pub size: DVec3,
+    size: DVec3,
 }
 
 impl ClusterBounds {
@@ -41,6 +42,29 @@ impl ClusterBounds {
         let size = max - min;
 
         Self { min, max, size }
+    }
+
+    /// Returns the diameter of the bounds.
+    pub fn diameter(&self) -> f64 {
+        self.size.length()
+    }
+
+    /// Returns the unit vectors projected to a plane given by the normal.
+    /// The vectors are scaled such that it translates every point inside
+    /// the bound to the outside.
+    pub fn projected_unit_vectors(&self, normal: DVec3) -> DMat3 {
+        let plane = Plane::new(DVec3::ZERO, normal);
+
+        let x_axis = plane.project_vector(DVec3::X).normalize_or_zero();
+        let y_axis = plane.project_vector(DVec3::Y).normalize_or_zero();
+        let z_axis = plane.project_vector(DVec3::Z).normalize_or_zero();
+
+        self.diameter()
+            * DMat3 {
+                x_axis,
+                y_axis,
+                z_axis,
+            }
     }
 
     /// Creates a cluster bound from key positions and clearances.

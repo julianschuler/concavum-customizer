@@ -106,7 +106,7 @@ pub fn prism_from_projected_points(
 }
 
 /// Creates a sheared prism by projecting points to a plane, extruding to a
-/// given height and sheering it to the given direction.
+/// given height and shearing it to the given direction.
 ///
 /// The points must be in a counter-clockwise order.
 pub fn sheared_prism_from_projected_points(
