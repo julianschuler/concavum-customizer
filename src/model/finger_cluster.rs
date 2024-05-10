@@ -23,7 +23,7 @@ pub struct FingerCluster {
 impl FingerCluster {
     pub fn new(columns: &Columns, config: &Keyboard) -> Self {
         let bounds = ClusterBounds::from_columns(columns, *config.circumference_distance);
-        let cluster_height = bounds.diameter();
+        let cluster_height = bounds.size.z;
 
         let (outline, insert_holders) = Self::outline_and_insert_holders(columns, config);
         let cluster_outline = outline.offset(*config.circumference_distance);
@@ -223,7 +223,7 @@ impl<'a> ClearanceBuilder<'a> {
     ) -> Tree {
         let normal_offset = self.columns.key_clearance.x;
         let side_offset = self.bounds.diameter();
-        let extrusion_height = 2.0 * self.bounds.diameter();
+        let extrusion_height = 2.0 * side_offset;
 
         // Column clearance parameters
         let translation = column.first().translation;
@@ -276,7 +276,7 @@ impl<'a> ClearanceBuilder<'a> {
             SideX::Right => self.columns.last(),
         };
 
-        let plane = Plane::new(-30.0 * DVec3::X, DVec3::X);
+        let plane = Plane::new(self.bounds.min, DVec3::X);
         let bounds = self.bounds.projected_unit_vectors(plane.normal());
 
         let first = column.first();
@@ -302,7 +302,7 @@ impl<'a> ClearanceBuilder<'a> {
             ])
             .collect();
 
-        prism_from_projected_points(points, &plane, self.bounds.diameter())
+        prism_from_projected_points(points, &plane, self.bounds.size.x)
     }
 
     fn side_point(&self, bottom: &DAffine3, top: &DAffine3, side_x: SideX) -> Option<DVec3> {

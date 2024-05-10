@@ -11,9 +11,9 @@ use crate::{
 
 /// Bounded region containing a cluster.
 pub struct ClusterBounds {
-    min: DVec3,
-    max: DVec3,
-    size: DVec3,
+    pub min: DVec3,
+    pub max: DVec3,
+    pub size: DVec3,
 }
 
 impl ClusterBounds {
