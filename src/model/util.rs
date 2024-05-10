@@ -1,5 +1,5 @@
 use fidget::context::Tree;
-use glam::{dvec2, dvec3, DAffine3, DQuat, DVec2, DVec3, Vec3Swizzles};
+use glam::{dvec3, DAffine3, DQuat, DVec2, DVec3, Vec3Swizzles};
 
 use crate::{
     config::EPSILON,
@@ -31,11 +31,11 @@ impl ClusterBounds {
             |(min, max), point| (min.min(point.translation), max.max(point.translation)),
         );
 
-        let padding = dvec2(key_clearance.x, key_clearance.y).length();
-        let xy_padding = padding + circumference_distance;
-        let max = max + dvec3(xy_padding, xy_padding, padding);
-        let min = dvec3(min.x - xy_padding, min.y - xy_padding, 0.0);
-        let size = max - min;
+        let padding = key_clearance.length() + circumference_distance;
+        let padding = dvec3(padding, padding, padding);
+        let max = max + padding;
+        let min = min - padding;
+        let size = max - dvec3(min.x, min.y, 0.0);
 
         Self { min, max, size }
     }
