@@ -22,11 +22,7 @@ pub struct FingerCluster {
 
 impl FingerCluster {
     pub fn new(columns: &Columns, config: &Keyboard) -> Self {
-        let bounds = ClusterBounds::from_positions(
-            columns.iter().flat_map(|column| column.iter()),
-            &columns.key_clearance,
-            *config.circumference_distance,
-        );
+        let bounds = ClusterBounds::from_columns(columns, *config.circumference_distance);
 
         let (outline, insert_holders) = Self::outline_and_insert_holders(columns, config);
         let cluster_outline = outline.offset(*config.circumference_distance);
