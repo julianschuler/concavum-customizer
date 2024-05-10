@@ -43,9 +43,9 @@ impl Shape {
     /// Returns the settings to use for meshing the shape with the given resolution.
     pub fn mesh_settings(&self, resolution: f64) -> Settings {
         #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
-        let depth = ((self.bounds.size / resolution).log2().ceil() as u8).max(1);
+        let depth = (self.bounds.size / resolution).log2().ceil() as u8;
         #[allow(clippy::cast_possible_truncation)]
-        let size = (f64::from(2u32.pow(u32::from(depth - 1))) * resolution) as f32;
+        let size = (f64::from(2u32.pow(u32::from(depth.max(1) - 1))) * resolution) as f32;
 
         let center = self.bounds.center.as_vec3().to_array().into();
         let bounds = shape::Bounds { center, size };
