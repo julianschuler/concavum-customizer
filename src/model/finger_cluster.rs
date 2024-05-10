@@ -4,14 +4,12 @@ use glam::{dvec3, DAffine3, DVec2, DVec3, Vec3Swizzles};
 use crate::{
     config::{Keyboard, EPSILON},
     model::{
+        cluster_bounds::ClusterBounds,
         geometry::{Line, Plane, Project},
         insert_holder::InsertHolder,
         key_positions::{Column, ColumnType, Columns},
         primitives::{Csg, RoundedCsg, SimplePolygon},
-        util::{
-            corner_point, prism_from_projected_points, side_point, ClusterBounds, Side, SideX,
-            SideY,
-        },
+        util::{corner_point, prism_from_projected_points, side_point, Side, SideX, SideY},
     },
 };
 

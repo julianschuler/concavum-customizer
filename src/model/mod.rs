@@ -1,3 +1,4 @@
+mod cluster_bounds;
 mod finger_cluster;
 mod geometry;
 mod insert_holder;
