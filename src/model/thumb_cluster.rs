@@ -1,8 +1,8 @@
 use fidget::context::Tree;
-use glam::{dvec2, DVec2, DVec3, Vec3Swizzles};
+use glam::{DVec3, Vec3Swizzles};
 
 use crate::{
-    config::{Keyboard, PositiveDVec2, EPSILON, KEY_CLEARANCE},
+    config::{Keyboard, EPSILON},
     model::{
         geometry::{Line, Plane},
         insert_holder::InsertHolder,
@@ -23,26 +23,20 @@ pub struct ThumbCluster {
 }
 
 impl ThumbCluster {
-    pub fn new(thumb_keys: &ThumbKeys, key_distance: &PositiveDVec2, config: &Keyboard) -> Self {
-        let key_clearance = dvec2(
-            key_distance.x + KEY_CLEARANCE,
-            1.5 * key_distance.y + KEY_CLEARANCE,
-        ) / 2.0;
-
+    pub fn new(thumb_keys: &ThumbKeys, config: &Keyboard) -> Self {
         let bounds = ClusterBounds::from_positions(
             thumb_keys.iter(),
-            &key_clearance,
+            &thumb_keys.key_clearance,
             *config.circumference_distance,
         );
 
-        let (outline, insert_holder) =
-            Self::outline_and_insert_holder(thumb_keys, &key_clearance, config);
+        let (outline, insert_holder) = Self::outline_and_insert_holder(thumb_keys, config);
         let cluster_outline = outline.offset(*config.circumference_distance);
 
-        let clearance = Self::clearance(thumb_keys, &key_clearance, &bounds);
+        let clearance = Self::clearance(thumb_keys, &bounds);
         let cluster = cluster_outline.rounded_difference(clearance, config.rounding_radius);
 
-        let key_clearance = Self::key_clearance(thumb_keys, &key_clearance, &bounds);
+        let key_clearance = Self::key_clearance(thumb_keys, &bounds);
 
         let insert_holder = cluster_outline.intersection(insert_holder);
 
@@ -56,9 +50,9 @@ impl ThumbCluster {
 
     fn outline_and_insert_holder(
         thumb_keys: &ThumbKeys,
-        key_clearance: &DVec2,
         config: &Keyboard,
     ) -> (Tree, InsertHolder) {
+        let key_clearance = &thumb_keys.key_clearance;
         let first_thumb_key = thumb_keys.first();
         let last_thumb_key = thumb_keys.last();
 
@@ -77,7 +71,8 @@ impl ThumbCluster {
         (ConvexPolygon::new(points).into(), insert_holder)
     }
 
-    fn clearance(thumb_keys: &ThumbKeys, key_clearance: &DVec2, bounds: &ClusterBounds) -> Tree {
+    fn clearance(thumb_keys: &ThumbKeys, bounds: &ClusterBounds) -> Tree {
+        let key_clearance = &thumb_keys.key_clearance;
         let width = bounds.size.x;
         let length = bounds.size.y;
         let height = bounds.size.z;
@@ -135,11 +130,8 @@ impl ThumbCluster {
         union.union(upper)
     }
 
-    fn key_clearance(
-        thumb_keys: &ThumbKeys,
-        key_clearance: &DVec2,
-        bounds: &ClusterBounds,
-    ) -> Tree {
+    fn key_clearance(thumb_keys: &ThumbKeys, bounds: &ClusterBounds) -> Tree {
+        let key_clearance = &thumb_keys.key_clearance;
         let first = thumb_keys.first();
         let last = thumb_keys.last();
 
