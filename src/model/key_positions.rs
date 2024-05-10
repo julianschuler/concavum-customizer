@@ -1,17 +1,19 @@
 use std::ops::{Deref, Mul};
 
-use glam::{dvec3, DAffine3, DQuat, DVec2, EulerRot};
+use glam::{dvec2, dvec3, DAffine3, DQuat, DVec2, EulerRot};
 
 use crate::{
-    config::{Column as ConfigColumn, Config, FingerCluster, PositiveDVec2, ThumbCluster},
+    config::{
+        Column as ConfigColumn, Config, FingerCluster, PositiveDVec2, ThumbCluster, KEY_CLEARANCE,
+    },
     model::geometry::zvec,
 };
 
 const CURVATURE_HEIGHT: f64 = 6.6;
 
 pub struct Column {
+    keys: Vec<DAffine3>,
     pub column_type: ColumnType,
-    entries: Vec<DAffine3>,
 }
 
 #[derive(Clone)]
@@ -21,41 +23,21 @@ pub enum ColumnType {
 }
 
 impl Column {
-    pub fn new(entries: Vec<DAffine3>, column_type: &ConfigColumn) -> Self {
+    pub fn new(keys: Vec<DAffine3>, column_type: &ConfigColumn) -> Self {
         let column_type = match column_type {
             ConfigColumn::Normal { .. } => ColumnType::Normal,
             ConfigColumn::Side { .. } => ColumnType::Side,
         };
 
-        Self {
-            column_type,
-            entries,
-        }
+        Self { keys, column_type }
     }
 
     pub fn first(&self) -> &DAffine3 {
-        self.entries
-            .first()
-            .expect("there has to be at least one row")
+        self.keys.first().expect("there has to be at least one row")
     }
 
     pub fn last(&self) -> &DAffine3 {
-        self.entries
-            .last()
-            .expect("there has to be at least one row")
-    }
-}
-
-impl Mul<&Column> for DAffine3 {
-    type Output = Column;
-
-    fn mul(self, column: &Column) -> Self::Output {
-        let entries = column.entries.iter().map(|&entry| self * entry).collect();
-
-        Column {
-            entries,
-            column_type: column.column_type.clone(),
-        }
+        self.keys.last().expect("there has to be at least one row")
     }
 }
 
@@ -63,17 +45,33 @@ impl Deref for Column {
     type Target = [DAffine3];
 
     fn deref(&self) -> &Self::Target {
-        &self.entries
+        &self.keys
     }
 }
 
-pub struct Columns(Vec<Column>);
+impl Mul<&Column> for DAffine3 {
+    type Output = Column;
+
+    fn mul(self, column: &Column) -> Self::Output {
+        let keys = column.keys.iter().map(|&key| self * key).collect();
+
+        Column {
+            keys,
+            column_type: column.column_type.clone(),
+        }
+    }
+}
+
+pub struct Columns {
+    inner: Vec<Column>,
+    pub key_clearance: DVec2,
+}
 
 impl Columns {
     fn from_config(config: &FingerCluster) -> Self {
         let key_distance: PositiveDVec2 = (&config.key_distance).into();
 
-        let columns = config
+        let inner = config
             .columns
             .iter()
             .enumerate()
@@ -124,7 +122,7 @@ impl Columns {
                     * DAffine3::from_rotation_y(side * side_angle);
 
                 let curvature_angle = curvature_angle.to_radians();
-                let entries = if curvature_angle == 0.0 {
+                let keys = if curvature_angle == 0.0 {
                     (0..*config.rows)
                         .map(|j| {
                             let y = key_distance.y
@@ -156,19 +154,31 @@ impl Columns {
                         .collect()
                 };
 
-                Column::new(entries, column)
+                Column::new(keys, column)
             })
             .collect();
 
-        Self(columns)
+        let key_clearance = dvec2(
+            key_distance.x + KEY_CLEARANCE,
+            key_distance.y + KEY_CLEARANCE,
+        ) / 2.0;
+
+        Self {
+            inner,
+            key_clearance,
+        }
     }
 
     pub fn first(&self) -> &Column {
-        self.0.first().expect("there has to be at least one column")
+        self.inner
+            .first()
+            .expect("there has to be at least one column")
     }
 
     pub fn last(&self) -> &Column {
-        self.0.last().expect("there has to be at least one column")
+        self.inner
+            .last()
+            .expect("there has to be at least one column")
     }
 }
 
@@ -176,20 +186,32 @@ impl Deref for Columns {
     type Target = [Column];
 
     fn deref(&self) -> &Self::Target {
-        &self.0
+        &self.inner
     }
 }
 
-impl FromIterator<Column> for Columns {
-    fn from_iter<T: IntoIterator<Item = Column>>(iter: T) -> Self {
-        Self(iter.into_iter().collect())
+impl Mul<Columns> for DAffine3 {
+    type Output = Columns;
+
+    fn mul(self, columns: Columns) -> Columns {
+        let inner = columns.iter().map(|column| self * column).collect();
+
+        Columns {
+            inner,
+            key_clearance: columns.key_clearance,
+        }
     }
 }
 
-pub struct ThumbKeys(Vec<DAffine3>);
+pub struct ThumbKeys {
+    inner: Vec<DAffine3>,
+    pub key_clearance: DVec2,
+}
 
 impl ThumbKeys {
     fn from_config(config: &ThumbCluster) -> Self {
+        let key_distance = *config.key_distance;
+
         let curvature_angle = config.curvature_angle.to_radians();
         let cluster_rotation = DQuat::from_euler(
             EulerRot::ZYX,
@@ -199,10 +221,10 @@ impl ThumbKeys {
         );
         let key_transform = DAffine3::from_rotation_translation(cluster_rotation, config.offset);
 
-        let keys = if curvature_angle == 0.0 {
+        let inner = if curvature_angle == 0.0 {
             (0..*config.keys)
                 .map(|j| {
-                    let x = *config.key_distance
+                    let x = key_distance
                         * f64::from(i16::from(j) - i16::from(config.resting_key_index));
 
                     key_transform * DAffine3::from_translation(dvec3(x, 0.0, 0.0))
@@ -226,17 +248,25 @@ impl ThumbKeys {
                 .collect()
         };
 
-        Self(keys)
+        let key_clearance = dvec2(
+            key_distance + KEY_CLEARANCE,
+            1.5 * key_distance + KEY_CLEARANCE,
+        ) / 2.0;
+
+        Self {
+            inner,
+            key_clearance,
+        }
     }
 
     pub fn first(&self) -> &DAffine3 {
-        self.0
+        self.inner
             .first()
             .expect("there has to be at least one thumb key")
     }
 
     pub fn last(&self) -> &DAffine3 {
-        self.0
+        self.inner
             .last()
             .expect("there has to be at least one thumb key")
     }
@@ -246,13 +276,23 @@ impl Deref for ThumbKeys {
     type Target = [DAffine3];
 
     fn deref(&self) -> &Self::Target {
-        &self.0
+        &self.inner
     }
 }
 
-impl FromIterator<DAffine3> for ThumbKeys {
-    fn from_iter<T: IntoIterator<Item = DAffine3>>(iter: T) -> Self {
-        Self(iter.into_iter().collect())
+impl Mul<ThumbKeys> for DAffine3 {
+    type Output = ThumbKeys;
+
+    fn mul(self, thumb_keys: ThumbKeys) -> ThumbKeys {
+        let inner = thumb_keys
+            .iter()
+            .map(|&thumb_key| self * thumb_key)
+            .collect();
+
+        ThumbKeys {
+            inner,
+            key_clearance: thumb_keys.key_clearance,
+        }
     }
 }
 
@@ -296,21 +336,10 @@ impl KeyPositions {
 impl Mul<KeyPositions> for DAffine3 {
     type Output = KeyPositions;
 
-    fn mul(self, key_positions: KeyPositions) -> Self::Output {
-        let columns = key_positions
-            .columns
-            .iter()
-            .map(|column| self * column)
-            .collect();
-        let thumb_keys = key_positions
-            .thumb_keys
-            .iter()
-            .map(|&thumb_key| self * thumb_key)
-            .collect();
-
+    fn mul(self, key_positions: KeyPositions) -> KeyPositions {
         KeyPositions {
-            columns,
-            thumb_keys,
+            columns: self * key_positions.columns,
+            thumb_keys: self * key_positions.thumb_keys,
         }
     }
 }

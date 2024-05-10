@@ -2,7 +2,7 @@ use fidget::context::Tree;
 use glam::{dvec3, DVec3};
 
 use crate::{
-    config::{Config, PositiveDVec2},
+    config::Config,
     model::{
         finger_cluster::FingerCluster,
         geometry::Plane,
@@ -19,13 +19,10 @@ pub struct KeyCluster {
 
 impl KeyCluster {
     pub fn from_config(config: &Config) -> Self {
-        let key_distance: PositiveDVec2 = (&config.finger_cluster.key_distance).into();
         let key_positions = KeyPositions::from_config(config).tilt(config.keyboard.tilting_angle);
 
-        let finger_cluster =
-            FingerCluster::new(&key_positions.columns, &key_distance, &config.keyboard);
-        let thumb_cluster =
-            ThumbCluster::new(&key_positions.thumb_keys, &key_distance, &config.keyboard);
+        let finger_cluster = FingerCluster::new(&key_positions.columns, &config.keyboard);
+        let thumb_cluster = ThumbCluster::new(&key_positions.thumb_keys, &config.keyboard);
         let bounds = finger_cluster.bounds.union(&thumb_cluster.bounds);
         let inserts = finger_cluster
             .insert_holders
