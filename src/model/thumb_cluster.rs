@@ -73,7 +73,7 @@ impl ThumbCluster {
 
         let first = thumb_keys.first();
         let last = thumb_keys.last();
-        let diameter = bounds.diameter();
+        let length = bounds.size.y;
         let bounds = bounds.projected_unit_vectors(first.y_axis);
 
         let first_point = side_point(first, Side::Left, key_clearance);
@@ -112,7 +112,7 @@ impl ThumbCluster {
         let lower = sheared_prism_from_projected_points(
             points.iter().copied(),
             &lower_plane,
-            diameter,
+            length,
             DVec3::Y,
         );
         let middle = prism_from_projected_points(
@@ -120,7 +120,7 @@ impl ThumbCluster {
             &middle_plane,
             2.0 * (key_clearance.y + EPSILON),
         );
-        let upper = sheared_prism_from_projected_points(points, &upper_plane, diameter, DVec3::Y);
+        let upper = sheared_prism_from_projected_points(points, &upper_plane, length, DVec3::Y);
 
         let union = lower.union(middle);
         union.union(upper)
