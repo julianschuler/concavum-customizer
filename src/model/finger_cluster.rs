@@ -1,5 +1,5 @@
 use fidget::context::Tree;
-use glam::{dvec3, DAffine3, DVec2, DVec3, Vec3Swizzles};
+use glam::{DAffine3, DMat3, DVec2, DVec3, Vec3Swizzles};
 
 use crate::{
     config::{Keyboard, EPSILON},
@@ -23,15 +23,16 @@ pub struct FingerCluster {
 impl FingerCluster {
     pub fn new(columns: &Columns, config: &Keyboard) -> Self {
         let bounds = ClusterBounds::from_columns(columns, *config.circumference_distance);
+        let cluster_height = bounds.diameter();
 
         let (outline, insert_holders) = Self::outline_and_insert_holders(columns, config);
         let cluster_outline = outline.offset(*config.circumference_distance);
-        let cluster = cluster_outline.extrude(-bounds.size.z, bounds.size.z);
+        let cluster = cluster_outline.extrude(-cluster_height, cluster_height);
 
         let clearance = ClearanceBuilder::new(columns, &bounds).build();
         let cluster = cluster.rounded_difference(clearance, config.rounding_radius);
 
-        let key_clearance = outline.extrude(-bounds.size.z, bounds.size.z);
+        let key_clearance = outline.extrude(-cluster_height, cluster_height);
 
         let insert_holders = insert_holders
             .into_iter()
@@ -174,7 +175,7 @@ impl<'a> ClearanceBuilder<'a> {
         }
     }
 
-    fn build(mut self) -> Tree {
+    fn build(self) -> Tree {
         let columns = self.columns;
         let first = columns.first();
         let last = columns.last();
@@ -203,7 +204,7 @@ impl<'a> ClearanceBuilder<'a> {
         clearance
     }
 
-    fn normal_column_clearance(&mut self, column: &Column) -> Tree {
+    fn normal_column_clearance(&self, column: &Column) -> Tree {
         let points = self.clearance_points(column);
         let first = column.first();
         let plane = Plane::new(
@@ -215,15 +216,14 @@ impl<'a> ClearanceBuilder<'a> {
     }
 
     fn side_column_clearance(
-        &mut self,
+        &self,
         column: &Column,
         neighbor: Option<&Column>,
         side_x: SideX,
     ) -> Tree {
-        let key_clearance_x = self.columns.key_clearance.x;
-        let normal_offset = key_clearance_x;
-        let side_offset = 4.0 * key_clearance_x;
-        let extrusion_height = 8.0 * key_clearance_x;
+        let normal_offset = self.columns.key_clearance.x;
+        let side_offset = self.bounds.diameter();
+        let extrusion_height = 2.0 * self.bounds.diameter();
 
         // Column clearance parameters
         let translation = column.first().translation;
@@ -255,15 +255,14 @@ impl<'a> ClearanceBuilder<'a> {
             combined_clearance.intersection(side_clearance)
         } else {
             // Bound side clearance since it is combined by union and can interfere with other columns
-            let plane = Plane::new(translation - normal_offset * normal, normal);
-            let length = self.bounds.size.y;
-            let height = self.bounds.size.z;
+            let bounds = self.bounds.projected_unit_vectors(normal);
             let points = [
-                dvec3(0.0, -length, 0.0),
-                dvec3(0.0, length, 0.0),
-                dvec3(0.0, length, 2.0 * height),
-                dvec3(0.0, -length, 2.0 * height),
+                -bounds.y_axis,
+                bounds.y_axis,
+                bounds.y_axis + bounds.z_axis,
+                -bounds.y_axis + bounds.z_axis,
             ];
+            let plane = Plane::new(translation - normal_offset * normal, normal);
             let side_bounding_shape = prism_from_projected_points(points, &plane, extrusion_height);
 
             let intersection = side_clearance.intersection(side_bounding_shape);
@@ -271,25 +270,24 @@ impl<'a> ClearanceBuilder<'a> {
         }
     }
 
-    fn side_clearance(&mut self, side_x: SideX) -> Tree {
-        let width = self.bounds.size.x;
-        let length = self.bounds.size.y;
-        let height = self.bounds.size.z;
-
+    fn side_clearance(&self, side_x: SideX) -> Tree {
         let column = match side_x {
             SideX::Left => self.columns.first(),
             SideX::Right => self.columns.last(),
         };
+
+        let plane = Plane::new(-30.0 * DVec3::X, DVec3::X);
+        let bounds = self.bounds.projected_unit_vectors(plane.normal());
 
         let first = column.first();
         let last = column.last();
 
         let lower_corner = corner_point(first, side_x, SideY::Bottom, &self.columns.key_clearance);
         let upper_corner = corner_point(last, side_x, SideY::Top, &self.columns.key_clearance);
-        let outwards_bottom_point = lower_corner - length * DVec3::Y;
-        let outwards_top_point = upper_corner + length * DVec3::Y;
-        let upwards_bottom_point = outwards_bottom_point + 2.0 * height * DVec3::Z;
-        let upwards_top_point = outwards_top_point + 2.0 * height * DVec3::Z;
+        let outwards_bottom_point = lower_corner - bounds.y_axis;
+        let outwards_top_point = upper_corner + bounds.y_axis;
+        let upwards_bottom_point = outwards_bottom_point + bounds.z_axis;
+        let upwards_top_point = outwards_top_point + bounds.z_axis;
 
         let points: Vec<_> = column
             .windows(2)
@@ -304,8 +302,7 @@ impl<'a> ClearanceBuilder<'a> {
             ])
             .collect();
 
-        let plane = Plane::new(width * DVec3::NEG_X, DVec3::X);
-        prism_from_projected_points(points, &plane, 2.0 * width)
+        prism_from_projected_points(points, &plane, self.bounds.diameter())
     }
 
     fn side_point(&self, bottom: &DAffine3, top: &DAffine3, side_x: SideX) -> Option<DVec3> {
@@ -331,6 +328,7 @@ impl<'a> ClearanceBuilder<'a> {
     fn clearance_points(&self, column: &Column) -> Vec<DVec3> {
         let first = column.first();
         let last = column.last();
+        let bounds = self.bounds.projected_unit_vectors(first.x_axis);
 
         // All points in the center, if any
         let mut points: Vec<_> = column
@@ -351,7 +349,7 @@ impl<'a> ClearanceBuilder<'a> {
             Side::Bottom,
             &column.column_type,
             &self.columns.key_clearance,
-            self.bounds,
+            &bounds,
         );
         lower_support_points.reverse();
         let upper_support_points = self.support_planes.calculate_support_points(
@@ -359,10 +357,10 @@ impl<'a> ClearanceBuilder<'a> {
             Side::Top,
             &column.column_type,
             &self.columns.key_clearance,
-            self.bounds,
+            &bounds,
         );
 
-        // Combine upper and lower support points with clearance points to polygon points
+        // Combine points with upper and lower support points
         points.extend(upper_support_points);
         points.extend(lower_support_points);
 
@@ -423,7 +421,7 @@ impl SupportPlanes {
         side: Side,
         column_type: &ColumnType,
         key_clearance: &DVec2,
-        bounds: &ClusterBounds,
+        bounds: &DMat3,
     ) -> Vec<DVec3> {
         const ALLOWED_DEVIATION: f64 = 1.0;
 
@@ -465,8 +463,8 @@ impl SupportPlanes {
             points.push(projected_point);
         }
 
-        let outwards_point = projected_point + sign * bounds.size.y * DVec3::Y;
-        let upwards_point = outwards_point + 2.0 * bounds.size.y * DVec3::Z;
+        let outwards_point = projected_point + sign * bounds.y_axis;
+        let upwards_point = outwards_point + bounds.z_axis;
         points.extend([outwards_point, upwards_point]);
 
         points
