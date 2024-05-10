@@ -25,11 +25,7 @@ pub struct ThumbCluster {
 
 impl ThumbCluster {
     pub fn new(thumb_keys: &ThumbKeys, config: &Keyboard) -> Self {
-        let bounds = ClusterBounds::from_positions(
-            thumb_keys.iter(),
-            &thumb_keys.key_clearance,
-            *config.circumference_distance,
-        );
+        let bounds = ClusterBounds::from_thumb_keys(thumb_keys, *config.circumference_distance);
 
         let (outline, insert_holder) = Self::outline_and_insert_holder(thumb_keys, config);
         let cluster_outline = outline.offset(*config.circumference_distance);
