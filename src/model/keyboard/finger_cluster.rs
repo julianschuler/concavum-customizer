@@ -4,10 +4,9 @@ use glam::{DAffine3, DMat3, DVec2, DVec3, Vec3Swizzles};
 use crate::{
     config::{Keyboard, EPSILON},
     model::{
-        cluster_bounds::ClusterBounds,
         geometry::{Line, Plane, Project},
-        insert_holder::InsertHolder,
         key_positions::{Column, ColumnType, Columns},
+        keyboard::{Bounds, InsertHolder},
         primitives::{Csg, RoundedCsg, SimplePolygon},
         util::{corner_point, prism_from_projected_points, side_point, Side, SideX, SideY},
     },
@@ -17,12 +16,12 @@ pub struct FingerCluster {
     pub cluster: Tree,
     pub key_clearance: Tree,
     pub insert_holders: Tree,
-    pub bounds: ClusterBounds,
+    pub bounds: Bounds,
 }
 
 impl FingerCluster {
     pub fn new(columns: &Columns, config: &Keyboard) -> Self {
-        let bounds = ClusterBounds::from_columns(columns, *config.circumference_distance);
+        let bounds = Bounds::from_columns(columns, *config.circumference_distance);
         let cluster_height = bounds.size.z;
 
         let (outline, insert_holders) = Self::outline_and_insert_holders(columns, config);
@@ -160,12 +159,12 @@ impl FingerCluster {
 
 struct ClearanceBuilder<'a> {
     columns: &'a Columns,
-    bounds: &'a ClusterBounds,
+    bounds: &'a Bounds,
     support_planes: SupportPlanes,
 }
 
 impl<'a> ClearanceBuilder<'a> {
-    fn new(columns: &'a Columns, bounds: &'a ClusterBounds) -> Self {
+    fn new(columns: &'a Columns, bounds: &'a Bounds) -> Self {
         let support_planes = SupportPlanes::from_columns(columns);
 
         Self {

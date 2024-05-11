@@ -1,23 +1,32 @@
+mod bounds;
+mod finger_cluster;
+mod insert_holder;
+mod thumb_cluster;
+
 use fidget::context::Tree;
 use glam::{dvec3, DVec3};
+
+pub use bounds::Bounds;
+pub use insert_holder::InsertHolder;
 
 use crate::{
     config::Config,
     model::{
-        finger_cluster::FingerCluster,
         geometry::Plane,
         key_positions::KeyPositions,
         primitives::{BoxShape, Csg, HalfSpace, RoundedCsg, Shape, Transforms},
-        thumb_cluster::ThumbCluster,
     },
 };
 
-pub struct KeyCluster {
+use finger_cluster::FingerCluster;
+use thumb_cluster::ThumbCluster;
+
+pub struct Keyboard {
     pub shape: Shape,
     pub key_positions: KeyPositions,
 }
 
-impl KeyCluster {
+impl Keyboard {
     pub fn from_config(config: &Config) -> Self {
         let key_positions = KeyPositions::from_config(config);
 

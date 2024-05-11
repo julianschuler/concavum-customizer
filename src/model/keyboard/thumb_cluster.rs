@@ -4,10 +4,9 @@ use glam::{DVec3, Vec3Swizzles};
 use crate::{
     config::{Keyboard, EPSILON},
     model::{
-        cluster_bounds::ClusterBounds,
         geometry::{Line, Plane},
-        insert_holder::InsertHolder,
         key_positions::ThumbKeys,
+        keyboard::{Bounds, InsertHolder},
         primitives::{ConvexPolygon, Csg, RoundedCsg},
         util::{
             corner_point, prism_from_projected_points, sheared_prism_from_projected_points,
@@ -20,12 +19,12 @@ pub struct ThumbCluster {
     pub cluster: Tree,
     pub key_clearance: Tree,
     pub insert_holder: Tree,
-    pub bounds: ClusterBounds,
+    pub bounds: Bounds,
 }
 
 impl ThumbCluster {
     pub fn new(thumb_keys: &ThumbKeys, config: &Keyboard) -> Self {
-        let bounds = ClusterBounds::from_thumb_keys(thumb_keys, *config.circumference_distance);
+        let bounds = Bounds::from_thumb_keys(thumb_keys, *config.circumference_distance);
 
         let (outline, insert_holder) = Self::outline_and_insert_holder(thumb_keys, config);
         let cluster_outline = outline.offset(*config.circumference_distance);
@@ -68,7 +67,7 @@ impl ThumbCluster {
         (ConvexPolygon::new(points).into(), insert_holder)
     }
 
-    fn clearance(thumb_keys: &ThumbKeys, bounds: &ClusterBounds) -> Tree {
+    fn clearance(thumb_keys: &ThumbKeys, bounds: &Bounds) -> Tree {
         let key_clearance = &thumb_keys.key_clearance;
 
         let first = thumb_keys.first();
@@ -126,7 +125,7 @@ impl ThumbCluster {
         union.union(upper)
     }
 
-    fn key_clearance(thumb_keys: &ThumbKeys, bounds: &ClusterBounds) -> Tree {
+    fn key_clearance(thumb_keys: &ThumbKeys, bounds: &Bounds) -> Tree {
         let key_clearance = &thumb_keys.key_clearance;
         let first = thumb_keys.first();
         let last = thumb_keys.last();
