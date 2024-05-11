@@ -19,7 +19,7 @@ pub struct KeyCluster {
 
 impl KeyCluster {
     pub fn from_config(config: &Config) -> Self {
-        let key_positions = KeyPositions::from_config(config).tilt(config.keyboard.tilting_angle);
+        let key_positions = KeyPositions::from_config(config);
 
         let finger_cluster = FingerCluster::new(&key_positions.columns, &config.keyboard);
         let thumb_cluster = ThumbCluster::new(&key_positions.thumb_keys, &config.keyboard);
