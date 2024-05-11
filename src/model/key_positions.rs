@@ -6,7 +6,7 @@ use crate::{
     config::{
         Column as ConfigColumn, Config, FingerCluster, PositiveDVec2, ThumbCluster, KEY_CLEARANCE,
     },
-    model::geometry::zvec,
+    model::cluster_bounds::ClusterBounds,
 };
 
 const CURVATURE_HEIGHT: f64 = 6.6;
@@ -303,33 +303,32 @@ pub struct KeyPositions {
 
 impl KeyPositions {
     pub fn from_config(config: &Config) -> Self {
+        const CENTER_OFFSET: f64 = 10.0;
+
         let columns = Columns::from_config(&config.finger_cluster);
         let thumb_keys = ThumbKeys::from_config(&config.thumb_cluster);
 
-        Self {
-            columns,
-            thumb_keys,
-        }
-    }
+        let (tilting_x, tilting_y) = (
+            config.keyboard.tilting_angle.x.to_radians(),
+            config.keyboard.tilting_angle.y.to_radians(),
+        );
+        let tilted_positions = (DAffine3::from_rotation_y(tilting_y)
+            * DAffine3::from_rotation_x(tilting_x))
+            * Self {
+                columns,
+                thumb_keys,
+            };
 
-    pub fn tilt(self, tilting_angle: DVec2) -> Self {
-        const Z_OFFSET: f64 = 12.0;
+        let bounds = ClusterBounds::from_columns(
+            &tilted_positions.columns,
+            *config.keyboard.circumference_distance,
+        )
+        .union(&ClusterBounds::from_thumb_keys(
+            &tilted_positions.thumb_keys,
+            *config.keyboard.circumference_distance,
+        ));
 
-        let (tilting_x, tilting_y) = (tilting_angle.x.to_radians(), tilting_angle.y.to_radians());
-        let tilting_transform =
-            DAffine3::from_rotation_y(tilting_y) * DAffine3::from_rotation_x(tilting_x);
-
-        let tilted_positions = tilting_transform * self;
-
-        let z_offset = Z_OFFSET
-            - tilted_positions
-                .columns
-                .iter()
-                .flat_map(|column| column.iter().map(|position| position.translation.z))
-                .min_by(f64::total_cmp)
-                .unwrap_or_default();
-
-        DAffine3::from_translation(zvec(z_offset)) * tilted_positions
+        DAffine3::from_translation(dvec3(CENTER_OFFSET, 0.0, 0.0) - bounds.min) * tilted_positions
     }
 }
 
