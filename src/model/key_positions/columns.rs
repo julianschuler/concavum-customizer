@@ -1,15 +1,10 @@
 use std::ops::{Deref, Mul};
 
-use glam::{dvec2, dvec3, DAffine3, DQuat, DVec2, EulerRot};
+use glam::{dvec2, dvec3, DAffine3, DVec2};
 
-use crate::{
-    config::{
-        Column as ConfigColumn, Config, FingerCluster, PositiveDVec2, ThumbCluster, KEY_CLEARANCE,
-    },
-    model::cluster_bounds::ClusterBounds,
+use crate::config::{
+    Column as ConfigColumn, FingerCluster, PositiveDVec2, CURVATURE_HEIGHT, KEY_CLEARANCE,
 };
-
-const CURVATURE_HEIGHT: f64 = 6.6;
 
 pub struct Column {
     keys: Vec<DAffine3>,
@@ -68,7 +63,7 @@ pub struct Columns {
 }
 
 impl Columns {
-    fn from_config(config: &FingerCluster) -> Self {
+    pub fn from_config(config: &FingerCluster) -> Self {
         let key_distance: PositiveDVec2 = (&config.key_distance).into();
 
         let inner = config
@@ -199,146 +194,6 @@ impl Mul<Columns> for DAffine3 {
         Columns {
             inner,
             key_clearance: columns.key_clearance,
-        }
-    }
-}
-
-pub struct ThumbKeys {
-    inner: Vec<DAffine3>,
-    pub key_clearance: DVec2,
-}
-
-impl ThumbKeys {
-    fn from_config(config: &ThumbCluster) -> Self {
-        let key_distance = *config.key_distance;
-
-        let curvature_angle = config.curvature_angle.to_radians();
-        let cluster_rotation = DQuat::from_euler(
-            EulerRot::ZYX,
-            config.rotation.z.to_radians(),
-            config.rotation.y.to_radians(),
-            config.rotation.x.to_radians(),
-        );
-        let key_transform = DAffine3::from_rotation_translation(cluster_rotation, config.offset);
-
-        let inner = if curvature_angle == 0.0 {
-            (0..*config.keys)
-                .map(|j| {
-                    let x = key_distance
-                        * f64::from(i16::from(j) - i16::from(config.resting_key_index));
-
-                    key_transform * DAffine3::from_translation(dvec3(x, 0.0, 0.0))
-                })
-                .collect()
-        } else {
-            let curvature_radius =
-                (*config.key_distance / 2.0 / (curvature_angle / 2.0).tan()) + CURVATURE_HEIGHT;
-
-            (0..*config.keys)
-                .map(|i| {
-                    let total_angle = curvature_angle
-                        * f64::from(i16::from(i) - i16::from(config.resting_key_index));
-                    let (sin, rcos) = (total_angle.sin(), 1.0 - total_angle.cos());
-                    let translation = dvec3(curvature_radius * sin, 0.0, curvature_radius * rcos);
-
-                    key_transform
-                        * DAffine3::from_translation(translation)
-                        * DAffine3::from_rotation_y(-total_angle)
-                })
-                .collect()
-        };
-
-        let key_clearance = dvec2(
-            key_distance + KEY_CLEARANCE,
-            1.5 * key_distance + KEY_CLEARANCE,
-        ) / 2.0;
-
-        Self {
-            inner,
-            key_clearance,
-        }
-    }
-
-    pub fn first(&self) -> &DAffine3 {
-        self.inner
-            .first()
-            .expect("there has to be at least one thumb key")
-    }
-
-    pub fn last(&self) -> &DAffine3 {
-        self.inner
-            .last()
-            .expect("there has to be at least one thumb key")
-    }
-}
-
-impl Deref for ThumbKeys {
-    type Target = [DAffine3];
-
-    fn deref(&self) -> &Self::Target {
-        &self.inner
-    }
-}
-
-impl Mul<ThumbKeys> for DAffine3 {
-    type Output = ThumbKeys;
-
-    fn mul(self, thumb_keys: ThumbKeys) -> ThumbKeys {
-        let inner = thumb_keys
-            .iter()
-            .map(|&thumb_key| self * thumb_key)
-            .collect();
-
-        ThumbKeys {
-            inner,
-            key_clearance: thumb_keys.key_clearance,
-        }
-    }
-}
-
-pub struct KeyPositions {
-    pub columns: Columns,
-    pub thumb_keys: ThumbKeys,
-}
-
-impl KeyPositions {
-    pub fn from_config(config: &Config) -> Self {
-        const CENTER_OFFSET: f64 = 10.0;
-
-        let columns = Columns::from_config(&config.finger_cluster);
-        let thumb_keys = ThumbKeys::from_config(&config.thumb_cluster);
-
-        let (tilting_x, tilting_y) = (
-            config.keyboard.tilting_angle.x.to_radians(),
-            config.keyboard.tilting_angle.y.to_radians(),
-        );
-        let tilted_positions = (DAffine3::from_rotation_y(tilting_y)
-            * DAffine3::from_rotation_x(tilting_x))
-            * Self {
-                columns,
-                thumb_keys,
-            };
-
-        let bounds = ClusterBounds::from_columns(
-            &tilted_positions.columns,
-            *config.keyboard.circumference_distance,
-        )
-        .union(&ClusterBounds::from_thumb_keys(
-            &tilted_positions.thumb_keys,
-            *config.keyboard.circumference_distance,
-        ));
-
-        DAffine3::from_translation(dvec3(CENTER_OFFSET, 0.0, 0.0) - bounds.min) * tilted_positions
-    }
-}
-
-impl Mul<KeyPositions> for DAffine3 {
-    type Output = KeyPositions;
-
-    fn mul(self, key_positions: KeyPositions) -> KeyPositions {
-        KeyPositions {
-            columns: self * key_positions.columns,
-            thumb_keys: self * key_positions.thumb_keys,
         }
     }
 }
