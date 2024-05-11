@@ -6,6 +6,7 @@ use serde::{de::Error as DeserializeError, Deserialize, Deserializer};
 
 pub const EPSILON: f64 = 0.001;
 pub const KEY_CLEARANCE: f64 = 1.0;
+pub const CURVATURE_HEIGHT: f64 = 6.6;
 
 pub type CurvatureAngle = Ranged<-20, 50>;
 pub type SideAngle = Ranged<0, 30>;
