@@ -5,18 +5,18 @@ use crate::{
     model::{
         geometry::Plane,
         key_positions::{Columns, ThumbKeys},
-        primitives::Bounds,
+        primitives::Bounds as ShapeBounds,
     },
 };
 
 /// Bounded region containing a cluster.
-pub struct ClusterBounds {
+pub struct Bounds {
     pub min: DVec3,
     pub max: DVec3,
     pub size: DVec3,
 }
 
-impl ClusterBounds {
+impl Bounds {
     /// Creates a cluster bound from columns.
     pub fn from_columns(columns: &Columns, circumference_distance: f64) -> Self {
         Self::from_positions(
@@ -91,8 +91,8 @@ impl ClusterBounds {
     }
 }
 
-impl From<ClusterBounds> for Bounds {
-    fn from(bounds: ClusterBounds) -> Self {
+impl From<Bounds> for ShapeBounds {
+    fn from(bounds: Bounds) -> Self {
         let center = (bounds.min + bounds.max) / 2.0;
         let size = bounds.size.max_element() + 2.0 * EPSILON;
 
