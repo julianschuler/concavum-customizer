@@ -1,5 +1,5 @@
 use fidget::mesh::{Mesh as FidgetMesh, Settings};
-use glam::DMat4;
+use glam::{DAffine3, DMat4};
 use three_d::{CpuMesh, Indices, Mat4, Positions};
 
 use crate::{
@@ -37,21 +37,14 @@ impl Mesh for model::Model {
             .key_positions
             .columns
             .iter()
-            .flat_map(|column| {
-                column.iter().map(|&position| {
-                    let matrix: DMat4 = position.into();
-                    matrix.as_mat4().to_cols_array_2d().into()
-                })
-            })
+            .flat_map(|column| column.iter().copied().flat_map(mirrored_positions))
             .collect();
         let thumb_key_positions = self
             .key_positions
             .thumb_keys
             .iter()
-            .map(|&position| {
-                let matrix: DMat4 = position.into();
-                matrix.as_mat4().to_cols_array_2d().into()
-            })
+            .copied()
+            .flat_map(mirrored_positions)
             .collect();
 
         Model {
@@ -96,4 +89,13 @@ impl IntoCpuMesh for FidgetMesh {
             ..Default::default()
         }
     }
+}
+
+/// Creates two key positions mirrored along the xy-plane given a single one.
+fn mirrored_positions(position: DAffine3) -> [Mat4; 2] {
+    let matrix: DMat4 = position.into();
+    let position = matrix.as_mat4().to_cols_array_2d().into();
+    let mirror_transform = Mat4::from_nonuniform_scale(-1.0, 1.0, 1.0);
+
+    [position, mirror_transform * position]
 }
