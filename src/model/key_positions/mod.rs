@@ -19,6 +19,7 @@ pub struct KeyPositions {
 impl KeyPositions {
     pub fn from_config(config: &Config) -> Self {
         const CENTER_OFFSET: f64 = 10.0;
+        const Z_OFFSET: f64 = 12.0;
 
         let columns = Columns::from_config(&config.finger_cluster);
         let thumb_keys = ThumbKeys::from_config(&config.thumb_cluster);
@@ -34,16 +35,26 @@ impl KeyPositions {
                 thumb_keys,
             };
 
-        let bounds = Bounds::from_columns(
-            &tilted_positions.columns,
-            *config.keyboard.circumference_distance,
-        )
-        .union(&Bounds::from_thumb_keys(
-            &tilted_positions.thumb_keys,
-            *config.keyboard.circumference_distance,
-        ));
+        let z_offset = Z_OFFSET
+            - tilted_positions
+                .columns
+                .min_z()
+                .min(tilted_positions.thumb_keys.min_z());
 
-        DAffine3::from_translation(dvec3(CENTER_OFFSET, 0.0, 0.0) - bounds.min) * tilted_positions
+        let column_bounds = Bounds::from_outline_points_and_height(
+            &tilted_positions.columns.outline_points(),
+            0.0,
+            *config.keyboard.circumference_distance,
+        );
+        let thumb_key_bounds = Bounds::from_outline_points_and_height(
+            &tilted_positions.thumb_keys.outline_points(),
+            0.0,
+            *config.keyboard.circumference_distance,
+        );
+        let bounds = column_bounds.union(&thumb_key_bounds);
+
+        DAffine3::from_translation(dvec3(CENTER_OFFSET, 0.0, z_offset) - bounds.min)
+            * tilted_positions
     }
 }
 

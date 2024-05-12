@@ -21,10 +21,14 @@ pub struct FingerCluster {
 
 impl FingerCluster {
     pub fn new(columns: &Columns, config: &Keyboard) -> Self {
-        let bounds = Bounds::from_columns(columns, *config.circumference_distance);
-        let cluster_height = bounds.size.z;
-
         let outline_points = columns.outline_points();
+        let cluster_height = columns.max_z() + columns.key_clearance.length();
+
+        let bounds = Bounds::from_outline_points_and_height(
+            &outline_points,
+            cluster_height,
+            *config.circumference_distance,
+        );
         let insert_holders = Self::insert_holders(
             &outline_points,
             config,

@@ -23,20 +23,26 @@ pub struct ThumbCluster {
 
 impl ThumbCluster {
     pub fn new(thumb_keys: &ThumbKeys, config: &Keyboard) -> Self {
-        let bounds = Bounds::from_thumb_keys(thumb_keys, *config.circumference_distance);
-
         let outline_points = thumb_keys.outline_points();
+        let cluster_height = thumb_keys.max_z() + thumb_keys.key_clearance.length();
+
+        let bounds = Bounds::from_outline_points_and_height(
+            &outline_points,
+            cluster_height,
+            *config.circumference_distance,
+        );
         let insert_holder: Tree =
             InsertHolder::from_outline_points(&outline_points, 1, config).into();
 
         let outline: Tree = ConvexPolygon::new(outline_points).into();
         let cluster_outline = outline.offset(*config.circumference_distance);
+        let cluster = cluster_outline.extrude(-cluster_height, cluster_height);
 
         let clearance = Self::clearance(thumb_keys, &bounds);
-        let cluster = cluster_outline.rounded_difference(clearance, config.rounding_radius);
+        let cluster = cluster.rounded_difference(clearance, config.rounding_radius);
 
         let key_clearance = Self::key_clearance(thumb_keys, &bounds);
-        let insert_holder = cluster_outline.intersection(insert_holder);
+        let insert_holder = insert_holder.intersection(cluster_outline);
 
         Self {
             cluster,

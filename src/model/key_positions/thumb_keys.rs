@@ -90,6 +90,20 @@ impl ThumbKeys {
         .map(Vec3Swizzles::xy)
         .collect()
     }
+
+    pub fn min_z(&self) -> f64 {
+        self.iter()
+            .map(|position| position.translation.z)
+            .min_by(f64::total_cmp)
+            .unwrap_or_default()
+    }
+
+    pub fn max_z(&self) -> f64 {
+        self.iter()
+            .map(|position| position.translation.z)
+            .max_by(f64::total_cmp)
+            .unwrap_or_default()
+    }
 }
 
 impl Deref for ThumbKeys {
