@@ -9,22 +9,25 @@ use crate::{
 pub struct Bounds {
     pub min: DVec3,
     pub max: DVec3,
-    pub size: DVec3,
 }
 
 impl Bounds {
+    /// Returns size of the bounds
+    pub fn size(&self) -> DVec3 {
+        self.max - self.min
+    }
+
     /// Combines two cluster bounds.
     pub fn union(&self, other: &Self) -> Self {
         let min = self.min.min(other.min);
         let max = self.max.max(other.max);
-        let size = max - min;
 
-        Self { min, max, size }
+        Self { min, max }
     }
 
     /// Returns the diameter of the bounds.
     pub fn diameter(&self) -> f64 {
-        self.size.length()
+        self.size().length()
     }
 
     /// Returns the unit vectors projected to a plane given by the normal.
@@ -62,16 +65,15 @@ impl Bounds {
         let padding = dvec3(circumference_distance, circumference_distance, 0.0);
         let min = dvec3(min.x, min.y, 0.0) - padding;
         let max = dvec3(max.x, max.y, height) + padding;
-        let size = max - min;
 
-        Self { min, max, size }
+        Self { min, max }
     }
 }
 
 impl From<Bounds> for ShapeBounds {
     fn from(bounds: Bounds) -> Self {
         let center = (bounds.min + bounds.max) / 2.0;
-        let size = bounds.size.max_element() + 2.0 * EPSILON;
+        let size = bounds.size().max_element() + 2.0 * EPSILON;
 
         Self::new(size, center)
     }

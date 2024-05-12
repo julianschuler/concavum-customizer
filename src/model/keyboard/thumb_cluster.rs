@@ -57,7 +57,7 @@ impl ThumbCluster {
 
         let first = thumb_keys.first();
         let last = thumb_keys.last();
-        let length = bounds.size.y;
+        let length = bounds.size().y;
         let bounds = bounds.projected_unit_vectors(first.y_axis);
 
         let first_point = side_point(first, Side::Left, key_clearance);
