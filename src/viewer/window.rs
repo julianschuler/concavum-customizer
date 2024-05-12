@@ -107,7 +107,7 @@ struct Application {
 impl Application {
     /// Creates a new Application from a viewport and a receiver with reload events.
     fn new(window: &window::Window, receiver: Receiver<ReloadEvent>) -> Self {
-        const DEFAULT_DISTANCE: f32 = 300.0;
+        const DEFAULT_DISTANCE: f32 = 600.0;
         const DEFAULT_FOV: Degrees = degrees(22.5);
         const DEFAULT_TARGET: Vec3 = vec3(0.0, 0.0, 0.0);
 
@@ -121,7 +121,7 @@ impl Application {
             0.1,
             10000.0,
         );
-        let control = OrbitControl::new(DEFAULT_TARGET, 1.0, 1000.0);
+        let control = OrbitControl::new(DEFAULT_TARGET, 50.0, 5000.0);
         let scene = Scene::default();
         let gui = GUI::new(&context);
         let assets = Assets::new();
