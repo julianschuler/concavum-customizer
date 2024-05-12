@@ -12,7 +12,7 @@ use crate::{
 pub struct InsertHolder(Tree);
 
 impl InsertHolder {
-    pub fn from_vertices(vertices: &[DVec2], index: usize, config: &Keyboard) -> Self {
+    pub fn from_outline_points(vertices: &[DVec2], index: usize, config: &Keyboard) -> Self {
         const INSERT_RADIUS: f64 = 2.0;
         const WALL_THICKNESS: f64 = 2.0;
         const HEIGHT: f64 = 7.0;

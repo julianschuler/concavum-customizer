@@ -1,5 +1,5 @@
 use fidget::context::Tree;
-use glam::{DVec3, Vec3Swizzles};
+use glam::DVec3;
 
 use crate::{
     config::{Keyboard, EPSILON},
@@ -9,8 +9,7 @@ use crate::{
         keyboard::{Bounds, InsertHolder},
         primitives::{ConvexPolygon, Csg, RoundedCsg},
         util::{
-            corner_point, prism_from_projected_points, sheared_prism_from_projected_points,
-            side_point, Side, SideX, SideY,
+            prism_from_projected_points, sheared_prism_from_projected_points, side_point, Side,
         },
     },
 };
@@ -26,14 +25,17 @@ impl ThumbCluster {
     pub fn new(thumb_keys: &ThumbKeys, config: &Keyboard) -> Self {
         let bounds = Bounds::from_thumb_keys(thumb_keys, *config.circumference_distance);
 
-        let (outline, insert_holder) = Self::outline_and_insert_holder(thumb_keys, config);
+        let outline_points = thumb_keys.outline_points();
+        let insert_holder: Tree =
+            InsertHolder::from_outline_points(&outline_points, 1, config).into();
+
+        let outline: Tree = ConvexPolygon::new(outline_points).into();
         let cluster_outline = outline.offset(*config.circumference_distance);
 
         let clearance = Self::clearance(thumb_keys, &bounds);
         let cluster = cluster_outline.rounded_difference(clearance, config.rounding_radius);
 
         let key_clearance = Self::key_clearance(thumb_keys, &bounds);
-
         let insert_holder = cluster_outline.intersection(insert_holder);
 
         Self {
@@ -42,29 +44,6 @@ impl ThumbCluster {
             insert_holder,
             bounds,
         }
-    }
-
-    fn outline_and_insert_holder(
-        thumb_keys: &ThumbKeys,
-        config: &Keyboard,
-    ) -> (Tree, InsertHolder) {
-        let key_clearance = &thumb_keys.key_clearance;
-        let first_thumb_key = thumb_keys.first();
-        let last_thumb_key = thumb_keys.last();
-
-        let points: Vec<_> = [
-            corner_point(first_thumb_key, SideX::Left, SideY::Top, key_clearance),
-            corner_point(first_thumb_key, SideX::Left, SideY::Bottom, key_clearance),
-            corner_point(last_thumb_key, SideX::Right, SideY::Bottom, key_clearance),
-            corner_point(last_thumb_key, SideX::Right, SideY::Top, key_clearance),
-        ]
-        .into_iter()
-        .map(Vec3Swizzles::xy)
-        .collect();
-
-        let insert_holder = InsertHolder::from_vertices(&points, 1, config);
-
-        (ConvexPolygon::new(points).into(), insert_holder)
     }
 
     fn clearance(thumb_keys: &ThumbKeys, bounds: &Bounds) -> Tree {
