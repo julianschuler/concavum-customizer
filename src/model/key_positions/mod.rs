@@ -53,7 +53,7 @@ impl KeyPositions {
         );
         let bounds = column_bounds.union(&thumb_key_bounds);
 
-        DAffine3::from_translation(dvec3(CENTER_OFFSET, 0.0, z_offset) - bounds.min)
+        DAffine3::from_translation(dvec3(CENTER_OFFSET - bounds.min.x, 0.0, z_offset))
             * tilted_positions
     }
 }
