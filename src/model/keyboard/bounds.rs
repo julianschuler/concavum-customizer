@@ -1,12 +1,8 @@
-use glam::{dvec3, DAffine3, DMat3, DVec2, DVec3};
+use glam::{dvec2, dvec3, DMat3, DVec2, DVec3};
 
 use crate::{
     config::EPSILON,
-    model::{
-        geometry::Plane,
-        key_positions::{Columns, ThumbKeys},
-        primitives::Bounds as ShapeBounds,
-    },
+    model::{geometry::Plane, primitives::Bounds as ShapeBounds},
 };
 
 /// Bounded region containing a cluster.
@@ -17,24 +13,6 @@ pub struct Bounds {
 }
 
 impl Bounds {
-    /// Creates a cluster bound from columns.
-    pub fn from_columns(columns: &Columns, circumference_distance: f64) -> Self {
-        Self::from_positions(
-            columns.iter().flat_map(|column| column.iter()),
-            &columns.key_clearance,
-            circumference_distance,
-        )
-    }
-
-    /// Creates a cluster bound from thumb keys.
-    pub fn from_thumb_keys(thumb_keys: &ThumbKeys, circumference_distance: f64) -> Self {
-        Self::from_positions(
-            thumb_keys.iter(),
-            &thumb_keys.key_clearance,
-            circumference_distance,
-        )
-    }
-
     /// Combines two cluster bounds.
     pub fn union(&self, other: &Self) -> Self {
         let min = self.min.min(other.min);
@@ -67,25 +45,24 @@ impl Bounds {
             }
     }
 
-    /// Creates a cluster bound from key positions and clearances.
-    fn from_positions<'a>(
-        positions: impl IntoIterator<Item = &'a DAffine3>,
-        key_clearance: &DVec2,
+    /// Creates bounds from outline points and height
+    pub fn from_outline_points_and_height(
+        outline_points: &[DVec2],
+        height: f64,
         circumference_distance: f64,
     ) -> Self {
-        let (min, max) = positions.into_iter().fold(
+        let (min, max) = outline_points.iter().fold(
             (
-                dvec3(f64::INFINITY, f64::INFINITY, f64::INFINITY),
-                dvec3(f64::NEG_INFINITY, f64::NEG_INFINITY, f64::NEG_INFINITY),
+                dvec2(f64::INFINITY, f64::INFINITY),
+                dvec2(f64::NEG_INFINITY, f64::NEG_INFINITY),
             ),
-            |(min, max), point| (min.min(point.translation), max.max(point.translation)),
+            |(min, max), point| (point.min(min), point.max(max)),
         );
 
-        let padding = key_clearance.length() + circumference_distance;
-        let padding = dvec3(padding, padding, padding);
-        let max = max + padding;
-        let min = min - padding;
-        let size = max - dvec3(min.x, min.y, 0.0);
+        let padding = dvec3(circumference_distance, circumference_distance, 0.0);
+        let min = dvec3(min.x, min.y, 0.0) - padding;
+        let max = dvec3(max.x, max.y, height) + padding;
+        let size = max - min;
 
         Self { min, max, size }
     }

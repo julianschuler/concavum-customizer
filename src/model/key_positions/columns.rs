@@ -207,6 +207,20 @@ impl Columns {
             .collect()
     }
 
+    pub fn min_z(&self) -> f64 {
+        self.iter()
+            .flat_map(|column| column.iter().map(|position| position.translation.z))
+            .min_by(f64::total_cmp)
+            .unwrap_or_default()
+    }
+
+    pub fn max_z(&self) -> f64 {
+        self.iter()
+            .flat_map(|column| column.iter().map(|position| position.translation.z))
+            .max_by(f64::total_cmp)
+            .unwrap_or_default()
+    }
+
     fn circumference_point(
         left: &DAffine3,
         right: &DAffine3,
