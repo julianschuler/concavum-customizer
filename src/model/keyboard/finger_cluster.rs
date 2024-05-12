@@ -219,7 +219,7 @@ impl<'a> ClearanceBuilder<'a> {
             ])
             .collect();
 
-        prism_from_projected_points(points, &plane, self.bounds.size.x)
+        prism_from_projected_points(points, &plane, self.bounds.size().x)
     }
 
     fn side_point(&self, bottom: &DAffine3, top: &DAffine3, side_x: SideX) -> Option<DVec3> {
