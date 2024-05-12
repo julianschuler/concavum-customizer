@@ -17,10 +17,18 @@ impl Bounds {
         self.max - self.min
     }
 
-    /// Combines two cluster bounds.
+    /// Combines two bounds.
     pub fn union(&self, other: &Self) -> Self {
         let min = self.min.min(other.min);
         let max = self.max.max(other.max);
+
+        Self { min, max }
+    }
+
+    /// Mirrors the bound along the yz-plane.
+    pub fn mirror_yz(&self) -> Self {
+        let min = dvec3(-self.max.x, self.min.y, self.min.z);
+        let max = self.max;
 
         Self { min, max }
     }
@@ -48,7 +56,7 @@ impl Bounds {
             }
     }
 
-    /// Creates bounds from outline points and height
+    /// Creates bounds from outline points and height.
     pub fn from_outline_points_and_height(
         outline_points: &[DVec2],
         height: f64,

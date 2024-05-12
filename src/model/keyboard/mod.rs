@@ -57,7 +57,11 @@ impl Keyboard {
         let cluster = cluster.union(inserts);
         let cluster = cluster.difference(Self::key_cutouts(&key_positions));
 
-        let shape = Shape::new(&cluster, bounds.into());
+        // Mirror the cluster along the yz-plane to create both halves of the keyboard
+        let keyboard = cluster.remap_xyz(Tree::x().abs(), Tree::y(), Tree::z());
+        let bounds = bounds.mirror_yz();
+
+        let shape = Shape::new(&keyboard, bounds.into());
 
         Self {
             shape,
