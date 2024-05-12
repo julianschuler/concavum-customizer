@@ -1,8 +1,11 @@
 use std::ops::{Deref, Mul};
 
-use glam::{dvec2, dvec3, DAffine3, DQuat, DVec2, EulerRot};
+use glam::{dvec2, dvec3, DAffine3, DQuat, DVec2, EulerRot, Vec3Swizzles};
 
-use crate::config::{ThumbCluster, CURVATURE_HEIGHT, KEY_CLEARANCE};
+use crate::{
+    config::{ThumbCluster, CURVATURE_HEIGHT, KEY_CLEARANCE},
+    model::util::{corner_point, SideX, SideY},
+};
 
 pub struct ThumbKeys {
     inner: Vec<DAffine3>,
@@ -70,6 +73,22 @@ impl ThumbKeys {
         self.inner
             .last()
             .expect("there has to be at least one thumb key")
+    }
+
+    pub fn outline_points(&self) -> Vec<DVec2> {
+        let key_clearance = &self.key_clearance;
+        let first_thumb_key = self.first();
+        let last_thumb_key = self.last();
+
+        [
+            corner_point(first_thumb_key, SideX::Left, SideY::Top, key_clearance),
+            corner_point(first_thumb_key, SideX::Left, SideY::Bottom, key_clearance),
+            corner_point(last_thumb_key, SideX::Right, SideY::Bottom, key_clearance),
+            corner_point(last_thumb_key, SideX::Right, SideY::Top, key_clearance),
+        ]
+        .into_iter()
+        .map(Vec3Swizzles::xy)
+        .collect()
     }
 }
 

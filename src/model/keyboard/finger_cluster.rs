@@ -1,5 +1,5 @@
 use fidget::context::Tree;
-use glam::{DAffine3, DMat3, DVec2, DVec3, Vec3Swizzles};
+use glam::{DAffine3, DMat3, DVec2, DVec3};
 
 use crate::{
     config::{Keyboard, EPSILON},
@@ -24,7 +24,15 @@ impl FingerCluster {
         let bounds = Bounds::from_columns(columns, *config.circumference_distance);
         let cluster_height = bounds.size.z;
 
-        let (outline, insert_holders) = Self::outline_and_insert_holders(columns, config);
+        let outline_points = columns.outline_points();
+        let insert_holders = Self::insert_holders(
+            &outline_points,
+            config,
+            columns.len(),
+            columns.first().len(),
+        );
+
+        let outline: Tree = SimplePolygon::new(outline_points).into();
         let cluster_outline = outline.offset(*config.circumference_distance);
         let cluster = cluster_outline.extrude(-cluster_height, cluster_height);
 
@@ -32,13 +40,7 @@ impl FingerCluster {
         let cluster = cluster.rounded_difference(clearance, config.rounding_radius);
 
         let key_clearance = outline.extrude(-cluster_height, cluster_height);
-
-        let insert_holders = insert_holders
-            .into_iter()
-            .map(Into::into)
-            .reduce(|holders: Tree, holder| holders.union(holder))
-            .expect("there is more than one insert holder for the finger cluster")
-            .intersection(cluster_outline);
+        let insert_holders = insert_holders.intersection(cluster_outline);
 
         Self {
             cluster,
@@ -48,112 +50,24 @@ impl FingerCluster {
         }
     }
 
-    fn outline_and_insert_holders(
-        columns: &Columns,
+    fn insert_holders(
+        outline_points: &[DVec2],
         config: &Keyboard,
-    ) -> (Tree, [InsertHolder; 3]) {
-        let key_clearance = &columns.key_clearance;
-        let bottom_points = columns.windows(2).map(|window| {
-            let first_left = window[0].first();
-            let first_right = window[1].first();
+        columns: usize,
+        rows: usize,
+    ) -> Tree {
+        let first_index = columns - 1;
+        let second_index = first_index + rows;
+        let third_index = second_index + columns;
 
-            Self::circumference_point(first_left, first_right, SideY::Bottom, key_clearance)
-        });
-        let top_points = columns.windows(2).map(|window| {
-            let last_left = window[0].last();
-            let last_right = window[1].last();
-
-            Self::circumference_point(last_left, last_right, SideY::Top, key_clearance)
-        });
-        let left_points = Self::side_circumference_points(columns, SideX::Left, key_clearance);
-        let right_points = Self::side_circumference_points(columns, SideX::Right, key_clearance);
-
-        let vertices: Vec<_> = bottom_points
-            .chain(right_points)
-            .chain(top_points.rev())
-            .chain(left_points.into_iter().rev())
-            .map(Vec3Swizzles::xy)
-            .collect();
-
-        let first_index = columns.len() - 1;
-        let second_index = first_index + columns.first().len();
-        let third_index = second_index + columns.len();
-        let insert_holders = [
-            InsertHolder::from_vertices(&vertices, first_index, config),
-            InsertHolder::from_vertices(&vertices, second_index, config),
-            InsertHolder::from_vertices(&vertices, third_index, config),
-        ];
-
-        (SimplePolygon::new(vertices).into(), insert_holders)
-    }
-
-    fn circumference_point(
-        left: &DAffine3,
-        right: &DAffine3,
-        side_y: SideY,
-        key_clearance: &DVec2,
-    ) -> DVec3 {
-        let left_point = corner_point(left, SideX::Right, side_y, key_clearance);
-        let right_point = corner_point(right, SideX::Left, side_y, key_clearance);
-
-        // Get point which is more outward
-        #[allow(clippy::float_cmp)]
-        if (left_point - right_point).y.signum() == side_y.direction() {
-            left_point
-        } else {
-            right_point
-        }
-    }
-
-    fn side_circumference_points(
-        columns: &Columns,
-        side_x: SideX,
-        key_clearance: &DVec2,
-    ) -> Vec<DVec3> {
-        let column = match side_x {
-            SideX::Left => columns.first(),
-            SideX::Right => columns.last(),
-        };
-        let first = column.first();
-        let last = column.last();
-
-        let lower_corner = corner_point(first, side_x, SideY::Bottom, key_clearance);
-        let upper_corner = corner_point(last, side_x, SideY::Top, key_clearance);
-
-        let mut points = vec![lower_corner];
-
-        points.extend(column.windows(2).filter_map(|window| {
-            Self::side_circumference_point(&window[0], &window[1], side_x, key_clearance)
-        }));
-
-        points.push(upper_corner);
-
-        points
-    }
-
-    fn side_circumference_point(
-        bottom: &DAffine3,
-        top: &DAffine3,
-        side_x: SideX,
-        key_clearance: &DVec2,
-    ) -> Option<DVec3> {
-        let outwards_direction = bottom.x_axis;
-
-        // Get point which is more outward
-        let offset = (top.translation - bottom.translation).dot(outwards_direction);
-        #[allow(clippy::float_cmp)]
-        let offset = if offset.signum() == side_x.direction() {
-            offset
-        } else {
-            0.0
-        };
-        let point = bottom.translation
-            + (offset + side_x.direction() * key_clearance.x) * outwards_direction;
-
-        let line = Line::new(point, bottom.y_axis);
-        let plane = Plane::new(top.translation, top.z_axis);
-
-        plane.intersection(&line)
+        [
+            InsertHolder::from_outline_points(outline_points, first_index, config).into(),
+            InsertHolder::from_outline_points(outline_points, second_index, config).into(),
+            InsertHolder::from_outline_points(outline_points, third_index, config).into(),
+        ]
+        .into_iter()
+        .reduce(|holders: Tree, holder| holders.union(holder))
+        .expect("there is more than one insert holder for the finger cluster")
     }
 }
 
