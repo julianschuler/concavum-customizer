@@ -184,11 +184,11 @@ impl<'de> Deserialize<'de> for FiniteFloat {
 
 /// A strictly positive finite 64-bit floating point type.
 #[derive(Copy, Clone)]
-pub struct PositiveFloat(f64);
+pub struct PositiveFloat(FiniteFloat);
 
 impl From<PositiveFloat> for f64 {
     fn from(float: PositiveFloat) -> Self {
-        float.0
+        float.0.into()
     }
 }
 
@@ -197,13 +197,14 @@ impl<'de> Deserialize<'de> for PositiveFloat {
     where
         D: Deserializer<'de>,
     {
-        let inner = FiniteFloat::deserialize(deserializer)?.0;
+        let inner = FiniteFloat::deserialize(deserializer)?;
 
-        if inner > 0.0 {
+        if inner.0 > 0.0 {
             Ok(Self(inner))
         } else {
             Err(D::Error::custom(format!(
-                "invalid value: `{inner}` is not greater than 0.0"
+                "invalid value: `{}` is not greater than 0.0",
+                inner.0
             )))
         }
     }
