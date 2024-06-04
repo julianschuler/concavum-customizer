@@ -42,7 +42,7 @@ impl FingerCluster {
         let cluster = cluster_outline.extrude(-cluster_height, cluster_height);
 
         let clearance = ClearanceBuilder::new(columns, &bounds).build();
-        let cluster = cluster.rounded_difference(clearance, config.rounding_radius);
+        let cluster = cluster.rounded_difference(clearance, config.rounding_radius.into());
 
         let key_clearance = outline.extrude(-cluster_height, cluster_height);
         let insert_holders = insert_holders.intersection(cluster_outline);

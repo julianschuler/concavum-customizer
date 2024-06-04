@@ -1,3 +1,4 @@
+use glam::DVec3;
 use hex_color::HexColor;
 use three_d::{
     AmbientLight, Attenuation, Camera, ClearState, Context, CpuMesh, Gm, InstancedMesh, Instances,
@@ -61,7 +62,7 @@ impl Scene {
                     context,
                     1.0,
                     Srgba::WHITE,
-                    &direction.as_vec3().to_array().into(),
+                    &DVec3::from(*direction).as_vec3().to_array().into(),
                     Attenuation::default(),
                 )
             })
