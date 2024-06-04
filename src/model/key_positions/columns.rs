@@ -75,29 +75,35 @@ impl Columns {
             .iter()
             .enumerate()
             .map(|(i, column)| {
-                let (curvature_angle, offset, side_angle, side) = match column {
-                    ConfigColumn::Normal {
-                        curvature_angle,
-                        offset,
-                    } => (curvature_angle, DVec2::from(*offset), 0.0, 0.0),
-                    ConfigColumn::Side { side_angle } => {
-                        let (side, column) = if i == 0 {
-                            (1.0, config.columns.get(1))
-                        } else {
-                            (-1.0, config.columns.get(config.columns.len() - 2))
-                        };
-
-                        if let ConfigColumn::Normal {
+                let (curvature_angle, offset, side_angle, side): (f64, DVec2, f64, _) =
+                    match *column {
+                        ConfigColumn::Normal {
                             curvature_angle,
                             offset,
-                        } = column.expect("there has to be at least one normal column")
-                        {
-                            (curvature_angle, DVec2::from(*offset), **side_angle, side)
-                        } else {
-                            panic!("there has to be at least one normal column")
+                        } => (curvature_angle.into(), offset.into(), 0.0, 0.0),
+                        ConfigColumn::Side { side_angle } => {
+                            let (side, column) = if i == 0 {
+                                (1.0, config.columns.get(1))
+                            } else {
+                                (-1.0, config.columns.get(config.columns.len() - 2))
+                            };
+
+                            if let &ConfigColumn::Normal {
+                                curvature_angle,
+                                offset,
+                            } = column.expect("there has to be at least one normal column")
+                            {
+                                (
+                                    curvature_angle.into(),
+                                    offset.into(),
+                                    side_angle.into(),
+                                    side,
+                                )
+                            } else {
+                                panic!("there has to be at least one normal column")
+                            }
                         }
-                    }
-                };
+                    };
                 let side_angle = side_angle.to_radians();
                 let side_angle_tan = side_angle.tan();
 

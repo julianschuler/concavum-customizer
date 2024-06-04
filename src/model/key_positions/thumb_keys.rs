@@ -14,7 +14,7 @@ pub struct ThumbKeys {
 
 impl ThumbKeys {
     pub fn from_config(config: &ThumbCluster) -> Self {
-        let curvature_angle = config.curvature_angle.to_radians();
+        let curvature_angle = f64::from(config.curvature_angle).to_radians();
         let rotation: DVec3 = config.rotation.into();
         let cluster_rotation = DQuat::from_euler(
             EulerRot::ZYX,

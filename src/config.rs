@@ -211,13 +211,11 @@ impl<'de> Deserialize<'de> for PositiveFloat {
 }
 
 #[derive(Copy, Clone)]
-pub struct Ranged<const LOWER: i8, const UPPER: i8>(f64);
+pub struct Ranged<const LOWER: i8, const UPPER: i8>(FiniteFloat);
 
-impl<const LOWER: i8, const UPPER: i8> Deref for Ranged<LOWER, UPPER> {
-    type Target = f64;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
+impl<const LOWER: i8, const UPPER: i8> From<Ranged<LOWER, UPPER>> for f64 {
+    fn from(ranged: Ranged<LOWER, UPPER>) -> Self {
+        ranged.0.into()
     }
 }
 
@@ -226,13 +224,14 @@ impl<'de, const LOWER: i8, const UPPER: i8> Deserialize<'de> for Ranged<LOWER, U
     where
         D: Deserializer<'de>,
     {
-        let inner = FiniteFloat::deserialize(deserializer)?.0;
+        let inner = FiniteFloat::deserialize(deserializer)?;
 
-        if inner >= f64::from(LOWER) && inner <= f64::from(UPPER) {
+        if inner.0 >= f64::from(LOWER) && inner.0 <= f64::from(UPPER) {
             Ok(Self(inner))
         } else {
             Err(D::Error::custom(format!(
-                "invalid value: `{inner}` is not between {LOWER} and {UPPER}"
+                "invalid value: `{}` is not between {LOWER} and {UPPER}",
+                inner.0
             )))
         }
     }
