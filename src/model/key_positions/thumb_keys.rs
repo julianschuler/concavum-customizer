@@ -1,6 +1,6 @@
 use std::ops::{Deref, Mul};
 
-use glam::{dvec2, dvec3, DAffine3, DQuat, DVec2, EulerRot, Vec3Swizzles};
+use glam::{dvec2, dvec3, DAffine3, DQuat, DVec2, DVec3, EulerRot, Vec3Swizzles};
 
 use crate::{
     config::{ThumbCluster, CURVATURE_HEIGHT, KEY_CLEARANCE},
@@ -15,13 +15,15 @@ pub struct ThumbKeys {
 impl ThumbKeys {
     pub fn from_config(config: &ThumbCluster) -> Self {
         let curvature_angle = config.curvature_angle.to_radians();
+        let rotation: DVec3 = config.rotation.into();
         let cluster_rotation = DQuat::from_euler(
             EulerRot::ZYX,
-            config.rotation.z.to_radians(),
-            config.rotation.y.to_radians(),
-            config.rotation.x.to_radians(),
+            rotation.z.to_radians(),
+            rotation.y.to_radians(),
+            rotation.x.to_radians(),
         );
-        let key_transform = DAffine3::from_rotation_translation(cluster_rotation, config.offset);
+        let key_transform =
+            DAffine3::from_rotation_translation(cluster_rotation, config.offset.into());
         let key_distance: f64 = config.key_distance.into();
 
         let inner = if curvature_angle == 0.0 {

@@ -38,7 +38,7 @@ impl Keyboard {
             .union(thumb_cluster.insert_holder);
 
         // Subtract key clearances from each other and combine the clusters
-        let rounding_radius = config.keyboard.rounding_radius;
+        let rounding_radius = config.keyboard.rounding_radius.into();
         let finger_key_clearance = finger_cluster.key_clearance;
         let finger_cluster = finger_cluster
             .cluster

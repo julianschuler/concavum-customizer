@@ -40,7 +40,7 @@ impl ThumbCluster {
         let cluster = cluster_outline.extrude(-cluster_height, cluster_height);
 
         let clearance = Self::clearance(thumb_keys, &bounds);
-        let cluster = cluster.rounded_difference(clearance, config.rounding_radius);
+        let cluster = cluster.rounded_difference(clearance, config.rounding_radius.into());
 
         let key_clearance = Self::key_clearance(thumb_keys, &bounds);
         let insert_holder = insert_holder.intersection(cluster_outline);

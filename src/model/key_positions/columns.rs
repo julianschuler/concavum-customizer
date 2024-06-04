@@ -68,7 +68,7 @@ pub struct Columns {
 
 impl Columns {
     pub fn from_config(config: &FingerCluster) -> Self {
-        let key_distance: DVec2 = config.key_distance.clone().into();
+        let key_distance: DVec2 = config.key_distance.into();
 
         let inner = config
             .columns
@@ -79,7 +79,7 @@ impl Columns {
                     ConfigColumn::Normal {
                         curvature_angle,
                         offset,
-                    } => (curvature_angle, offset, 0.0, 0.0),
+                    } => (curvature_angle, DVec2::from(*offset), 0.0, 0.0),
                     ConfigColumn::Side { side_angle } => {
                         let (side, column) = if i == 0 {
                             (1.0, config.columns.get(1))
@@ -92,7 +92,7 @@ impl Columns {
                             offset,
                         } = column.expect("there has to be at least one normal column")
                         {
-                            (curvature_angle, offset, **side_angle, side)
+                            (curvature_angle, DVec2::from(*offset), **side_angle, side)
                         } else {
                             panic!("there has to be at least one normal column")
                         }

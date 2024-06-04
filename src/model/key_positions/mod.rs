@@ -3,7 +3,7 @@ mod thumb_keys;
 
 use std::ops::Mul;
 
-use glam::{dvec3, DAffine3};
+use glam::{dvec3, DAffine3, DVec2};
 
 use crate::config::Config;
 use crate::model::keyboard::Bounds;
@@ -24,12 +24,9 @@ impl KeyPositions {
         let columns = Columns::from_config(&config.finger_cluster);
         let thumb_keys = ThumbKeys::from_config(&config.thumb_cluster);
 
-        let (tilting_x, tilting_y) = (
-            config.keyboard.tilting_angle.x.to_radians(),
-            config.keyboard.tilting_angle.y.to_radians(),
-        );
-        let tilted_positions = (DAffine3::from_rotation_y(tilting_y)
-            * DAffine3::from_rotation_x(tilting_x))
+        let tilting_angle: DVec2 = config.keyboard.tilting_angle.into();
+        let tilted_positions = (DAffine3::from_rotation_y(tilting_angle.y.to_radians())
+            * DAffine3::from_rotation_x(tilting_angle.x.to_radians()))
             * Self {
                 columns,
                 thumb_keys,
