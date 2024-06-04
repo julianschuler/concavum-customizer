@@ -1,4 +1,11 @@
-use std::{fs::read_to_string, io, num::NonZeroU8, ops::Deref, path::Path};
+use std::{
+    fs::read_to_string,
+    hash::{Hash, Hasher},
+    io,
+    num::NonZeroU8,
+    ops::Deref,
+    path::Path,
+};
 
 use glam::{DVec2, DVec3};
 use hex_color::HexColor;
@@ -11,7 +18,7 @@ pub const CURVATURE_HEIGHT: f64 = 6.6;
 pub type CurvatureAngle = Ranged<-20, 50>;
 pub type SideAngle = Ranged<0, 30>;
 
-#[derive(Deserialize)]
+#[derive(Deserialize, PartialEq, Eq, Hash)]
 pub struct Config {
     pub preview: Preview,
     pub finger_cluster: FingerCluster,
@@ -20,7 +27,7 @@ pub struct Config {
     pub colors: Colors,
 }
 
-#[derive(Clone, Deserialize)]
+#[derive(Clone, Deserialize, PartialEq, Eq, Hash)]
 pub struct Preview {
     pub show_keys: bool,
     pub show_interface_pcb: bool,
@@ -29,7 +36,7 @@ pub struct Preview {
     pub light_positions: Vec<Vec3<FiniteFloat>>,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, PartialEq, Eq, Hash)]
 pub struct FingerCluster {
     pub rows: NonZeroU8,
     pub columns: Columns,
@@ -37,7 +44,7 @@ pub struct FingerCluster {
     pub home_row_index: u8,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, PartialEq, Eq, Hash)]
 #[serde(untagged, deny_unknown_fields)]
 pub enum Column {
     Normal {
@@ -49,7 +56,7 @@ pub enum Column {
     },
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, PartialEq, Eq, Hash)]
 pub struct ThumbCluster {
     pub keys: NonZeroU8,
     pub curvature_angle: CurvatureAngle,
@@ -59,7 +66,7 @@ pub struct ThumbCluster {
     pub resting_key_index: u8,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, PartialEq, Eq, Hash)]
 pub struct Keyboard {
     pub tilting_angle: Vec2<FiniteFloat>,
     pub circumference_distance: PositiveFloat,
@@ -68,7 +75,7 @@ pub struct Keyboard {
     pub bottom_plate_thickness: PositiveFloat,
 }
 
-#[derive(Clone, Deserialize)]
+#[derive(Clone, Deserialize, PartialEq, Eq, Hash)]
 pub struct Colors {
     pub keyboard: HexColor,
     pub keycap: HexColor,
@@ -79,6 +86,7 @@ pub struct Colors {
     pub background: HexColor,
 }
 
+#[derive(PartialEq, Eq, Hash)]
 pub struct Columns(Vec<Column>);
 
 impl Deref for Columns {
@@ -122,7 +130,7 @@ impl<'de> Deserialize<'de> for Columns {
 }
 
 /// A 2-dimensional vector
-#[derive(Copy, Clone, Deserialize)]
+#[derive(Copy, Clone, Deserialize, PartialEq, Eq, Hash)]
 pub struct Vec2<T> {
     pub x: T,
     pub y: T,
@@ -138,7 +146,7 @@ impl<T: Into<f64>> From<Vec2<T>> for DVec2 {
 }
 
 /// A 3-dimensional vector
-#[derive(Copy, Clone, Deserialize)]
+#[derive(Copy, Clone, Deserialize, PartialEq, Eq, Hash)]
 pub struct Vec3<T> {
     pub x: T,
     pub y: T,
@@ -156,8 +164,16 @@ impl<T: Into<f64>> From<Vec3<T>> for DVec3 {
 }
 
 /// A finite 64-bit floating point type.
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, PartialEq)]
 pub struct FiniteFloat(f64);
+
+impl Eq for FiniteFloat {}
+
+impl Hash for FiniteFloat {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.0.to_bits().hash(state);
+    }
+}
 
 impl From<FiniteFloat> for f64 {
     fn from(float: FiniteFloat) -> Self {
@@ -183,7 +199,7 @@ impl<'de> Deserialize<'de> for FiniteFloat {
 }
 
 /// A strictly positive finite 64-bit floating point type.
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, PartialEq, Eq, Hash)]
 pub struct PositiveFloat(FiniteFloat);
 
 impl From<PositiveFloat> for f64 {
@@ -210,7 +226,7 @@ impl<'de> Deserialize<'de> for PositiveFloat {
     }
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, PartialEq, Eq, Hash)]
 pub struct Ranged<const LOWER: i8, const UPPER: i8>(FiniteFloat);
 
 impl<const LOWER: i8, const UPPER: i8> From<Ranged<LOWER, UPPER>> for f64 {
