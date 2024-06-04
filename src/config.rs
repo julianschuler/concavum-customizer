@@ -33,7 +33,7 @@ pub struct Preview {
 pub struct FingerCluster {
     pub rows: NonZeroU8,
     pub columns: Columns,
-    pub key_distance: [PositiveFloat; 2],
+    pub key_distance: Vec2<PositiveFloat>,
     pub home_row_index: u8,
 }
 
@@ -121,6 +121,40 @@ impl<'de> Deserialize<'de> for Columns {
     }
 }
 
+/// A 2-dimensional vector
+#[derive(Clone, Deserialize)]
+pub struct Vec2<T> {
+    pub x: T,
+    pub y: T,
+}
+
+impl<T: Into<f64>> From<Vec2<T>> for DVec2 {
+    fn from(value: Vec2<T>) -> Self {
+        Self {
+            x: value.x.into(),
+            y: value.y.into(),
+        }
+    }
+}
+
+/// A 3-dimensional vector
+#[derive(Clone, Deserialize)]
+pub struct Vec3<T> {
+    pub x: T,
+    pub y: T,
+    pub z: T,
+}
+
+impl<T: Into<f64>> From<Vec3<T>> for DVec3 {
+    fn from(value: Vec3<T>) -> Self {
+        Self {
+            x: value.x.into(),
+            y: value.y.into(),
+            z: value.z.into(),
+        }
+    }
+}
+
 /// Strictly positive 64-bit floating point type.
 #[derive(Copy, Clone)]
 pub struct PositiveFloat(f64);
@@ -144,21 +178,6 @@ impl<'de> Deserialize<'de> for PositiveFloat {
             Err(D::Error::custom(format!(
                 "invalid value: {inner} is not greater than 0.0"
             )))
-        }
-    }
-}
-
-pub struct PositiveDVec2 {
-    pub x: f64,
-    pub y: f64,
-}
-
-impl From<&[PositiveFloat; 2]> for PositiveDVec2 {
-    fn from(value: &[PositiveFloat; 2]) -> Self {
-        let [x, y] = *value;
-        Self {
-            x: x.into(),
-            y: y.into(),
         }
     }
 }
