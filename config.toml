@@ -8,7 +8,7 @@ show_bottom_plate = true
 # Resolution used for meshing, size of the smallest feature
 resolution = 1.0
 # Light positions, will be hardcoded at a later stage
-light_positions = [[100, 0, 100], [100, -100, -100]]
+light_positions = [[100, 0, 100], [-100, 0, 100], [100, -100, -100], [-100, -100, -100]]
 
 
 [finger_cluster]
