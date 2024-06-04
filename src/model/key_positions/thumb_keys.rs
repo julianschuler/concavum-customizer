@@ -14,8 +14,6 @@ pub struct ThumbKeys {
 
 impl ThumbKeys {
     pub fn from_config(config: &ThumbCluster) -> Self {
-        let key_distance = *config.key_distance;
-
         let curvature_angle = config.curvature_angle.to_radians();
         let cluster_rotation = DQuat::from_euler(
             EulerRot::ZYX,
@@ -24,6 +22,7 @@ impl ThumbKeys {
             config.rotation.x.to_radians(),
         );
         let key_transform = DAffine3::from_rotation_translation(cluster_rotation, config.offset);
+        let key_distance: f64 = config.key_distance.into();
 
         let inner = if curvature_angle == 0.0 {
             (0..config.keys.into())
@@ -36,7 +35,7 @@ impl ThumbKeys {
                 .collect()
         } else {
             let curvature_radius =
-                (*config.key_distance / 2.0 / (curvature_angle / 2.0).tan()) + CURVATURE_HEIGHT;
+                (key_distance / 2.0 / (curvature_angle / 2.0).tan()) + CURVATURE_HEIGHT;
 
             (0..config.keys.into())
                 .map(|i| {

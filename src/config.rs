@@ -125,11 +125,9 @@ impl<'de> Deserialize<'de> for Columns {
 #[derive(Copy, Clone)]
 pub struct PositiveFloat(f64);
 
-impl Deref for PositiveFloat {
-    type Target = f64;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
+impl From<PositiveFloat> for f64 {
+    fn from(float: PositiveFloat) -> Self {
+        float.0
     }
 }
 
@@ -158,7 +156,10 @@ pub struct PositiveDVec2 {
 impl From<&[PositiveFloat; 2]> for PositiveDVec2 {
     fn from(value: &[PositiveFloat; 2]) -> Self {
         let [x, y] = *value;
-        Self { x: *x, y: *y }
+        Self {
+            x: x.into(),
+            y: y.into(),
+        }
     }
 }
 

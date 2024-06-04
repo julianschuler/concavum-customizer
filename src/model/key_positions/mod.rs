@@ -40,16 +40,17 @@ impl KeyPositions {
                 .columns
                 .min_z()
                 .min(tilted_positions.thumb_keys.min_z());
+        let circumference_distance = config.keyboard.circumference_distance.into();
 
         let column_bounds = Bounds::from_outline_points_and_height(
             &tilted_positions.columns.outline_points(),
             0.0,
-            *config.keyboard.circumference_distance,
+            circumference_distance,
         );
         let thumb_key_bounds = Bounds::from_outline_points_and_height(
             &tilted_positions.thumb_keys.outline_points(),
             0.0,
-            *config.keyboard.circumference_distance,
+            circumference_distance,
         );
         let bounds = column_bounds.union(&thumb_key_bounds);
 

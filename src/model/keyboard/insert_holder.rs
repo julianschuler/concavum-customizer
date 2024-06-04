@@ -27,9 +27,9 @@ impl InsertHolder {
 
         let outwards_direction = (edge1.normalize() + edge2.normalize()).normalize();
         let point = vertex
-            + (*config.circumference_distance
+            + (f64::from(config.circumference_distance)
                 - INSERT_RADIUS
-                - WALL_THICKNESS.max(*config.shell_thickness))
+                - WALL_THICKNESS.max(config.shell_thickness.into()))
                 * outwards_direction;
 
         let corner: Tree = Corner::new(edge1, edge2).into();
