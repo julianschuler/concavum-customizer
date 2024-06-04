@@ -1,4 +1,4 @@
-use std::{fs::read_to_string, io, ops::Deref, path::Path};
+use std::{fs::read_to_string, io, num::NonZeroU8, ops::Deref, path::Path};
 
 use glam::{DVec2, DVec3};
 use hex_color::HexColor;
@@ -31,7 +31,7 @@ pub struct Preview {
 
 #[derive(Deserialize)]
 pub struct FingerCluster {
-    pub rows: PositiveInt,
+    pub rows: NonZeroU8,
     pub columns: Columns,
     pub key_distance: [PositiveFloat; 2],
     pub home_row_index: u8,
@@ -51,7 +51,7 @@ pub enum Column {
 
 #[derive(Deserialize)]
 pub struct ThumbCluster {
-    pub keys: PositiveInt,
+    pub keys: NonZeroU8,
     pub curvature_angle: CurvatureAngle,
     pub rotation: DVec3,
     pub offset: DVec3,
@@ -118,35 +118,6 @@ impl<'de> Deserialize<'de> for Columns {
         }
 
         Ok(Self(inner))
-    }
-}
-
-/// Strictly positive 8-bit unsigned integer type.
-#[derive(Copy, Clone)]
-pub struct PositiveInt(u8);
-
-impl Deref for PositiveInt {
-    type Target = u8;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-impl<'de> Deserialize<'de> for PositiveInt {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        let inner = u8::deserialize(deserializer)?;
-
-        if inner > 0 {
-            Ok(Self(inner))
-        } else {
-            Err(D::Error::custom(format!(
-                "invalid value: {inner} is not greater than 0"
-            )))
-        }
     }
 }
 
