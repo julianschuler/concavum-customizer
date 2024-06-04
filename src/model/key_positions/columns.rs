@@ -3,9 +3,7 @@ use std::ops::{Deref, Mul};
 use glam::{dvec2, dvec3, DAffine3, DVec2, DVec3, Vec3Swizzles};
 
 use crate::{
-    config::{
-        Column as ConfigColumn, FingerCluster, PositiveDVec2, CURVATURE_HEIGHT, KEY_CLEARANCE,
-    },
+    config::{Column as ConfigColumn, FingerCluster, CURVATURE_HEIGHT, KEY_CLEARANCE},
     model::{
         geometry::{Line, Plane},
         util::{corner_point, SideX, SideY},
@@ -70,7 +68,7 @@ pub struct Columns {
 
 impl Columns {
     pub fn from_config(config: &FingerCluster) -> Self {
-        let key_distance: PositiveDVec2 = (&config.key_distance).into();
+        let key_distance: DVec2 = config.key_distance.clone().into();
 
         let inner = config
             .columns
