@@ -26,7 +26,7 @@ pub trait Mesh {
 
 impl Mesh for model::Model {
     fn mesh_settings(&self) -> Settings {
-        self.keyboard.mesh_settings(*self.settings.resolution)
+        self.keyboard.mesh_settings(self.settings.resolution.into())
     }
 
     fn mesh(&self, settings: Settings) -> Model {

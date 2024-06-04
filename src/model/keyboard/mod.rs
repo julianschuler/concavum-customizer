@@ -50,7 +50,7 @@ impl Keyboard {
 
         // Hollow out the combined cluster and cut off everthing below a z value of 0
         let half_space = HalfSpace::new(Plane::new(DVec3::ZERO, DVec3::NEG_Z));
-        let hollowed_cluster = combined_cluster.shell(*config.keyboard.shell_thickness);
+        let hollowed_cluster = combined_cluster.shell(config.keyboard.shell_thickness.into());
         let cluster = hollowed_cluster.intersection(half_space);
 
         // Add the insert holders and cutouts

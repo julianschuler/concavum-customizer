@@ -23,11 +23,12 @@ impl FingerCluster {
     pub fn new(columns: &Columns, config: &Keyboard) -> Self {
         let outline_points = columns.outline_points();
         let cluster_height = columns.max_z() + columns.key_clearance.length();
+        let circumference_distance = config.circumference_distance.into();
 
         let bounds = Bounds::from_outline_points_and_height(
             &outline_points,
             cluster_height,
-            *config.circumference_distance,
+            circumference_distance,
         );
         let insert_holders = Self::insert_holders(
             &outline_points,
@@ -37,7 +38,7 @@ impl FingerCluster {
         );
 
         let outline: Tree = SimplePolygon::new(outline_points).into();
-        let cluster_outline = outline.offset(*config.circumference_distance);
+        let cluster_outline = outline.offset(circumference_distance);
         let cluster = cluster_outline.extrude(-cluster_height, cluster_height);
 
         let clearance = ClearanceBuilder::new(columns, &bounds).build();
