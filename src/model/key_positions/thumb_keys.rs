@@ -26,7 +26,7 @@ impl ThumbKeys {
         let key_transform = DAffine3::from_rotation_translation(cluster_rotation, config.offset);
 
         let inner = if curvature_angle == 0.0 {
-            (0..*config.keys)
+            (0..config.keys.into())
                 .map(|j| {
                     let x = key_distance
                         * f64::from(i16::from(j) - i16::from(config.resting_key_index));
@@ -38,7 +38,7 @@ impl ThumbKeys {
             let curvature_radius =
                 (*config.key_distance / 2.0 / (curvature_angle / 2.0).tan()) + CURVATURE_HEIGHT;
 
-            (0..*config.keys)
+            (0..config.keys.into())
                 .map(|i| {
                     let total_angle = curvature_angle
                         * f64::from(i16::from(i) - i16::from(config.resting_key_index));
