@@ -176,7 +176,7 @@ impl<'de> Deserialize<'de> for FiniteFloat {
             Ok(Self(inner))
         } else {
             Err(D::Error::custom(format!(
-                "invalid value: {inner} is not finite"
+                "invalid value: `{inner}` is not finite"
             )))
         }
     }
@@ -203,7 +203,7 @@ impl<'de> Deserialize<'de> for PositiveFloat {
             Ok(Self(inner))
         } else {
             Err(D::Error::custom(format!(
-                "invalid value: {inner} is not greater than 0.0"
+                "invalid value: `{inner}` is not greater than 0.0"
             )))
         }
     }
@@ -231,7 +231,7 @@ impl<'de, const LOWER: i8, const UPPER: i8> Deserialize<'de> for Ranged<LOWER, U
             Ok(Self(inner))
         } else {
             Err(D::Error::custom(format!(
-                "invalid value: {inner} is not between {LOWER} and {UPPER}"
+                "invalid value: `{inner}` is not between {LOWER} and {UPPER}"
             )))
         }
     }
