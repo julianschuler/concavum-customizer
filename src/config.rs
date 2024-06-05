@@ -18,7 +18,7 @@ pub const CURVATURE_HEIGHT: f64 = 6.6;
 pub type CurvatureAngle = Ranged<-20, 50>;
 pub type SideAngle = Ranged<0, 30>;
 
-#[derive(Deserialize, PartialEq, Eq, Hash)]
+#[derive(Clone, Deserialize, PartialEq, Eq, Hash)]
 pub struct Config {
     pub preview: Preview,
     pub finger_cluster: FingerCluster,
@@ -36,7 +36,7 @@ pub struct Preview {
     pub light_positions: Vec<Vec3<FiniteFloat>>,
 }
 
-#[derive(Deserialize, PartialEq, Eq, Hash)]
+#[derive(Clone, Deserialize, PartialEq, Eq, Hash)]
 pub struct FingerCluster {
     pub rows: NonZeroU8,
     pub columns: Columns,
@@ -44,7 +44,7 @@ pub struct FingerCluster {
     pub home_row_index: u8,
 }
 
-#[derive(Deserialize, PartialEq, Eq, Hash)]
+#[derive(Clone, Deserialize, PartialEq, Eq, Hash)]
 #[serde(untagged, deny_unknown_fields)]
 pub enum Column {
     Normal {
@@ -56,7 +56,7 @@ pub enum Column {
     },
 }
 
-#[derive(Deserialize, PartialEq, Eq, Hash)]
+#[derive(Clone, Deserialize, PartialEq, Eq, Hash)]
 pub struct ThumbCluster {
     pub keys: NonZeroU8,
     pub curvature_angle: CurvatureAngle,
@@ -66,7 +66,7 @@ pub struct ThumbCluster {
     pub resting_key_index: u8,
 }
 
-#[derive(Deserialize, PartialEq, Eq, Hash)]
+#[derive(Clone, Deserialize, PartialEq, Eq, Hash)]
 pub struct Keyboard {
     pub tilting_angle: Vec2<FiniteFloat>,
     pub circumference_distance: PositiveFloat,
@@ -86,7 +86,7 @@ pub struct Colors {
     pub background: HexColor,
 }
 
-#[derive(PartialEq, Eq, Hash)]
+#[derive(Clone, PartialEq, Eq, Hash)]
 pub struct Columns(Vec<Column>);
 
 impl Deref for Columns {

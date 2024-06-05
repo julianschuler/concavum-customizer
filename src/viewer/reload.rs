@@ -1,7 +1,8 @@
 use std::{
+    collections::HashMap,
     sync::{
         atomic::{AtomicBool, Ordering},
-        Arc,
+        Arc, Mutex,
     },
     thread::spawn,
     time::Instant,
@@ -13,7 +14,7 @@ use crate::{
     config::{Config, Error},
     model::Model,
     viewer::{
-        model::Mesh,
+        model::{Mesh, Model as MeshModel},
         window::{ModelUpdater, ReloadEvent},
     },
 };
@@ -21,6 +22,7 @@ use crate::{
 pub struct ModelReloader {
     updater: ModelUpdater,
     cancellation_token: CancellationToken,
+    cache: Arc<Mutex<HashMap<Config, MeshModel>>>,
 }
 
 impl ModelReloader {
@@ -29,6 +31,7 @@ impl ModelReloader {
         Self {
             updater,
             cancellation_token: CancellationToken::new(),
+            cache: Default::default(),
         }
     }
 
@@ -36,43 +39,52 @@ impl ModelReloader {
         match config {
             Ok(config) => {
                 self.cancellation_token.cancel();
-                let cancellation_token = CancellationToken::new();
-                self.cancellation_token = cancellation_token.clone();
 
-                let start = Instant::now();
-                self.updater.send_event(ReloadEvent::Started);
-                let model = Model::from_config(config);
+                if let Some(model) = self.cache.lock().unwrap().get(&config).map(Clone::clone) {
+                    self.updater.send_event(ReloadEvent::Finished(model));
+                } else {
+                    let cancellation_token = CancellationToken::new();
+                    self.cancellation_token = cancellation_token.clone();
 
-                let mesh_settings = model.mesh_settings();
-                let cancellation_token = self.cancellation_token.clone();
-                let updater = self.updater.clone();
-                spawn(move || {
-                    let mut cancelled = false;
-                    for depth in 0..mesh_settings.depth {
-                        let mesh_settings = Settings {
-                            depth,
-                            bounds: mesh_settings.bounds,
-                            threads: mesh_settings.threads,
-                        };
-                        let model = model.mesh(mesh_settings);
+                    let start = Instant::now();
+                    self.updater.send_event(ReloadEvent::Started);
+                    let model = Model::from_config(config.clone());
 
-                        cancelled = cancellation_token.cancelled();
-                        if cancelled {
-                            break;
+                    let mesh_settings = model.mesh_settings();
+                    let cancellation_token = self.cancellation_token.clone();
+                    let updater = self.updater.clone();
+                    let cache = self.cache.clone();
+
+                    spawn(move || {
+                        let mut cancelled = false;
+                        for depth in 0..mesh_settings.depth {
+                            let mesh_settings = Settings {
+                                depth,
+                                bounds: mesh_settings.bounds,
+                                threads: mesh_settings.threads,
+                            };
+                            let model = model.mesh(mesh_settings);
+
+                            cancelled = cancellation_token.cancelled();
+                            if cancelled {
+                                break;
+                            }
+                            updater.send_event(ReloadEvent::Updated(model));
                         }
-                        updater.send_event(ReloadEvent::Updated(model));
-                    }
 
-                    if !cancelled {
-                        let model = model.mesh(mesh_settings);
+                        if !cancelled {
+                            let model = model.mesh(mesh_settings);
 
-                        if !cancellation_token.cancelled() {
-                            updater.send_event(ReloadEvent::Finished(model));
+                            cache.lock().unwrap().insert(config, model.clone());
 
-                            eprintln!("Reloaded model in {:?}", start.elapsed());
+                            if !cancellation_token.cancelled() {
+                                updater.send_event(ReloadEvent::Finished(model));
+
+                                eprintln!("Reloaded model in {:?}", start.elapsed());
+                            }
                         }
-                    }
-                });
+                    });
+                }
             }
             Err(error) => self.updater.send_event(ReloadEvent::Error(Arc::new(error))),
         }
