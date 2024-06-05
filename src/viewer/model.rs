@@ -7,6 +7,7 @@ use crate::{
     model,
 };
 
+#[derive(Clone)]
 pub struct Model {
     pub keyboard: CpuMesh,
     pub finger_key_positions: Vec<Mat4>,
