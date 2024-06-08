@@ -21,6 +21,9 @@ pub trait Mesh {
     /// Returns the mesh settings for meshing at the set resolution.
     fn mesh_settings(&self) -> Settings;
 
+    /// Converts self into a mesh model using the given keyboard mesh
+    fn with_keyboard(&self, keybord: CpuMesh) -> Model;
+
     /// Converts self into a mesh model using the given mesh settings.
     fn mesh(&self, settings: Settings) -> Model;
 }
@@ -30,10 +33,7 @@ impl Mesh for model::Model {
         self.keyboard.mesh_settings(self.settings.resolution.into())
     }
 
-    fn mesh(&self, settings: Settings) -> Model {
-        let mesh = self.keyboard.mesh(settings);
-        let keyboard = mesh.into_cpu_mesh();
-
+    fn with_keyboard(&self, keyboard: CpuMesh) -> Model {
         let finger_key_positions = self
             .key_positions
             .columns
@@ -55,6 +55,13 @@ impl Mesh for model::Model {
             colors: self.colors.clone(),
             settings: self.settings.clone(),
         }
+    }
+
+    fn mesh(&self, settings: Settings) -> Model {
+        let mesh = self.keyboard.mesh(settings);
+        let keyboard = mesh.into_cpu_mesh();
+
+        self.with_keyboard(keyboard)
     }
 }
 

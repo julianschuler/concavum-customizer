@@ -9,12 +9,13 @@ use std::{
 };
 
 use fidget::mesh::Settings;
+use three_d::CpuMesh;
 
 use crate::{
     config::{Config, Error},
     model::Model,
     viewer::{
-        model::{Mesh, Model as MeshModel},
+        model::Mesh,
         window::{ModelUpdater, ReloadEvent},
     },
 };
@@ -22,7 +23,7 @@ use crate::{
 pub struct ModelReloader {
     updater: ModelUpdater,
     cancellation_token: CancellationToken,
-    cache: Arc<Mutex<HashMap<Config, MeshModel>>>,
+    cache: Arc<Mutex<HashMap<Config, CpuMesh>>>,
 }
 
 impl ModelReloader {
@@ -40,7 +41,10 @@ impl ModelReloader {
             Ok(config) => {
                 self.cancellation_token.cancel();
 
-                if let Some(model) = self.cache.lock().unwrap().get(&config).map(Clone::clone) {
+                let model = Model::from_config(config.clone());
+
+                if let Some(keyboard) = self.cache.lock().unwrap().get(&config).map(Clone::clone) {
+                    let model = model.with_keyboard(keyboard);
                     self.updater.send_event(ReloadEvent::Finished(model));
                 } else {
                     let cancellation_token = CancellationToken::new();
@@ -75,7 +79,7 @@ impl ModelReloader {
                         if !cancelled {
                             let model = model.mesh(mesh_settings);
 
-                            cache.lock().unwrap().insert(config, model.clone());
+                            cache.lock().unwrap().insert(config, model.keyboard.clone());
 
                             if !cancellation_token.cancelled() {
                                 updater.send_event(ReloadEvent::Finished(model));

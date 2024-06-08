@@ -18,7 +18,7 @@ pub const CURVATURE_HEIGHT: f64 = 6.6;
 pub type CurvatureAngle = Ranged<-20, 50>;
 pub type SideAngle = Ranged<0, 30>;
 
-#[derive(Clone, Deserialize, PartialEq, Eq, Hash)]
+#[derive(Clone, Deserialize, Eq)]
 pub struct Config {
     pub preview: Preview,
     pub finger_cluster: FingerCluster,
@@ -256,6 +256,25 @@ impl<'de, const LOWER: i8, const UPPER: i8> Deserialize<'de> for Ranged<LOWER, U
 impl Config {
     pub fn try_from_path(config_path: &Path) -> Result<Self, Error> {
         Ok(toml::from_str(&read_to_string(config_path)?)?)
+    }
+}
+
+// Exclude fields independent from the calculated mesh from Hash and PartialEq
+impl PartialEq for Config {
+    fn eq(&self, other: &Self) -> bool {
+        self.preview.resolution == other.preview.resolution
+            && self.finger_cluster == other.finger_cluster
+            && self.thumb_cluster == other.thumb_cluster
+            && self.keyboard == other.keyboard
+    }
+}
+
+impl Hash for Config {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.preview.resolution.hash(state);
+        self.finger_cluster.hash(state);
+        self.thumb_cluster.hash(state);
+        self.keyboard.hash(state);
     }
 }
 
