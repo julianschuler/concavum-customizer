@@ -32,7 +32,7 @@ impl ModelReloader {
         Self {
             updater,
             cancellation_token: CancellationToken::new(),
-            cache: Default::default(),
+            cache: Arc::default(),
         }
     }
 
@@ -43,7 +43,7 @@ impl ModelReloader {
 
                 let model = Model::from_config(config.clone());
 
-                if let Some(keyboard) = self.cache.lock().unwrap().get(&config).map(Clone::clone) {
+                if let Some(keyboard) = self.cache.lock().unwrap().get(&config).cloned() {
                     let model = model.with_keyboard(keyboard);
                     self.updater.send_event(ReloadEvent::Finished(model));
                 } else {
