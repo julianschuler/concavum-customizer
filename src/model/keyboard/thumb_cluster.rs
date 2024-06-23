@@ -32,8 +32,7 @@ impl ThumbCluster {
             cluster_height,
             circumference_distance,
         );
-        let insert_holder: Tree =
-            InsertHolder::from_outline_points(&outline_points, 1, config).into();
+        let insert_holder = InsertHolder::from_outline_points(&outline_points, 1, config);
 
         let outline: Tree = ConvexPolygon::new(outline_points).into();
         let cluster_outline = outline.offset(circumference_distance);
@@ -43,7 +42,7 @@ impl ThumbCluster {
         let cluster = cluster.rounded_difference(clearance, config.rounding_radius.into());
 
         let key_clearance = Self::key_clearance(thumb_keys, &bounds);
-        let insert_holder = insert_holder.intersection(cluster_outline);
+        let insert_holder = cluster_outline.intersection(insert_holder);
 
         Self {
             cluster,
