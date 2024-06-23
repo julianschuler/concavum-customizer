@@ -30,7 +30,7 @@ pub struct HalfSpace {
 }
 
 impl HalfSpace {
-    /// Creates a new half given by the dividing plane.
+    /// Creates a new half space given by the dividing plane.
     pub fn new(plane: Plane) -> Self {
         Self { plane }
     }
