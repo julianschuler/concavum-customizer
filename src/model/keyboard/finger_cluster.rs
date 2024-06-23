@@ -45,6 +45,12 @@ impl FingerCluster {
         let cluster = cluster.rounded_difference(clearance, config.rounding_radius.into());
 
         let key_clearance = outline.extrude(-cluster_height, cluster_height);
+
+        let insert_holders = insert_holders
+            .into_iter()
+            .map(Into::into)
+            .reduce(|holders: Tree, holder| holders.union(holder))
+            .expect("there is more than one insert holder for the finger cluster");
         let insert_holders = insert_holders.intersection(cluster_outline);
 
         Self {
@@ -60,19 +66,16 @@ impl FingerCluster {
         config: &Keyboard,
         columns: usize,
         rows: usize,
-    ) -> Tree {
+    ) -> [InsertHolder; 3] {
         let first_index = columns - 1;
         let second_index = first_index + rows;
         let third_index = second_index + columns;
 
         [
-            InsertHolder::from_outline_points(outline_points, first_index, config).into(),
-            InsertHolder::from_outline_points(outline_points, second_index, config).into(),
-            InsertHolder::from_outline_points(outline_points, third_index, config).into(),
+            InsertHolder::from_outline_points(outline_points, first_index, config),
+            InsertHolder::from_outline_points(outline_points, second_index, config),
+            InsertHolder::from_outline_points(outline_points, third_index, config),
         ]
-        .into_iter()
-        .reduce(|holders: Tree, holder| holders.union(holder))
-        .expect("there is more than one insert holder for the finger cluster")
     }
 }
 
