@@ -30,17 +30,21 @@ pub trait Mesh {
 
 impl Mesh for model::Model {
     fn mesh_settings(&self) -> Settings {
-        self.keyboard.mesh_settings(self.settings.resolution.into())
+        self.keyboard
+            .shape
+            .mesh_settings(self.settings.resolution.into())
     }
 
     fn with_keyboard(&self, keyboard: CpuMesh) -> Model {
         let finger_key_positions = self
+            .keyboard
             .key_positions
             .columns
             .iter()
             .flat_map(|column| column.iter().copied().flat_map(mirrored_positions))
             .collect();
         let thumb_key_positions = self
+            .keyboard
             .key_positions
             .thumb_keys
             .iter()
@@ -58,7 +62,7 @@ impl Mesh for model::Model {
     }
 
     fn mesh(&self, settings: Settings) -> Model {
-        let mesh = self.keyboard.mesh(settings);
+        let mesh = self.keyboard.shape.mesh(settings);
         let keyboard = mesh.into_cpu_mesh();
 
         self.with_keyboard(keyboard)

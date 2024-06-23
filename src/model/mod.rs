@@ -6,14 +6,10 @@ mod util;
 
 use crate::config::{Colors, Config, Preview};
 
-use key_positions::KeyPositions;
 use keyboard::Keyboard;
 
-pub use primitives::Shape;
-
 pub struct Model {
-    pub keyboard: Shape,
-    pub key_positions: KeyPositions,
+    pub keyboard: Keyboard,
     pub colors: Colors,
     pub settings: Preview,
 }
@@ -23,8 +19,7 @@ impl Model {
         let keyboard = Keyboard::from_config(&config);
 
         Self {
-            keyboard: keyboard.shape,
-            key_positions: keyboard.key_positions,
+            keyboard,
             colors: config.colors,
             settings: config.preview,
         }
