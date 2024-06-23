@@ -7,6 +7,8 @@ use std::{
 };
 
 fn main() {
+    println!("cargo::rerun-if-changed=assets");
+
     let out_dir = env::var("OUT_DIR").expect("OUT_DIR should always be set when building");
     let out_path = Path::new(&out_dir).join("assets.rs");
     let assets_dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("assets");
