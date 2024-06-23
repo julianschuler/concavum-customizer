@@ -12,6 +12,7 @@ pub struct Model {
     pub keyboard: CpuMesh,
     pub finger_key_positions: Vec<Mat4>,
     pub thumb_key_positions: Vec<Mat4>,
+    pub interface_pcb_positions: [Mat4; 2],
     pub colors: Colors,
     pub settings: Preview,
 }
@@ -51,11 +52,13 @@ impl Mesh for model::Model {
             .copied()
             .flat_map(mirrored_positions)
             .collect();
+        let interface_pcb_positions = mirrored_positions(self.keyboard.interface_pcb_position);
 
         Model {
             keyboard,
             finger_key_positions,
             thumb_key_positions,
+            interface_pcb_positions,
             colors: self.colors.clone(),
             settings: self.settings.clone(),
         }

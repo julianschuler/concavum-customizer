@@ -4,7 +4,7 @@ use glam::{dvec3, DVec2};
 use crate::{
     config::Keyboard,
     model::{
-        geometry::rotate_90_degrees,
+        geometry::{rotate_90_degrees, LineSegment},
         primitives::{Circle, Corner, Csg, Transforms},
     },
 };
@@ -13,6 +13,7 @@ pub struct InsertHolder {
     point: DVec2,
     edge1: DVec2,
     edge2: DVec2,
+    outline_vertex: DVec2,
 }
 
 impl InsertHolder {
@@ -40,13 +41,26 @@ impl InsertHolder {
                 - Self::WALL_THICKNESS.max(shell_thickness))
                 * outwards_direction;
 
+        let outline_vertex = vertex + (circumference_distance - shell_thickness) * edge1;
+
         Self {
             point,
             edge1,
             edge2,
+            outline_vertex,
         }
     }
 
+    /// Returs the outline segment corresponding to insert holder scaled to the given length.
+    pub fn outline_segment(&self, length: f64) -> LineSegment {
+        let direction = -rotate_90_degrees(self.edge1);
+        let offset = (Self::RADIUS + direction.dot(self.point - self.outline_vertex)).max(0.0);
+
+        let start = self.outline_vertex + offset * direction;
+        let end = start + length * direction;
+
+        LineSegment { start, end }
+    }
 }
 
 impl From<InsertHolder> for Tree {
