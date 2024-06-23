@@ -34,9 +34,7 @@ impl Keyboard {
         let finger_cluster = FingerCluster::new(&key_positions.columns, &config.keyboard);
         let thumb_cluster = ThumbCluster::new(&key_positions.thumb_keys, &config.keyboard);
         let bounds = finger_cluster.bounds.union(&thumb_cluster.bounds);
-        let inserts = finger_cluster
-            .insert_holders
-            .union(thumb_cluster.insert_holder);
+        let holders = finger_cluster.holders.union(thumb_cluster.insert_holder);
         let interface_pcb_position = finger_cluster.interface_pcb.position;
 
         // Subtract key clearances from each other and combine the clusters
@@ -55,9 +53,9 @@ impl Keyboard {
         let hollowed_cluster = combined_cluster.shell(config.keyboard.shell_thickness.into());
         let cluster = hollowed_cluster.intersection(half_space);
 
-        // Add the insert holders and cutouts
+        // Add the insert and interface PCB holders and cutouts
         let cluster = cluster
-            .union(inserts)
+            .union(holders)
             .difference(Self::key_cutouts(&key_positions));
 
         // Mirror the cluster along the yz-plane to create both halves of the keyboard
