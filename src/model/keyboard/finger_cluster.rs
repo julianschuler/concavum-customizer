@@ -8,7 +8,7 @@ use crate::{
         interface_pcb::InterfacePcb,
         key_positions::{Column, ColumnType, Columns},
         keyboard::{Bounds, InsertHolder},
-        primitives::{Csg, RoundedCsg, SimplePolygon},
+        primitives::{Csg, IntoTree, RoundedCsg, SimplePolygon},
         util::{corner_point, prism_from_projected_points, side_point, Side, SideX, SideY},
     },
 };
@@ -41,7 +41,7 @@ impl FingerCluster {
 
         let interface_pcb = InterfacePcb::from_insert_holder(&insert_holders[2]);
 
-        let outline: Tree = SimplePolygon::new(outline_points).into();
+        let outline = SimplePolygon::new(outline_points).into_tree();
         let cluster_outline = outline.offset(circumference_distance);
         let cluster = cluster_outline.extrude(-cluster_height, cluster_height);
 
@@ -52,8 +52,8 @@ impl FingerCluster {
 
         let insert_holders = insert_holders
             .into_iter()
-            .map(Into::into)
-            .reduce(|holders: Tree, holder| holders.union(holder))
+            .map(IntoTree::into_tree)
+            .reduce(|holders, holder| holders.union(holder))
             .expect("there is more than one insert holder for the finger cluster");
         let insert_holders = insert_holders.intersection(cluster_outline);
 

@@ -5,7 +5,7 @@ use crate::{
     config::Keyboard,
     model::{
         geometry::{rotate_90_degrees, LineSegment},
-        primitives::{Circle, Corner, Csg, Transforms},
+        primitives::{Circle, Corner, Csg, IntoTree, Transforms},
     },
 };
 
@@ -65,10 +65,12 @@ impl InsertHolder {
 
 impl From<InsertHolder> for Tree {
     fn from(insert_holder: InsertHolder) -> Self {
-        let corner: Tree = Corner::new(insert_holder.edge1, insert_holder.edge2).into();
-        let hole: Tree = Circle::new(InsertHolder::INSERT_RADIUS).into();
-        let rounded_corner = corner.offset(InsertHolder::RADIUS).difference(hole);
-        rounded_corner
+        let hole = Circle::new(InsertHolder::INSERT_RADIUS);
+
+        Corner::new(insert_holder.edge1, insert_holder.edge2)
+            .into_tree()
+            .offset(InsertHolder::RADIUS)
+            .difference(hole)
             .translate(dvec3(insert_holder.point.x, insert_holder.point.y, 0.0))
             .extrude(0.0, InsertHolder::HEIGHT)
     }
