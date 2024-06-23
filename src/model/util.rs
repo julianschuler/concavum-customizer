@@ -3,7 +3,7 @@ use glam::{DAffine3, DQuat, DVec2, DVec3, Vec3Swizzles};
 
 use crate::model::{
     geometry::{zvec, Plane},
-    primitives::{Csg, SimplePolygon, Transforms},
+    primitives::{Csg, IntoTree, SimplePolygon, Transforms},
 };
 
 #[derive(Clone, Copy)]
@@ -98,11 +98,12 @@ pub fn prism_from_projected_points(
         .map(|point| (rotation * point).xy())
         .collect();
 
-    let polygon: Tree = SimplePolygon::new(vertices).into();
-    let prism = polygon.extrude(offset, offset + height);
-
     let affine = DAffine3::from_quat(rotation.inverse());
-    prism.affine(affine)
+
+    SimplePolygon::new(vertices)
+        .into_tree()
+        .extrude(offset, offset + height)
+        .affine(affine)
 }
 
 /// Creates a sheared prism by projecting points to a plane, extruding to a
@@ -124,10 +125,11 @@ pub fn sheared_prism_from_projected_points(
         .map(|point| (rotation * point).xy())
         .collect();
 
-    let polygon: Tree = SimplePolygon::new(vertices).into();
-    let prism = polygon.extrude(0.0, height);
-    let prism = prism.shear(shearing_direction.xy(), shearing_direction.z);
-
     let affine = DAffine3::from_quat(rotation.inverse()) * DAffine3::from_translation(zvec(offset));
-    prism.affine(affine)
+
+    SimplePolygon::new(vertices)
+        .into_tree()
+        .extrude(0.0, height)
+        .shear(shearing_direction.xy(), shearing_direction.z)
+        .affine(affine)
 }

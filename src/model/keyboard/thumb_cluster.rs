@@ -7,7 +7,7 @@ use crate::{
         geometry::{Line, Plane},
         key_positions::ThumbKeys,
         keyboard::{Bounds, InsertHolder},
-        primitives::{ConvexPolygon, Csg, RoundedCsg},
+        primitives::{ConvexPolygon, Csg, IntoTree, RoundedCsg},
         util::{
             prism_from_projected_points, sheared_prism_from_projected_points, side_point, Side,
         },
@@ -34,8 +34,9 @@ impl ThumbCluster {
         );
         let insert_holder = InsertHolder::from_outline_points(&outline_points, 1, config);
 
-        let outline: Tree = ConvexPolygon::new(outline_points).into();
-        let cluster_outline = outline.offset(circumference_distance);
+        let cluster_outline = ConvexPolygon::new(outline_points)
+            .into_tree()
+            .offset(circumference_distance);
         let cluster = cluster_outline.extrude(-cluster_height, cluster_height);
 
         let clearance = Self::clearance(thumb_keys, &bounds);

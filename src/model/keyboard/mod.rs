@@ -14,7 +14,7 @@ use crate::{
     model::{
         geometry::Plane,
         key_positions::KeyPositions,
-        primitives::{BoxShape, Csg, HalfSpace, RoundedCsg, Shape, Transforms},
+        primitives::{BoxShape, Csg, HalfSpace, IntoTree, RoundedCsg, Shape, Transforms},
     },
 };
 
@@ -56,8 +56,9 @@ impl Keyboard {
         let cluster = hollowed_cluster.intersection(half_space);
 
         // Add the insert holders and cutouts
-        let cluster = cluster.union(inserts);
-        let cluster = cluster.difference(Self::key_cutouts(&key_positions));
+        let cluster = cluster
+            .union(inserts)
+            .difference(Self::key_cutouts(&key_positions));
 
         // Mirror the cluster along the yz-plane to create both halves of the keyboard
         let keyboard = cluster.remap_xyz(Tree::x().abs(), Tree::y(), Tree::z());
@@ -73,7 +74,7 @@ impl Keyboard {
     }
 
     fn key_cutouts(key_positions: &KeyPositions) -> Tree {
-        let key_cutout: Tree = BoxShape::new(dvec3(14.0, 14.0, 10.0)).into();
+        let key_cutout = BoxShape::new(dvec3(14.0, 14.0, 10.0)).into_tree();
 
         key_positions
             .columns

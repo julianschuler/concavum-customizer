@@ -70,3 +70,15 @@ impl Bounds {
         Self { size, center }
     }
 }
+
+/// A trait for converting a shape into a `Tree`.
+pub trait IntoTree {
+    /// Converts self into a `Tree`
+    fn into_tree(self) -> Tree;
+}
+
+impl<T: Into<Tree>> IntoTree for T {
+    fn into_tree(self) -> Tree {
+        self.into()
+    }
+}
