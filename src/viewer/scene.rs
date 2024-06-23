@@ -27,7 +27,7 @@ impl Scene {
             .collect();
 
         let objects = vec![Object::new(context, &model.keyboard, model.colors.keyboard)];
-        let instanced_objects = if model.settings.show_keys {
+        let mut instanced_objects = if model.settings.show_keys {
             vec![
                 InstancedObject::new(
                     context,
@@ -51,6 +51,14 @@ impl Scene {
         } else {
             Vec::new()
         };
+        if model.settings.show_interface_pcb {
+            instanced_objects.push(InstancedObject::new(
+                context,
+                &assets.interface_pcb,
+                model.colors.interface_pcb,
+                model.interface_pcb_positions.to_vec(),
+            ))
+        }
 
         let ambient = AmbientLight::new(context, 0.05, Srgba::WHITE);
         let lights = model

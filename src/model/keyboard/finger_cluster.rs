@@ -5,6 +5,7 @@ use crate::{
     config::{Keyboard, EPSILON},
     model::{
         geometry::{Line, Plane, Project},
+        interface_pcb::InterfacePcb,
         key_positions::{Column, ColumnType, Columns},
         keyboard::{Bounds, InsertHolder},
         primitives::{Csg, RoundedCsg, SimplePolygon},
@@ -16,6 +17,7 @@ pub struct FingerCluster {
     pub cluster: Tree,
     pub key_clearance: Tree,
     pub insert_holders: Tree,
+    pub interface_pcb: InterfacePcb,
     pub bounds: Bounds,
 }
 
@@ -37,6 +39,8 @@ impl FingerCluster {
             columns.first().len(),
         );
 
+        let interface_pcb = InterfacePcb::from_insert_holder(&insert_holders[2]);
+
         let outline: Tree = SimplePolygon::new(outline_points).into();
         let cluster_outline = outline.offset(circumference_distance);
         let cluster = cluster_outline.extrude(-cluster_height, cluster_height);
@@ -57,6 +61,7 @@ impl FingerCluster {
             cluster,
             key_clearance,
             insert_holders,
+            interface_pcb,
             bounds,
         }
     }

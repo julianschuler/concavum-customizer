@@ -4,7 +4,7 @@ mod insert_holder;
 mod thumb_cluster;
 
 use fidget::context::Tree;
-use glam::{dvec3, DVec3};
+use glam::{dvec3, DAffine3, DVec3};
 
 pub use bounds::Bounds;
 pub use insert_holder::InsertHolder;
@@ -24,6 +24,7 @@ use thumb_cluster::ThumbCluster;
 pub struct Keyboard {
     pub shape: Shape,
     pub key_positions: KeyPositions,
+    pub interface_pcb_position: DAffine3,
 }
 
 impl Keyboard {
@@ -36,6 +37,7 @@ impl Keyboard {
         let inserts = finger_cluster
             .insert_holders
             .union(thumb_cluster.insert_holder);
+        let interface_pcb_position = finger_cluster.interface_pcb.position;
 
         // Subtract key clearances from each other and combine the clusters
         let rounding_radius = config.keyboard.rounding_radius.into();
@@ -66,6 +68,7 @@ impl Keyboard {
         Self {
             shape,
             key_positions,
+            interface_pcb_position,
         }
     }
 
