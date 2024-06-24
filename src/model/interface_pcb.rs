@@ -32,14 +32,11 @@ impl InterfacePcb {
         const HOLDER_WIDTH: f64 = 1.5;
         let height = Self::SIZE.z + Self::HOLDER_SIZE.z;
 
-        let cutout = BoxShape::new(dvec3(Self::SIZE.x, bounds_diameter, bounds_diameter))
-            .into_tree()
+        let cutout =
+            BoxShape::new(dvec3(Self::SIZE.x, bounds_diameter, bounds_diameter)).into_tree();
+        let cutout = cutout
             .translate(zvec((bounds_diameter - height) / 2.0 + Self::HOLDER_SIZE.z))
-            .union(BoxShape::new(dvec3(
-                Self::SIZE.x - 2.0 * Self::HOLDER_SIZE.x,
-                bounds_diameter,
-                bounds_diameter,
-            )));
+            .union(cutout.translate(dvec3(0.0, Self::HOLDER_SIZE.y / 2.0, 0.0)));
 
         let translation = dvec3(
             Self::SIZE.x / 2.0,
