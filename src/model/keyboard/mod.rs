@@ -35,7 +35,7 @@ impl Keyboard {
         let thumb_cluster = ThumbCluster::new(&key_positions.thumb_keys, &config.keyboard);
         let bounds = finger_cluster.bounds.union(&thumb_cluster.bounds);
         let holders = finger_cluster.holders.union(thumb_cluster.insert_holder);
-        let interface_pcb_position = finger_cluster.interface_pcb.position;
+        let interface_pcb = finger_cluster.interface_pcb;
 
         // Subtract key clearances from each other and combine the clusters
         let rounding_radius = config.keyboard.rounding_radius.into();
@@ -62,12 +62,15 @@ impl Keyboard {
         let keyboard = cluster.remap_xyz(Tree::x().abs(), Tree::y(), Tree::z());
         let bounds = bounds.mirror_yz();
 
+        // Add interface PCB cutouts
+        let keyboard = keyboard.difference(interface_pcb.cutouts(bounds.diameter()));
+
         let shape = Shape::new(&keyboard, bounds.into());
 
         Self {
             shape,
             key_positions,
-            interface_pcb_position,
+            interface_pcb_position: interface_pcb.position,
         }
     }
 

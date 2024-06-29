@@ -1,10 +1,12 @@
+use std::f64::consts::PI;
+
 use fidget::context::Tree;
-use glam::{dvec3, DAffine3, DMat2, DMat3, DVec3};
+use glam::{dvec2, dvec3, DAffine3, DMat2, DMat3, DVec2, DVec3};
 
 use crate::model::{
     geometry::{rotate_90_degrees, zvec},
     keyboard::InsertHolder,
-    primitives::{BoxShape, Csg, IntoTree, Transforms},
+    primitives::{BoxShape, Circle, Csg, IntoTree, Rectangle, Transforms},
 };
 
 pub struct InterfacePcb {
@@ -52,5 +54,35 @@ impl InterfacePcb {
             .into_tree()
             .difference(cutout)
             .affine(self.position * DAffine3::from_translation(translation))
+    }
+
+    pub fn cutouts(&self, bounds_diameter: f64) -> Tree {
+        const USB_SIZE: DVec2 = dvec2(9.2, 3.4);
+        const USB_RADIUS: f64 = 1.1;
+        const USB_OFFSET: DVec3 = dvec3(24.9, 0.0, 3.2);
+        const JACK_RADIUS: f64 = 3.1;
+        const JACK_OFFSET_LEFT: DVec3 = dvec3(5.4, 0.0, 2.45);
+        const JACK_OFFSET_RIGHT: DVec3 = dvec3(10.7, 0.0, 2.45);
+
+        let jack_cutout = Circle::new(JACK_RADIUS)
+            .into_tree()
+            .extrude(-Self::SIZE.y, bounds_diameter);
+        let usb_cutout = Rectangle::new(USB_SIZE - dvec2(USB_RADIUS, USB_RADIUS))
+            .into_tree()
+            .offset(USB_RADIUS)
+            .extrude(-Self::SIZE.y, bounds_diameter);
+
+        let rotation_x = DAffine3::from_rotation_x(-PI / 2.0);
+        let height_offset = zvec(Self::SIZE.z);
+
+        let jack_translation_left = DAffine3::from_translation(JACK_OFFSET_LEFT + height_offset);
+        let jack_translation_right = DAffine3::from_translation(JACK_OFFSET_RIGHT + height_offset);
+        let usb_translation = DAffine3::from_translation(USB_OFFSET + height_offset);
+
+        usb_cutout
+            .affine(self.position * usb_translation * rotation_x)
+            .union(jack_cutout.affine(self.position * jack_translation_left * rotation_x))
+            .remap_xyz(Tree::x().neg(), Tree::y(), Tree::z())
+            .union(jack_cutout.affine(self.position * jack_translation_right * rotation_x))
     }
 }
