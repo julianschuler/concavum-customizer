@@ -57,7 +57,7 @@ impl Scene {
                 &assets.interface_pcb,
                 model.colors.interface_pcb,
                 model.interface_pcb_positions.to_vec(),
-            ))
+            ));
         }
 
         let ambient = AmbientLight::new(context, 0.05, Srgba::WHITE);
