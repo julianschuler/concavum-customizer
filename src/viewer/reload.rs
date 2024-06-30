@@ -67,7 +67,7 @@ impl ModelReloader {
                                 bounds: mesh_settings.bounds,
                                 threads: mesh_settings.threads,
                             };
-                            let model = model.mesh(mesh_settings);
+                            let model = model.mesh_preview(mesh_settings);
 
                             cancelled = cancellation_token.cancelled();
                             if cancelled {
