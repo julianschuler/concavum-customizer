@@ -59,7 +59,6 @@ impl Shape {
 }
 
 /// A cubical bounded region used for meshing.
-#[derive(Clone, Copy)]
 pub struct Bounds {
     size: f64,
     center: DVec3,
