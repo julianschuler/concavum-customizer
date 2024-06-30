@@ -23,6 +23,7 @@ use thumb_cluster::ThumbCluster;
 
 pub struct Keyboard {
     pub shape: Shape,
+    pub preview: Shape,
     pub key_positions: KeyPositions,
     pub interface_pcb_position: DAffine3,
 }
@@ -49,9 +50,10 @@ impl Keyboard {
         let combined_cluster = finger_cluster.union(thumb_cluster);
 
         // Hollow out the combined cluster and cut off everthing below a z value of 0
-        let half_space = HalfSpace::new(Plane::new(DVec3::ZERO, DVec3::NEG_Z));
+        let half_space = HalfSpace::new(Plane::new(DVec3::ZERO, DVec3::NEG_Z)).into_tree();
         let hollowed_cluster = combined_cluster.shell(config.keyboard.shell_thickness.into());
-        let cluster = hollowed_cluster.intersection(half_space);
+        let cluster = hollowed_cluster.intersection(half_space.clone());
+        let cluster_preview = combined_cluster.intersection(half_space);
 
         // Add the insert and interface PCB holders and cutouts
         let cluster = cluster
@@ -60,15 +62,19 @@ impl Keyboard {
 
         // Mirror the cluster along the yz-plane to create both halves of the keyboard
         let keyboard = cluster.remap_xyz(Tree::x().abs(), Tree::y(), Tree::z());
+        let keyboard_preview = cluster_preview.remap_xyz(Tree::x().abs(), Tree::y(), Tree::z());
         let bounds = bounds.mirror_yz();
 
         // Add interface PCB cutouts
         let keyboard = keyboard.difference(interface_pcb.cutouts(bounds.diameter()));
 
-        let shape = Shape::new(&keyboard, bounds.into());
+        let bounds = bounds.into();
+        let shape = Shape::new(&keyboard, bounds);
+        let preview = Shape::new(&keyboard_preview, bounds);
 
         Self {
             shape,
+            preview,
             key_positions,
             interface_pcb_position: interface_pcb.position,
         }

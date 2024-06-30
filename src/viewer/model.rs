@@ -27,6 +27,9 @@ pub trait Mesh {
 
     /// Converts self into a mesh model using the given mesh settings.
     fn mesh(&self, settings: Settings) -> Model;
+
+    /// Converts self into a preview mesh model using the given mesh settings.
+    fn mesh_preview(&self, settings: Settings) -> Model;
 }
 
 impl Mesh for model::Model {
@@ -66,6 +69,13 @@ impl Mesh for model::Model {
 
     fn mesh(&self, settings: Settings) -> Model {
         let mesh = self.keyboard.shape.mesh(settings);
+        let keyboard = mesh.into_cpu_mesh();
+
+        self.with_keyboard(keyboard)
+    }
+
+    fn mesh_preview(&self, settings: Settings) -> Model {
+        let mesh = self.keyboard.preview.mesh(settings);
         let keyboard = mesh.into_cpu_mesh();
 
         self.with_keyboard(keyboard)
