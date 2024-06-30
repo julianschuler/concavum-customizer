@@ -2,7 +2,7 @@ use glam::DVec3;
 use hex_color::HexColor;
 use three_d::{
     AmbientLight, Attenuation, Camera, ClearState, Context, CpuMesh, Gm, InstancedMesh, Instances,
-    Light, Mat4, Mesh, PointLight, RenderTarget, Srgba,
+    Light, Mat4, Mesh, PointLight, RenderTarget, SquareMatrix, Srgba, Vec4,
 };
 
 use crate::viewer::{assets::Assets, material::Physical, model::Model};
@@ -18,7 +18,7 @@ pub struct Scene {
 
 impl Scene {
     /// Creates a scene from a model for the given assets and context.
-    pub fn from_model(context: &Context, model: Model, assets: &Assets) -> Scene {
+    pub fn from_model(context: &Context, model: Model, assets: &Assets, preview: bool) -> Scene {
         let switch_positions = model
             .finger_key_positions
             .iter()
@@ -26,7 +26,11 @@ impl Scene {
             .copied()
             .collect();
 
-        let objects = vec![Object::new(context, &model.keyboard, model.colors.keyboard)];
+        let objects = if !preview {
+            vec![Object::new(context, &model.keyboard, model.colors.keyboard)]
+        } else {
+            Vec::new()
+        };
         let mut instanced_objects = if model.settings.show_keys {
             vec![
                 InstancedObject::new(
@@ -57,6 +61,17 @@ impl Scene {
                 &assets.interface_pcb,
                 model.colors.interface_pcb,
                 model.interface_pcb_positions.to_vec(),
+            ));
+        }
+        if preview {
+            instanced_objects.push(InstancedObject::new(
+                context,
+                &model.keyboard,
+                model.colors.keyboard,
+                vec![
+                    Mat4::identity(),
+                    Mat4::from_diagonal(Vec4::new(-1.0, 1.0, 1.0, 1.0)),
+                ],
             ));
         }
 

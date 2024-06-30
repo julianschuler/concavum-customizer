@@ -6,6 +6,7 @@ use crate::{
 };
 
 /// Bounded region containing a cluster.
+#[derive(Clone)]
 pub struct Bounds {
     pub min: DVec3,
     pub max: DVec3,

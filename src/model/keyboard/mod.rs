@@ -53,7 +53,10 @@ impl Keyboard {
         let half_space = HalfSpace::new(Plane::new(DVec3::ZERO, DVec3::NEG_Z)).into_tree();
         let hollowed_cluster = combined_cluster.shell(config.keyboard.shell_thickness.into());
         let cluster = hollowed_cluster.intersection(half_space.clone());
+
+        // Calculate preview shape
         let cluster_preview = combined_cluster.intersection(half_space);
+        let preview = Shape::new(&cluster_preview, bounds.clone().into());
 
         // Add the insert and interface PCB holders and cutouts
         let cluster = cluster
@@ -62,15 +65,12 @@ impl Keyboard {
 
         // Mirror the cluster along the yz-plane to create both halves of the keyboard
         let keyboard = cluster.remap_xyz(Tree::x().abs(), Tree::y(), Tree::z());
-        let keyboard_preview = cluster_preview.remap_xyz(Tree::x().abs(), Tree::y(), Tree::z());
         let bounds = bounds.mirror_yz();
 
         // Add interface PCB cutouts
         let keyboard = keyboard.difference(interface_pcb.cutouts(bounds.diameter()));
 
-        let bounds = bounds.into();
-        let shape = Shape::new(&keyboard, bounds);
-        let preview = Shape::new(&keyboard_preview, bounds);
+        let shape = Shape::new(&keyboard, bounds.into());
 
         Self {
             shape,
