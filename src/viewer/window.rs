@@ -7,8 +7,8 @@ use color_eyre::Report;
 use three_d::{
     degrees,
     egui::{Align2, Area, Spinner},
-    vec3, window, Camera, Context, Degrees, FrameInput, FrameOutput, InnerSpace, MouseButton,
-    OrbitControl, Vec3, WindowError, WindowSettings, GUI,
+    vec3, window, Camera, Context, CpuMesh, Degrees, FrameInput, FrameOutput, InnerSpace,
+    MouseButton, OrbitControl, Vec3, WindowError, WindowSettings, GUI,
 };
 use winit::event_loop::{EventLoop, EventLoopProxy};
 
@@ -18,23 +18,23 @@ use crate::{
 };
 
 /// A reload event.
-pub enum ReloadEvent {
-    Started,
-    Updated(Model),
-    Finished(Model),
+pub enum SceneUpdate {
+    Model(Model),
+    Preview(CpuMesh),
+    Mesh(CpuMesh),
     Error(Arc<Error>),
 }
 
 /// A model updater allowing to update a model at runtime.
 #[derive(Clone)]
-pub struct ModelUpdater {
-    sender: Sender<ReloadEvent>,
+pub struct SceneUpdater {
+    sender: Sender<SceneUpdate>,
     event_loop_proxy: EventLoopProxy<()>,
 }
 
-impl ModelUpdater {
-    pub fn send_event(&self, event: ReloadEvent) {
-        let _ = self.sender.send(event);
+impl SceneUpdater {
+    pub fn send_update(&self, update: SceneUpdate) {
+        let _ = self.sender.send(update);
         let _ = self.event_loop_proxy.send_event(());
     }
 }
@@ -42,8 +42,8 @@ impl ModelUpdater {
 /// An application window with a model updater.
 pub struct Window {
     inner: window::Window,
-    updater: ModelUpdater,
-    receiver: Receiver<ReloadEvent>,
+    updater: SceneUpdater,
+    receiver: Receiver<SceneUpdate>,
 }
 
 impl Window {
@@ -63,7 +63,7 @@ impl Window {
 
         let (sender, receiver) = channel();
 
-        let updater = ModelUpdater {
+        let updater = SceneUpdater {
             sender,
             event_loop_proxy,
         };
@@ -76,7 +76,7 @@ impl Window {
     }
 
     /// Returns the model updater.
-    pub fn model_updater(&self) -> ModelUpdater {
+    pub fn model_updater(&self) -> SceneUpdater {
         self.updater.clone()
     }
 
@@ -99,14 +99,14 @@ struct Application {
     camera: Camera,
     scene: Scene,
     gui: GUI,
-    receiver: Receiver<ReloadEvent>,
+    receiver: Receiver<SceneUpdate>,
     assets: Assets,
     show_spinner: bool,
 }
 
 impl Application {
     /// Creates a new Application from a viewport and a receiver with reload events.
-    fn new(window: &window::Window, receiver: Receiver<ReloadEvent>) -> Self {
+    fn new(window: &window::Window, receiver: Receiver<SceneUpdate>) -> Self {
         const DEFAULT_DISTANCE: f32 = 600.0;
         const DEFAULT_FOV: Degrees = degrees(22.5);
         const DEFAULT_TARGET: Vec3 = vec3(0.0, 0.0, 0.0);
@@ -171,8 +171,8 @@ impl Application {
             }
         }
 
-        if let Ok(reload_event) = self.receiver.try_recv() {
-            self.handle_reload_event(&frame_input.context, reload_event);
+        if let Ok(scene_update) = self.receiver.try_recv() {
+            self.handle_scene_update(&frame_input.context, scene_update);
         }
 
         // Render scene and GUI
@@ -183,22 +183,21 @@ impl Application {
             .expect("rendering the gui should never fail");
     }
 
-    /// Handles a reload event for the given context.
-    fn handle_reload_event(&mut self, context: &Context, reload_event: ReloadEvent) {
+    /// Handles a scene update for the given context.
+    fn handle_scene_update(&mut self, context: &Context, scene_update: SceneUpdate) {
         self.show_spinner = matches!(
-            &reload_event,
-            ReloadEvent::Started | ReloadEvent::Updated(_)
+            &scene_update,
+            SceneUpdate::Model(_) | SceneUpdate::Preview(_)
         );
 
-        match reload_event {
-            ReloadEvent::Started => {}
-            ReloadEvent::Updated(model) => {
-                self.scene = Scene::from_model(context, model, &self.assets, true);
+        match scene_update {
+            SceneUpdate::Model(model) => {
+                self.scene = Scene::from_model(context, model, &self.assets);
             }
-            ReloadEvent::Finished(model) => {
-                self.scene = Scene::from_model(context, model, &self.assets, false);
+            SceneUpdate::Preview(mesh) | SceneUpdate::Mesh(mesh) => {
+                self.scene.update_keyboard(context, &mesh);
             }
-            ReloadEvent::Error(err) => eprintln!("Error:{:?}", Report::from(err.clone())),
+            SceneUpdate::Error(err) => eprintln!("Error:{:?}", Report::from(err.clone())),
         }
     }
 }

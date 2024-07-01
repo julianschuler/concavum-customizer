@@ -2,53 +2,47 @@ use glam::DVec3;
 use hex_color::HexColor;
 use three_d::{
     AmbientLight, Attenuation, Camera, ClearState, Context, CpuMesh, Gm, InstancedMesh, Instances,
-    Light, Mat4, Mesh, PointLight, RenderTarget, SquareMatrix, Srgba, Vec4,
+    Light, Mat4, Mesh, PointLight, RenderTarget, Srgba,
 };
 
-use crate::viewer::{assets::Assets, material::Physical, model::Model};
+use crate::{
+    config::Colors,
+    viewer::{assets::Assets, material::Physical, model::Model},
+};
 
 #[derive(Default)]
 pub struct Scene {
-    objects: Vec<Object>,
+    keyboard: Option<Object>,
     instanced_objects: Vec<InstancedObject>,
     lights: Vec<PointLight>,
     ambient: AmbientLight,
-    background_color: HexColor,
+    colors: Colors,
 }
 
 impl Scene {
     /// Creates a scene from a model for the given assets and context.
-    pub fn from_model(context: &Context, model: Model, assets: &Assets, preview: bool) -> Scene {
+    pub fn from_model(context: &Context, model: Model, assets: &Assets) -> Scene {
         let switch_positions = model
             .finger_key_positions
             .iter()
             .chain(&model.thumb_key_positions)
             .copied()
             .collect();
+        let colors = model.colors.clone();
 
-        let objects = if !preview {
-            vec![Object::new(context, &model.keyboard, model.colors.keyboard)]
-        } else {
-            Vec::new()
-        };
         let mut instanced_objects = if model.settings.show_keys {
             vec![
-                InstancedObject::new(
-                    context,
-                    &assets.switch,
-                    model.colors.switch,
-                    switch_positions,
-                ),
+                InstancedObject::new(context, &assets.switch, colors.switch, switch_positions),
                 InstancedObject::new(
                     context,
                     &assets.keycap_1u,
-                    model.colors.keycap,
+                    colors.keycap,
                     model.finger_key_positions,
                 ),
                 InstancedObject::new(
                     context,
                     &assets.keycap_1_5u,
-                    model.colors.keycap,
+                    colors.keycap,
                     model.thumb_key_positions,
                 ),
             ]
@@ -59,19 +53,8 @@ impl Scene {
             instanced_objects.push(InstancedObject::new(
                 context,
                 &assets.interface_pcb,
-                model.colors.interface_pcb,
+                colors.interface_pcb,
                 model.interface_pcb_positions.to_vec(),
-            ));
-        }
-        if preview {
-            instanced_objects.push(InstancedObject::new(
-                context,
-                &model.keyboard,
-                model.colors.keyboard,
-                vec![
-                    Mat4::identity(),
-                    Mat4::from_diagonal(Vec4::new(-1.0, 1.0, 1.0, 1.0)),
-                ],
             ));
         }
 
@@ -92,17 +75,22 @@ impl Scene {
             .collect();
 
         Scene {
-            objects,
+            keyboard: None,
             instanced_objects,
             lights,
             ambient,
-            background_color: model.colors.background,
+            colors,
         }
+    }
+
+    /// Updates the keyboard.
+    pub fn update_keyboard(&mut self, context: &Context, keyboard: &CpuMesh) {
+        self.keyboard = Some(Object::new(context, keyboard, self.colors.keyboard));
     }
 
     /// Renders the scene with a given camera and render target.
     pub fn render(&self, camera: &Camera, screen: &RenderTarget) {
-        let HexColor { r, g, b, a } = self.background_color;
+        let HexColor { r, g, b, a } = self.colors.background;
 
         let mut lights: Vec<_> = self
             .lights
@@ -111,7 +99,7 @@ impl Scene {
             .collect();
         lights.push(&self.ambient as &dyn Light);
 
-        screen
+        let render_target = screen
             .clear(ClearState::color_and_depth(
                 f32::from(r) / 255.0,
                 f32::from(g) / 255.0,
@@ -121,14 +109,13 @@ impl Scene {
             ))
             .render(
                 camera,
-                self.objects.iter().map(|object| &object.inner),
-                &lights,
-            )
-            .render(
-                camera,
                 self.instanced_objects.iter().map(|object| &object.inner),
                 &lights,
             );
+
+        if let Some(keyboard) = &self.keyboard {
+            render_target.render(camera, [&keyboard.inner], &lights);
+        }
     }
 }
 

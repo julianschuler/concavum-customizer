@@ -75,7 +75,7 @@ pub struct Keyboard {
     pub bottom_plate_thickness: PositiveFloat,
 }
 
-#[derive(Clone, Deserialize, PartialEq, Eq, Hash)]
+#[derive(Clone, Default, Deserialize, PartialEq, Eq, Hash)]
 pub struct Colors {
     pub keyboard: HexColor,
     pub keycap: HexColor,

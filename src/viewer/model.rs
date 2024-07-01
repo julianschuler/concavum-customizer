@@ -9,7 +9,6 @@ use crate::{
 
 #[derive(Clone)]
 pub struct Model {
-    pub keyboard: CpuMesh,
     pub finger_key_positions: Vec<Mat4>,
     pub thumb_key_positions: Vec<Mat4>,
     pub interface_pcb_positions: [Mat4; 2],
@@ -17,37 +16,16 @@ pub struct Model {
     pub settings: Preview,
 }
 
-/// A trait for meshing a model.
-pub trait Mesh {
-    /// Returns the mesh settings for meshing at the set resolution.
-    fn mesh_settings(&self) -> Settings;
-
-    /// Converts self into a mesh model using the given keyboard mesh
-    fn with_keyboard(&self, keybord: CpuMesh) -> Model;
-
-    /// Converts self into a mesh model using the given mesh settings.
-    fn mesh(&self, settings: Settings) -> Model;
-
-    /// Converts self into a preview mesh model using the given mesh settings.
-    fn mesh_preview(&self, settings: Settings) -> Model;
-}
-
-impl Mesh for model::Model {
-    fn mesh_settings(&self) -> Settings {
-        self.keyboard
-            .shape
-            .mesh_settings(self.settings.resolution.into())
-    }
-
-    fn with_keyboard(&self, keyboard: CpuMesh) -> Model {
-        let finger_key_positions = self
+impl From<&model::Model> for Model {
+    fn from(model: &model::Model) -> Self {
+        let finger_key_positions = model
             .keyboard
             .key_positions
             .columns
             .iter()
             .flat_map(|column| column.iter().copied().flat_map(mirrored_positions))
             .collect();
-        let thumb_key_positions = self
+        let thumb_key_positions = model
             .keyboard
             .key_positions
             .thumb_keys
@@ -55,30 +33,51 @@ impl Mesh for model::Model {
             .copied()
             .flat_map(mirrored_positions)
             .collect();
-        let interface_pcb_positions = mirrored_positions(self.keyboard.interface_pcb_position);
+        let interface_pcb_positions = mirrored_positions(model.keyboard.interface_pcb_position);
 
-        Model {
-            keyboard,
+        Self {
             finger_key_positions,
             thumb_key_positions,
             interface_pcb_positions,
-            colors: self.colors.clone(),
-            settings: self.settings.clone(),
+            colors: model.colors.clone(),
+            settings: model.settings.clone(),
         }
     }
+}
 
-    fn mesh(&self, settings: Settings) -> Model {
-        let mesh = self.keyboard.shape.mesh(settings);
-        let keyboard = mesh.into_cpu_mesh();
+/// A trait for meshing a model.
+pub trait Mesh {
+    /// Returns the mesh settings for meshing the preview at the set resolution.
+    fn mesh_settings_preview(&self) -> Settings;
 
-        self.with_keyboard(keyboard)
+    /// Meshes the preview using the given mesh settings.
+    fn mesh_preview(&self, settings: Settings) -> CpuMesh;
+
+    /// Meshes self.
+    fn mesh(&self) -> CpuMesh;
+}
+
+impl Mesh for model::Model {
+    fn mesh_settings_preview(&self) -> Settings {
+        self.keyboard
+            .preview
+            .mesh_settings(self.settings.resolution.into())
     }
 
-    fn mesh_preview(&self, settings: Settings) -> Model {
+    fn mesh_preview(&self, settings: Settings) -> CpuMesh {
         let mesh = self.keyboard.preview.mesh(settings);
-        let keyboard = mesh.into_cpu_mesh();
 
-        self.with_keyboard(keyboard)
+        mesh.into_cpu_mesh()
+    }
+
+    fn mesh(&self) -> CpuMesh {
+        let settings = self
+            .keyboard
+            .shape
+            .mesh_settings(self.settings.resolution.into());
+        let mesh = self.keyboard.shape.mesh(settings);
+
+        mesh.into_cpu_mesh()
     }
 }
 
