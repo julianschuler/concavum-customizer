@@ -23,7 +23,7 @@ impl From<&model::Model> for Model {
             .key_positions
             .columns
             .iter()
-            .flat_map(|column| column.iter().copied().flat_map(mirrored_positions))
+            .flat_map(|column| column.iter().copied().flat_map(Mirror::mirror))
             .collect();
         let thumb_key_positions = model
             .keyboard
@@ -31,9 +31,9 @@ impl From<&model::Model> for Model {
             .thumb_keys
             .iter()
             .copied()
-            .flat_map(mirrored_positions)
+            .flat_map(Mirror::mirror)
             .collect();
-        let interface_pcb_positions = mirrored_positions(model.keyboard.interface_pcb_position);
+        let interface_pcb_positions = model.keyboard.interface_pcb_position.mirror();
 
         Self {
             finger_key_positions,
@@ -65,9 +65,11 @@ impl Mesh for model::Model {
     }
 
     fn mesh_preview(&self, settings: Settings) -> CpuMesh {
-        let mesh = self.keyboard.preview.mesh(settings);
-
-        mesh.into_cpu_mesh()
+        self.keyboard
+            .preview
+            .mesh(settings)
+            .mirror()
+            .into_cpu_mesh()
     }
 
     fn mesh(&self) -> CpuMesh {
@@ -75,9 +77,8 @@ impl Mesh for model::Model {
             .keyboard
             .shape
             .mesh_settings(self.settings.resolution.into());
-        let mesh = self.keyboard.shape.mesh(settings);
 
-        mesh.into_cpu_mesh()
+        self.keyboard.shape.mesh(settings).into_cpu_mesh()
     }
 }
 
@@ -115,11 +116,42 @@ impl IntoCpuMesh for FidgetMesh {
     }
 }
 
-/// Creates two key positions mirrored along the xy-plane given a single one.
-fn mirrored_positions(position: DAffine3) -> [Mat4; 2] {
-    let matrix: DMat4 = position.into();
-    let position = matrix.as_mat4().to_cols_array_2d().into();
-    let mirror_transform = Mat4::from_nonuniform_scale(-1.0, 1.0, 1.0);
+trait Mirror<Output = Self> {
+    /// Mirrors self along the yz-plane.
+    fn mirror(self) -> Output;
+}
 
-    [position, mirror_transform * position]
+impl Mirror for FidgetMesh {
+    fn mirror(mut self) -> FidgetMesh {
+        let n = self.vertices.len();
+
+        let mut flipped_vertices = self
+            .vertices
+            .iter()
+            .map(|vertex| {
+                let [x, y, z] = vertex.as_slice().try_into().unwrap();
+                [-x, y, z].into()
+            })
+            .collect();
+        let mut flipped_triangles = self
+            .triangles
+            .iter()
+            .map(|triangle| triangle.map(|value| value + n))
+            .collect();
+
+        self.vertices.append(&mut flipped_vertices);
+        self.triangles.append(&mut flipped_triangles);
+
+        self
+    }
+}
+
+impl Mirror<[Mat4; 2]> for DAffine3 {
+    fn mirror(self) -> [Mat4; 2] {
+        let matrix: DMat4 = self.into();
+        let position = matrix.as_mat4().to_cols_array_2d().into();
+        let mirror_transform = Mat4::from_nonuniform_scale(-1.0, 1.0, 1.0);
+
+        [position, mirror_transform * position]
+    }
 }
