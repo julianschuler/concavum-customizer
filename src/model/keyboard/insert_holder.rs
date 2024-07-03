@@ -10,7 +10,7 @@ use crate::{
 };
 
 pub struct InsertHolder {
-    point: DVec2,
+    center: DVec2,
     edge1: DVec2,
     edge2: DVec2,
     outline_vertex: DVec2,
@@ -35,7 +35,7 @@ impl InsertHolder {
         let edge2 = rotate_90_degrees(vertex - next_vertex).normalize();
 
         let outwards_direction = (edge1 + edge2).normalize();
-        let point = vertex
+        let center = vertex
             + (circumference_distance
                 - Self::INSERT_RADIUS
                 - Self::WALL_THICKNESS.max(shell_thickness))
@@ -44,7 +44,7 @@ impl InsertHolder {
         let outline_vertex = vertex + (circumference_distance - shell_thickness) * edge1;
 
         Self {
-            point,
+            center,
             edge1,
             edge2,
             outline_vertex,
@@ -54,12 +54,17 @@ impl InsertHolder {
     /// Returs the outline segment corresponding to insert holder scaled to the given length.
     pub fn outline_segment(&self, length: f64) -> LineSegment {
         let direction = -rotate_90_degrees(self.edge1);
-        let offset = (Self::RADIUS + direction.dot(self.point - self.outline_vertex)).max(0.0);
+        let offset = (Self::RADIUS + direction.dot(self.center - self.outline_vertex)).max(0.0);
 
         let start = self.outline_vertex + offset * direction;
         let end = start + length * direction;
 
         LineSegment { start, end }
+    }
+
+    /// Returns the center point of the insert
+    pub fn center(&self) -> DVec2 {
+        self.center
     }
 }
 
@@ -71,7 +76,7 @@ impl From<InsertHolder> for Tree {
             .into_tree()
             .offset(InsertHolder::RADIUS)
             .difference(hole)
-            .translate(dvec3(insert_holder.point.x, insert_holder.point.y, 0.0))
+            .translate(dvec3(insert_holder.center.x, insert_holder.center.y, 0.0))
             .extrude(0.0, InsertHolder::HEIGHT)
     }
 }
