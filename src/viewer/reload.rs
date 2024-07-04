@@ -9,13 +9,12 @@ use std::{
 };
 
 use fidget::mesh::Settings;
-use three_d::CpuMesh;
 
 use crate::{
     config::{Config, Error},
     model::Model,
     viewer::{
-        model::Mesh,
+        model::{Mesh, Meshes},
         window::{SceneUpdate, SceneUpdater},
     },
 };
@@ -23,7 +22,7 @@ use crate::{
 pub struct ModelReloader {
     updater: SceneUpdater,
     cancellation_token: CancellationToken,
-    cache: Arc<Mutex<HashMap<Config, CpuMesh>>>,
+    cache: Arc<Mutex<HashMap<Config, Meshes>>>,
 }
 
 impl ModelReloader {
@@ -46,8 +45,8 @@ impl ModelReloader {
                 self.updater
                     .send_update(SceneUpdate::Model((&model).into()));
 
-                if let Some(mesh) = self.cache.lock().unwrap().get(&config).cloned() {
-                    self.updater.send_update(SceneUpdate::Mesh(mesh));
+                if let Some(meshes) = self.cache.lock().unwrap().get(&config).cloned() {
+                    self.updater.send_update(SceneUpdate::Meshes(meshes));
                 } else {
                     let cancellation_token = CancellationToken::new();
                     self.cancellation_token = cancellation_token.clone();
@@ -80,12 +79,12 @@ impl ModelReloader {
 
                         // Final Mesh
                         if !cancelled {
-                            let mesh = model.mesh();
+                            let meshes = model.meshes();
 
-                            cache.lock().unwrap().insert(config, mesh.clone());
+                            cache.lock().unwrap().insert(config, meshes.clone());
 
                             if !cancellation_token.cancelled() {
-                                updater.send_update(SceneUpdate::Mesh(mesh));
+                                updater.send_update(SceneUpdate::Meshes(meshes));
 
                                 eprintln!("Reloaded model in {:?}", start.elapsed());
                             }

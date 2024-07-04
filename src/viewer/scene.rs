@@ -7,16 +7,22 @@ use three_d::{
 
 use crate::{
     config::Colors,
-    viewer::{assets::Assets, material::Physical, model::Model},
+    viewer::{
+        assets::Assets,
+        material::Physical,
+        model::{Meshes, Model},
+    },
 };
 
 #[derive(Default)]
 pub struct Scene {
-    keyboard: Option<Object>,
+    objects: Option<Vec<Object>>,
+    preview: Option<Object>,
     instanced_objects: Vec<InstancedObject>,
     lights: Vec<PointLight>,
     ambient: AmbientLight,
     colors: Colors,
+    show_bottom_plate: bool,
 }
 
 impl Scene {
@@ -73,19 +79,37 @@ impl Scene {
                 )
             })
             .collect();
+        let show_bottom_plate = model.settings.show_bottom_plate;
 
         Scene {
-            keyboard: None,
+            objects: None,
+            preview: None,
             instanced_objects,
             lights,
             ambient,
             colors,
+            show_bottom_plate,
         }
     }
 
-    /// Updates the keyboard.
-    pub fn update_keyboard(&mut self, context: &Context, keyboard: &CpuMesh) {
-        self.keyboard = Some(Object::new(context, keyboard, self.colors.keyboard));
+    /// Updates the preview.
+    pub fn update_preview(&mut self, context: &Context, preview: &CpuMesh) {
+        self.preview = Some(Object::new(context, preview, self.colors.keyboard));
+    }
+
+    /// Updates the objects using the given meshes.
+    pub fn update_objects(&mut self, context: &Context, meshes: &Meshes) {
+        let mut objects = vec![Object::new(context, &meshes.keyboard, self.colors.keyboard)];
+
+        if self.show_bottom_plate {
+            objects.push(Object::new(
+                context,
+                &meshes.bottom_plate,
+                self.colors.keyboard,
+            ));
+        }
+
+        self.objects = Some(objects);
     }
 
     /// Renders the scene with a given camera and render target.
@@ -113,8 +137,10 @@ impl Scene {
                 &lights,
             );
 
-        if let Some(keyboard) = &self.keyboard {
-            render_target.render(camera, [&keyboard.inner], &lights);
+        if let Some(objects) = &self.objects {
+            render_target.render(camera, objects.iter().map(|object| &object.inner), &lights);
+        } else if let Some(preview) = &self.preview {
+            render_target.render(camera, [&preview.inner], &lights);
         }
     }
 }
