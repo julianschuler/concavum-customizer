@@ -15,8 +15,9 @@ use crate::{
 
 pub struct FingerCluster {
     pub cluster: Tree,
+    pub outline: Tree,
     pub key_clearance: Tree,
-    pub holders: Tree,
+    pub insert_holders: [InsertHolder; 3],
     pub interface_pcb: InterfacePcb,
     pub bounds: Bounds,
 }
@@ -50,18 +51,11 @@ impl FingerCluster {
 
         let key_clearance = outline.extrude(-cluster_height, cluster_height);
 
-        let holders = insert_holders
-            .into_iter()
-            .map(IntoTree::into_tree)
-            .reduce(|holders, holder| holders.union(holder))
-            .expect("there is more than one insert holder for the finger cluster")
-            .union(interface_pcb.holder(bounds.diameter()))
-            .intersection(cluster_outline);
-
         Self {
             cluster,
+            outline: cluster_outline,
             key_clearance,
-            holders,
+            insert_holders,
             interface_pcb,
             bounds,
         }
