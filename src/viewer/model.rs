@@ -71,11 +71,7 @@ impl Mesh for model::Model {
     }
 
     fn mesh_preview(&self, settings: Settings) -> CpuMesh {
-        self.keyboard
-            .preview
-            .mesh(settings)
-            .mirror()
-            .into_cpu_mesh()
+        self.keyboard.preview.mesh(settings).into_cpu_mesh()
     }
 
     fn meshes(&self) -> Meshes {
@@ -89,12 +85,7 @@ impl Mesh for model::Model {
             .keyboard
             .bottom_plate
             .mesh_settings(self.settings.resolution.into());
-        let bottom_plate = self
-            .keyboard
-            .bottom_plate
-            .mesh(settings)
-            .mirror()
-            .into_cpu_mesh();
+        let bottom_plate = self.keyboard.bottom_plate.mesh(settings).into_cpu_mesh();
 
         Meshes {
             keyboard,

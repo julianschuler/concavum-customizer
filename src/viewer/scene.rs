@@ -2,7 +2,7 @@ use glam::DVec3;
 use hex_color::HexColor;
 use three_d::{
     AmbientLight, Attenuation, Camera, ClearState, Context, CpuMesh, Gm, InstancedMesh, Instances,
-    Light, Mat4, Mesh, PointLight, RenderTarget, Srgba,
+    Light, Mat4, Mesh, PointLight, RenderTarget, SquareMatrix, Srgba,
 };
 
 use crate::{
@@ -16,8 +16,8 @@ use crate::{
 
 #[derive(Default)]
 pub struct Scene {
-    objects: Option<Vec<Object>>,
-    preview: Option<Object>,
+    keyboard: Option<Object>,
+    preview: Option<InstancedObject>,
     instanced_objects: Vec<InstancedObject>,
     lights: Vec<PointLight>,
     ambient: AmbientLight,
@@ -82,7 +82,7 @@ impl Scene {
         let show_bottom_plate = model.settings.show_bottom_plate;
 
         Scene {
-            objects: None,
+            keyboard: None,
             preview: None,
             instanced_objects,
             lights,
@@ -94,22 +94,36 @@ impl Scene {
 
     /// Updates the preview.
     pub fn update_preview(&mut self, context: &Context, preview: &CpuMesh) {
-        self.preview = Some(Object::new(context, preview, self.colors.keyboard));
+        self.preview = Some(InstancedObject::new(
+            context,
+            preview,
+            self.colors.keyboard,
+            vec![
+                Mat4::identity(),
+                Mat4::from_nonuniform_scale(-1.0, 1.0, 1.0),
+            ],
+        ));
     }
 
     /// Updates the objects using the given meshes.
     pub fn update_objects(&mut self, context: &Context, meshes: &Meshes) {
-        let mut objects = vec![Object::new(context, &meshes.keyboard, self.colors.keyboard)];
+        if self.keyboard.is_none() {
+            self.keyboard = Some(Object::new(context, &meshes.keyboard, self.colors.keyboard));
+        }
 
         if self.show_bottom_plate {
-            objects.push(Object::new(
+            let transforms = vec![
+                Mat4::identity(),
+                Mat4::from_nonuniform_scale(-1.0, 1.0, 1.0),
+            ];
+
+            self.instanced_objects.push(InstancedObject::new(
                 context,
                 &meshes.bottom_plate,
                 self.colors.keyboard,
+                transforms,
             ));
         }
-
-        self.objects = Some(objects);
     }
 
     /// Renders the scene with a given camera and render target.
@@ -137,10 +151,10 @@ impl Scene {
                 &lights,
             );
 
-        if let Some(objects) = &self.objects {
-            render_target.render(camera, objects.iter().map(|object| &object.inner), &lights);
+        if let Some(keyboard) = &self.keyboard {
+            render_target.render(camera, &keyboard.inner, &lights);
         } else if let Some(preview) = &self.preview {
-            render_target.render(camera, [&preview.inner], &lights);
+            render_target.render(camera, &preview.inner, &lights);
         }
     }
 }
