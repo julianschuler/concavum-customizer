@@ -23,7 +23,7 @@ impl From<&model::Model> for Model {
             .key_positions
             .columns
             .iter()
-            .flat_map(|column| column.iter().copied().flat_map(Mirror::mirror))
+            .flat_map(|column| column.iter().copied().flat_map(mirrored_positions))
             .collect();
         let thumb_key_positions = model
             .keyboard
@@ -31,9 +31,9 @@ impl From<&model::Model> for Model {
             .thumb_keys
             .iter()
             .copied()
-            .flat_map(Mirror::mirror)
+            .flat_map(mirrored_positions)
             .collect();
-        let interface_pcb_positions = model.keyboard.interface_pcb_position.mirror();
+        let interface_pcb_positions = mirrored_positions(model.keyboard.interface_pcb_position);
 
         Self {
             finger_key_positions,
@@ -128,42 +128,11 @@ impl IntoCpuMesh for FidgetMesh {
     }
 }
 
-trait Mirror<Output = Self> {
-    /// Mirrors self along the yz-plane.
-    fn mirror(self) -> Output;
-}
+/// Creates two key positions mirrored along the xy-plane given a single one.
+fn mirrored_positions(position: DAffine3) -> [Mat4; 2] {
+    let matrix: DMat4 = position.into();
+    let position = matrix.as_mat4().to_cols_array_2d().into();
+    let mirror_transform = Mat4::from_nonuniform_scale(-1.0, 1.0, 1.0);
 
-impl Mirror for FidgetMesh {
-    fn mirror(mut self) -> FidgetMesh {
-        let n = self.vertices.len();
-
-        let mut flipped_vertices = self
-            .vertices
-            .iter()
-            .map(|vertex| {
-                let [x, y, z] = vertex.as_slice().try_into().unwrap();
-                [-x, y, z].into()
-            })
-            .collect();
-        let mut flipped_triangles = self
-            .triangles
-            .iter()
-            .map(|triangle| triangle.map(|value| value + n))
-            .collect();
-
-        self.vertices.append(&mut flipped_vertices);
-        self.triangles.append(&mut flipped_triangles);
-
-        self
-    }
-}
-
-impl Mirror<[Mat4; 2]> for DAffine3 {
-    fn mirror(self) -> [Mat4; 2] {
-        let matrix: DMat4 = self.into();
-        let position = matrix.as_mat4().to_cols_array_2d().into();
-        let mirror_transform = Mat4::from_nonuniform_scale(-1.0, 1.0, 1.0);
-
-        [position, mirror_transform * position]
-    }
+    [position, mirror_transform * position]
 }
