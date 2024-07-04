@@ -1,7 +1,10 @@
+mod bottom_plate;
 mod bounds;
 mod finger_cluster;
 mod insert_holder;
 mod thumb_cluster;
+
+use std::iter::once;
 
 use fidget::context::Tree;
 use glam::{dvec3, DAffine3, DVec3};
@@ -35,8 +38,13 @@ impl Keyboard {
         let finger_cluster = FingerCluster::new(&key_positions.columns, &config.keyboard);
         let thumb_cluster = ThumbCluster::new(&key_positions.thumb_keys, &config.keyboard);
         let bounds = finger_cluster.bounds.union(&thumb_cluster.bounds);
-        let holders = finger_cluster.holders.union(thumb_cluster.insert_holder);
         let interface_pcb = finger_cluster.interface_pcb;
+        let insert_holders: Vec<_> = finger_cluster
+            .insert_holders
+            .into_iter()
+            .chain(once(thumb_cluster.insert_holder))
+            .collect();
+        let cluster_outline = finger_cluster.outline.union(thumb_cluster.outline);
 
         // Subtract key clearances from each other and combine the clusters
         let rounding_radius = config.keyboard.rounding_radius.into();
@@ -59,6 +67,11 @@ impl Keyboard {
         let preview = Shape::new(&cluster_preview, bounds.clone().into());
 
         // Add the insert and interface PCB holders and cutouts
+        let holders = Self::holders(
+            insert_holders,
+            interface_pcb.holder(bounds.diameter()),
+            &cluster_outline,
+        );
         let cluster = cluster
             .union(holders)
             .difference(Self::key_cutouts(&key_positions));
@@ -91,5 +104,20 @@ impl Keyboard {
             .map(|&position| key_cutout.affine(position))
             .reduce(|a, b| a.union(b))
             .expect("there is more than one key")
+    }
+
+    fn holders(
+        insert_holders: impl IntoIterator<Item = InsertHolder>,
+        interface_pcb_holder: Tree,
+        cluster_outline: &Tree,
+    ) -> Tree {
+        cluster_outline.intersection(
+            insert_holders
+                .into_iter()
+                .map(IntoTree::into_tree)
+                .reduce(|holders, holder| holders.union(holder))
+                .expect("there is more than one insert holder for the finger cluster")
+                .union(interface_pcb_holder),
+        )
     }
 }

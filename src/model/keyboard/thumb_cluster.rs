@@ -16,8 +16,9 @@ use crate::{
 
 pub struct ThumbCluster {
     pub cluster: Tree,
+    pub outline: Tree,
     pub key_clearance: Tree,
-    pub insert_holder: Tree,
+    pub insert_holder: InsertHolder,
     pub bounds: Bounds,
 }
 
@@ -43,10 +44,10 @@ impl ThumbCluster {
         let cluster = cluster.rounded_difference(clearance, config.rounding_radius.into());
 
         let key_clearance = Self::key_clearance(thumb_keys, &bounds);
-        let insert_holder = cluster_outline.intersection(insert_holder);
 
         Self {
             cluster,
+            outline: cluster_outline,
             key_clearance,
             insert_holder,
             bounds,
