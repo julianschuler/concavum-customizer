@@ -14,14 +14,18 @@ use winit::event_loop::{EventLoop, EventLoopProxy};
 
 use crate::{
     config::Error,
-    viewer::{assets::Assets, model::Model, scene::Scene},
+    viewer::{
+        assets::Assets,
+        model::{Meshes, Model},
+        scene::Scene,
+    },
 };
 
 /// A reload event.
 pub enum SceneUpdate {
     Model(Model),
     Preview(CpuMesh),
-    Mesh(CpuMesh),
+    Meshes(Meshes),
     Error(Arc<Error>),
 }
 
@@ -194,9 +198,10 @@ impl Application {
             SceneUpdate::Model(model) => {
                 self.scene = Scene::from_model(context, model, &self.assets);
             }
-            SceneUpdate::Preview(mesh) | SceneUpdate::Mesh(mesh) => {
-                self.scene.update_keyboard(context, &mesh);
+            SceneUpdate::Preview(mesh) => {
+                self.scene.update_preview(context, &mesh);
             }
+            SceneUpdate::Meshes(meshes) => self.scene.update_objects(context, &meshes),
             SceneUpdate::Error(err) => eprintln!("Error:{:?}", Report::from(err.clone())),
         }
     }

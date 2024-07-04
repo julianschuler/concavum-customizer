@@ -45,6 +45,12 @@ impl From<&model::Model> for Model {
     }
 }
 
+#[derive(Clone)]
+pub struct Meshes {
+    pub keyboard: CpuMesh,
+    pub bottom_plate: CpuMesh,
+}
+
 /// A trait for meshing a model.
 pub trait Mesh {
     /// Returns the mesh settings for meshing the preview at the set resolution.
@@ -54,7 +60,7 @@ pub trait Mesh {
     fn mesh_preview(&self, settings: Settings) -> CpuMesh;
 
     /// Meshes self.
-    fn mesh(&self) -> CpuMesh;
+    fn meshes(&self) -> Meshes;
 }
 
 impl Mesh for model::Model {
@@ -72,13 +78,28 @@ impl Mesh for model::Model {
             .into_cpu_mesh()
     }
 
-    fn mesh(&self) -> CpuMesh {
+    fn meshes(&self) -> Meshes {
         let settings = self
             .keyboard
             .shape
             .mesh_settings(self.settings.resolution.into());
+        let keyboard = self.keyboard.shape.mesh(settings).into_cpu_mesh();
 
-        self.keyboard.shape.mesh(settings).into_cpu_mesh()
+        let settings = self
+            .keyboard
+            .bottom_plate
+            .mesh_settings(self.settings.resolution.into());
+        let bottom_plate = self
+            .keyboard
+            .bottom_plate
+            .mesh(settings)
+            .mirror()
+            .into_cpu_mesh();
+
+        Meshes {
+            keyboard,
+            bottom_plate,
+        }
     }
 }
 
