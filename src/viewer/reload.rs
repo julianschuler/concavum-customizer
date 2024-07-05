@@ -42,16 +42,17 @@ impl ModelReloader {
 
                 let model = Model::from_config(config.clone());
 
-                self.updater
-                    .send_update(SceneUpdate::Model((&model).into()));
-
                 if let Some(meshes) = self.cache.lock().unwrap().get(&config).cloned() {
-                    self.updater.send_update(SceneUpdate::Meshes(meshes));
+                    self.updater
+                        .send_update(SceneUpdate::New((&model).into(), meshes));
                 } else {
                     let cancellation_token = CancellationToken::new();
                     self.cancellation_token = cancellation_token.clone();
 
                     let start = Instant::now();
+
+                    self.updater
+                        .send_update(SceneUpdate::Model((&model).into()));
 
                     let cancellation_token = self.cancellation_token.clone();
                     let updater = self.updater.clone();

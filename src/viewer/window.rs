@@ -23,6 +23,7 @@ use crate::{
 
 /// A reload event.
 pub enum SceneUpdate {
+    New(Model, Meshes),
     Model(Model),
     Preview(CpuMesh),
     Meshes(Meshes),
@@ -195,6 +196,10 @@ impl Application {
         );
 
         match scene_update {
+            SceneUpdate::New(model, meshes) => {
+                self.scene = Scene::from_model(context, model, &self.assets);
+                self.scene.update_objects(context, &meshes);
+            }
             SceneUpdate::Model(model) => {
                 self.scene = Scene::from_model(context, model, &self.assets);
             }
