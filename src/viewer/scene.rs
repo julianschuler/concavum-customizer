@@ -60,7 +60,7 @@ impl Scene {
                 context,
                 &assets.interface_pcb,
                 colors.interface_pcb,
-                model.interface_pcb_positions.to_vec(),
+                model.interface_pcb_positions,
             ));
         }
 

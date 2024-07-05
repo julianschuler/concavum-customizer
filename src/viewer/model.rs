@@ -11,7 +11,7 @@ use crate::{
 pub struct Model {
     pub finger_key_positions: Vec<Mat4>,
     pub thumb_key_positions: Vec<Mat4>,
-    pub interface_pcb_positions: [Mat4; 2],
+    pub interface_pcb_positions: Vec<Mat4>,
     pub colors: Colors,
     pub settings: Preview,
 }
@@ -33,7 +33,8 @@ impl From<&model::Model> for Model {
             .copied()
             .flat_map(mirrored_positions)
             .collect();
-        let interface_pcb_positions = mirrored_positions(model.keyboard.interface_pcb_position);
+        let interface_pcb_positions =
+            mirrored_positions(model.keyboard.interface_pcb_position).to_vec();
 
         Self {
             finger_key_positions,
