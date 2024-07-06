@@ -74,8 +74,9 @@ impl ModelReloader {
                             cancelled = cancellation_token.cancelled();
                             if cancelled {
                                 break;
+                            } else if mesh.triangle_count() > 0 {
+                                updater.send_update(SceneUpdate::Preview(mesh));
                             }
-                            updater.send_update(SceneUpdate::Preview(mesh));
                         }
 
                         // Final Mesh
