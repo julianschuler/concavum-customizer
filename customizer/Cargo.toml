@@ -1,0 +1,12 @@
+[package]
+name = "customizer"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+color-eyre = { workspace = true }
+viewer = { workspace = true}
+
+[lints]
+workspace = true
