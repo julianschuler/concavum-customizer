@@ -1,19 +1,38 @@
+mod model;
+mod reload;
+mod update;
+
+use config::Config;
 use three_d::{
     egui::{Align2, Area, Spinner},
     Context, FrameInput, RenderTarget, GUI,
 };
 
+use reload::ModelReloader;
+
+pub use model::{Meshes, Model};
+pub use update::{SceneUpdate, SceneUpdater};
+
 /// A graphical user interface for changing the configuration.
 pub struct Gui {
     inner: GUI,
+    config: Config,
+    model_reloader: ModelReloader,
 }
 
 impl Gui {
-    /// Creates a new GUI for the given context.
-    pub fn new(context: &Context) -> Self {
+    /// Creates a new GUI from the initial config for the given context.
+    pub fn from_config(context: &Context, config: Config, updater: SceneUpdater) -> Self {
         let inner = GUI::new(context);
 
-        Self { inner }
+        let mut model_reloader = ModelReloader::new(updater);
+        model_reloader.reload(Ok(config.clone()));
+
+        Self {
+            inner,
+            config,
+            model_reloader,
+        }
     }
 
     /// Updates the GUI using the given frame input.

@@ -6,7 +6,10 @@ license.workspace = true
 
 [dependencies]
 config = { workspace = true }
+glam = { workspace = true }
+model = { workspace = true }
 three-d = { workspace = true }
+winit = { workspace = true }
 
 [lints]
 workspace = true
