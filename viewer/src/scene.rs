@@ -1,6 +1,5 @@
-use config::Colors;
+use config::{Color, Colors};
 use glam::DVec3;
-use hex_color::HexColor;
 use three_d::{
     AmbientLight, Attenuation, Camera, ClearState, Context, CpuMesh, Gm, InstancedMesh, Instances,
     Light, Mat4, Mesh, PointLight, RenderTarget, SquareMatrix, Srgba,
@@ -126,7 +125,7 @@ impl Scene {
 
     /// Renders the scene with a given camera and render target.
     pub fn render(&self, camera: &Camera, screen: &RenderTarget) {
-        let HexColor { r, g, b, a } = self.colors.background;
+        let Color { r, g, b, a } = self.colors.background;
 
         let mut lights: Vec<_> = self
             .lights
@@ -162,7 +161,7 @@ struct Object {
 }
 
 impl Object {
-    fn new(context: &Context, mesh: &CpuMesh, color: HexColor) -> Self {
+    fn new(context: &Context, mesh: &CpuMesh, color: Color) -> Self {
         let mesh = Mesh::new(context, mesh);
         let material = Physical::new(color);
 
@@ -177,7 +176,7 @@ struct InstancedObject {
 }
 
 impl InstancedObject {
-    fn new(context: &Context, mesh: &CpuMesh, color: HexColor, transformations: Vec<Mat4>) -> Self {
+    fn new(context: &Context, mesh: &CpuMesh, color: Color, transformations: Vec<Mat4>) -> Self {
         let instanced_mesh = InstancedMesh::new(
             context,
             &Instances {

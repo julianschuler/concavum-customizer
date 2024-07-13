@@ -1968,7 +1968,6 @@ dependencies = [
  "color-eyre",
  "config",
  "glam",
- "hex_color",
  "model",
  "notify",
  "thiserror",

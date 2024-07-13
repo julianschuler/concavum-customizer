@@ -11,6 +11,7 @@ use glam::{DVec2, DVec3};
 use hex_color::HexColor;
 use serde::{de::Error as DeserializeError, Deserialize, Deserializer};
 
+pub type Color = HexColor;
 pub type CurvatureAngle = Ranged<-20, 50>;
 pub type SideAngle = Ranged<0, 30>;
 
@@ -73,13 +74,13 @@ pub struct Keyboard {
 
 #[derive(Clone, Default, Deserialize, PartialEq, Eq, Hash)]
 pub struct Colors {
-    pub keyboard: HexColor,
-    pub keycap: HexColor,
-    pub switch: HexColor,
-    pub matrix_pcb: HexColor,
-    pub interface_pcb: HexColor,
-    pub fpc_connector: HexColor,
-    pub background: HexColor,
+    pub keyboard: Color,
+    pub keycap: Color,
+    pub switch: Color,
+    pub matrix_pcb: Color,
+    pub interface_pcb: Color,
+    pub fpc_connector: Color,
+    pub background: Color,
 }
 
 #[derive(Clone, PartialEq, Eq, Hash)]
