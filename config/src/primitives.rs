@@ -1,7 +1,7 @@
 use std::hash::{Hash, Hasher};
 
 use glam::{DVec2, DVec3};
-use serde::{de::Error as DeserializeError, Deserialize, Deserializer};
+use serde::{de::Error as DeserializeError, Deserialize, Deserializer, Serialize};
 
 use crate::Error;
 
@@ -18,6 +18,15 @@ impl<T: Into<f64>> From<Vec2<T>> for DVec2 {
             x: value.x.into(),
             y: value.y.into(),
         }
+    }
+}
+
+impl<T: Serialize + Copy> Serialize for Vec2<T> {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        [self.x, self.y].serialize(serializer)
     }
 }
 
@@ -39,8 +48,17 @@ impl<T: Into<f64>> From<Vec3<T>> for DVec3 {
     }
 }
 
+impl<T: Serialize + Copy> Serialize for Vec3<T> {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        [self.x, self.y, self.z].serialize(serializer)
+    }
+}
+
 /// A finite 64-bit floating point type.
-#[derive(Copy, Clone, Default, PartialEq)]
+#[derive(Copy, Clone, Serialize, Default, PartialEq)]
 pub struct FiniteFloat(f64);
 
 impl Eq for FiniteFloat {}
@@ -87,7 +105,7 @@ impl<'de> Deserialize<'de> for FiniteFloat {
 }
 
 /// A strictly positive finite 64-bit floating point type.
-#[derive(Copy, Clone, Default, PartialEq, Eq, Hash)]
+#[derive(Copy, Clone, Serialize, Default, PartialEq, Eq, Hash)]
 pub struct PositiveFloat(FiniteFloat);
 
 impl From<PositiveFloat> for f64 {
@@ -129,7 +147,7 @@ impl<'de> Deserialize<'de> for PositiveFloat {
 }
 
 /// A range constrained 64-bit floating point type.
-#[derive(Copy, Clone, PartialEq, Eq, Hash)]
+#[derive(Copy, Clone, Serialize, PartialEq, Eq, Hash)]
 pub struct Ranged<const LOWER: i8, const UPPER: i8>(FiniteFloat);
 
 impl<const LOWER: i8, const UPPER: i8> From<Ranged<LOWER, UPPER>> for f64 {
