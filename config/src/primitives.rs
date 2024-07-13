@@ -3,6 +3,8 @@ use std::hash::{Hash, Hasher};
 use glam::{DVec2, DVec3};
 use serde::{de::Error as DeserializeError, Deserialize, Deserializer};
 
+use crate::Error;
+
 /// A 2-dimensional vector
 #[derive(Copy, Clone, Deserialize, PartialEq, Eq, Hash)]
 pub struct Vec2<T> {
@@ -55,6 +57,18 @@ impl From<FiniteFloat> for f64 {
     }
 }
 
+impl TryFrom<f64> for FiniteFloat {
+    type Error = Error;
+
+    fn try_from(value: f64) -> Result<Self, Self::Error> {
+        if value.is_finite() {
+            Ok(Self(value))
+        } else {
+            Err(Error::NonFiniteFloat)
+        }
+    }
+}
+
 impl<'de> Deserialize<'de> for FiniteFloat {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
@@ -79,6 +93,20 @@ pub struct PositiveFloat(FiniteFloat);
 impl From<PositiveFloat> for f64 {
     fn from(float: PositiveFloat) -> Self {
         float.0.into()
+    }
+}
+
+impl TryFrom<f64> for PositiveFloat {
+    type Error = Error;
+
+    fn try_from(value: f64) -> Result<Self, Self::Error> {
+        let inner = FiniteFloat::try_from(value)?;
+
+        if inner.0 > 0.0 {
+            Ok(Self(inner))
+        } else {
+            Err(Error::NonPositiveFloat)
+        }
     }
 }
 

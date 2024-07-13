@@ -162,4 +162,10 @@ pub enum Error {
     /// Failed to parse TOML
     #[error("failed to parse TOML")]
     TomlParse(#[from] toml::de::Error),
+    /// Float is not finite
+    #[error("float is not finite")]
+    NonFiniteFloat,
+    /// Float is not positive
+    #[error("float is not positive")]
+    NonPositiveFloat,
 }
