@@ -2,6 +2,7 @@
 members = [
   "config",
   "customizer",
+  "gui",
   "model",
   "viewer",
 ]
@@ -19,6 +20,7 @@ earcutr = "0.4.3"
 fidget = { git = "https://github.com/julianschuler/fidget.git", branch = "static-singular-value-truncation", default-features = false, features = ["jit", "mesh"] }
 futures = "0.3"
 glam = { version = "0.27", features = ["serde"] }
+gui = { path = "gui" }
 hex_color = { version = "3.0", features = ["serde"] }
 model = { path = "model" }
 notify = "6.1"

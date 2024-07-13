@@ -5,11 +5,10 @@ use std::sync::{
 
 use color_eyre::Report;
 use config::Error;
+use gui::Gui;
 use three_d::{
-    degrees,
-    egui::{Align2, Area, Spinner},
-    vec3, window, Camera, Context, CpuMesh, Degrees, FrameInput, FrameOutput, InnerSpace,
-    MouseButton, OrbitControl, Vec3, WindowError, WindowSettings, GUI,
+    degrees, vec3, window, Camera, Context, CpuMesh, Degrees, FrameInput, FrameOutput, InnerSpace,
+    MouseButton, OrbitControl, Vec3, WindowError, WindowSettings,
 };
 use winit::event_loop::{EventLoop, EventLoopProxy};
 
@@ -101,7 +100,7 @@ struct Application {
     control: OrbitControl,
     camera: Camera,
     scene: Scene,
-    gui: GUI,
+    gui: Gui,
     receiver: Receiver<SceneUpdate>,
     assets: Assets,
     show_spinner: bool,
@@ -126,7 +125,7 @@ impl Application {
         );
         let control = OrbitControl::new(DEFAULT_TARGET, 50.0, 5000.0);
         let scene = Scene::default();
-        let gui = GUI::new(&context);
+        let gui = Gui::new(&context);
         let assets = Assets::new();
 
         Self {
@@ -142,19 +141,7 @@ impl Application {
 
     /// Handles events for the given frame input.
     fn handle_events(&mut self, mut frame_input: FrameInput) {
-        self.gui.update(
-            &mut frame_input.events,
-            frame_input.accumulated_time,
-            frame_input.viewport,
-            frame_input.device_pixel_ratio,
-            |gui_context| {
-                if self.show_spinner {
-                    Area::new("area")
-                        .anchor(Align2::RIGHT_BOTTOM, [-15.0, -15.0])
-                        .show(gui_context, |ui| ui.add(Spinner::new().size(32.0)));
-                }
-            },
-        );
+        self.gui.update(&mut frame_input, self.show_spinner);
 
         self.camera.set_viewport(frame_input.viewport);
         self.control
@@ -181,9 +168,7 @@ impl Application {
         // Render scene and GUI
         let screen = frame_input.screen();
         self.scene.render(&self.camera, &screen);
-        screen
-            .write(|| self.gui.render())
-            .expect("rendering the gui should never fail");
+        self.gui.render(&screen)
     }
 
     /// Handles a scene update for the given context.

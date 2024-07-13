@@ -124,7 +124,7 @@ impl Scene {
     }
 
     /// Renders the scene with a given camera and render target.
-    pub fn render(&self, camera: &Camera, screen: &RenderTarget) {
+    pub fn render(&self, camera: &Camera, render_target: &RenderTarget) {
         let Color { r, g, b, a } = self.colors.background;
 
         let mut lights: Vec<_> = self
@@ -134,7 +134,7 @@ impl Scene {
             .collect();
         lights.push(&self.ambient as &dyn Light);
 
-        let render_target = screen
+        let render_target = render_target
             .clear(ClearState::color_and_depth(
                 f32::from(r) / 255.0,
                 f32::from(g) / 255.0,
