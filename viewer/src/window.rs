@@ -11,7 +11,7 @@ use winit::event_loop::{EventLoop, EventLoopProxy};
 
 use crate::{assets::Assets, scene::Scene};
 
-/// An application window with a model updater.
+/// An application window.
 pub struct Window {
     inner: window::Window,
     event_loop_proxy: EventLoopProxy<()>,
@@ -51,7 +51,7 @@ impl Window {
     }
 }
 
-/// An application rendering an interactive Scene and GUI.
+/// An application rendering an interactive scene and GUI.
 struct Application {
     control: OrbitControl,
     camera: Camera,

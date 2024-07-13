@@ -8,6 +8,7 @@ use three_d::{
 
 use crate::{assets::Assets, material::Physical};
 
+/// A scene rendering a keyboard model.
 #[derive(Default)]
 pub struct Scene {
     keyboard: Option<Object>,
@@ -153,6 +154,7 @@ impl Scene {
     }
 }
 
+/// An object which can be rendered in a scene.
 struct Object {
     inner: Gm<Mesh, Physical>,
 }
@@ -168,6 +170,7 @@ impl Object {
     }
 }
 
+/// An instanced object which can be rendered in a scene.
 struct InstancedObject {
     inner: Gm<InstancedMesh, Physical>,
 }
