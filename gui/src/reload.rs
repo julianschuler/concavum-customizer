@@ -13,7 +13,7 @@ use model::{MeshSettings, Model};
 
 use crate::{
     model::{Mesh, Meshes},
-    window::{SceneUpdate, SceneUpdater},
+    update::{SceneUpdate, SceneUpdater},
 };
 
 pub struct ModelReloader {

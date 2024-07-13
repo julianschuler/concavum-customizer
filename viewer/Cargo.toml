@@ -9,8 +9,6 @@ color-eyre = { workspace = true }
 config = { workspace = true }
 glam = { workspace = true }
 gui = { workspace = true }
-model = { workspace = true }
-notify = { workspace = true }
 thiserror = { workspace = true }
 three-d = { workspace = true }
 winit = { workspace = true }

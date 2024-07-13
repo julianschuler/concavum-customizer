@@ -1,51 +1,20 @@
-use std::sync::{
-    mpsc::{channel, Receiver, Sender},
-    Arc,
-};
+use std::sync::mpsc::Receiver;
 
 use color_eyre::Report;
-use config::Error;
-use gui::Gui;
+use config::Config;
+use gui::{Gui, SceneUpdate, SceneUpdater};
 use three_d::{
-    degrees, vec3, window, Camera, Context, CpuMesh, Degrees, FrameInput, FrameOutput, InnerSpace,
+    degrees, vec3, window, Camera, Context, Degrees, FrameInput, FrameOutput, InnerSpace,
     MouseButton, OrbitControl, Vec3, WindowError, WindowSettings,
 };
 use winit::event_loop::{EventLoop, EventLoopProxy};
 
-use crate::{
-    assets::Assets,
-    model::{Meshes, Model},
-    scene::Scene,
-};
-
-/// A reload event.
-pub enum SceneUpdate {
-    New(Model, Meshes),
-    Model(Model),
-    Preview(CpuMesh),
-    Meshes(Meshes),
-    Error(Arc<Error>),
-}
-
-/// A model updater allowing to update a model at runtime.
-#[derive(Clone)]
-pub struct SceneUpdater {
-    sender: Sender<SceneUpdate>,
-    event_loop_proxy: EventLoopProxy<()>,
-}
-
-impl SceneUpdater {
-    pub fn send_update(&self, update: SceneUpdate) {
-        let _ = self.sender.send(update);
-        let _ = self.event_loop_proxy.send_event(());
-    }
-}
+use crate::{assets::Assets, scene::Scene};
 
 /// An application window with a model updater.
 pub struct Window {
     inner: window::Window,
-    updater: SceneUpdater,
-    receiver: Receiver<SceneUpdate>,
+    event_loop_proxy: EventLoopProxy<()>,
 }
 
 impl Window {
@@ -63,30 +32,17 @@ impl Window {
             event_loop,
         )?;
 
-        let (sender, receiver) = channel();
-
-        let updater = SceneUpdater {
-            sender,
-            event_loop_proxy,
-        };
-
         Ok(Self {
             inner,
-            updater,
-            receiver,
+            event_loop_proxy,
         })
     }
 
-    /// Returns the model updater.
-    pub fn model_updater(&self) -> SceneUpdater {
-        self.updater.clone()
-    }
-
-    /// Runs the render loop.
+    /// Runs the render loop using the given initial config.
     ///
     /// This is blocking until the window is closed.
-    pub fn run_render_loop(self) {
-        let mut application = Application::new(&self.inner, self.receiver);
+    pub fn run_render_loop(self, initial_config: Config) {
+        let mut application = Application::new(&self.inner, self.event_loop_proxy, initial_config);
 
         self.inner.render_loop(move |frame_input| {
             application.handle_events(frame_input);
@@ -95,20 +51,24 @@ impl Window {
     }
 }
 
-/// An application rendering an interactive Scene.
+/// An application rendering an interactive Scene and GUI.
 struct Application {
     control: OrbitControl,
     camera: Camera,
     scene: Scene,
-    gui: Gui,
-    receiver: Receiver<SceneUpdate>,
     assets: Assets,
+    receiver: Receiver<SceneUpdate>,
+    gui: Gui,
     show_spinner: bool,
 }
 
 impl Application {
-    /// Creates a new Application from a viewport and a receiver with reload events.
-    fn new(window: &window::Window, receiver: Receiver<SceneUpdate>) -> Self {
+    /// Creates a new Application given a window, event loop proxy and initial config.
+    fn new(
+        window: &window::Window,
+        event_loop_proxy: EventLoopProxy<()>,
+        initial_config: Config,
+    ) -> Self {
         const DEFAULT_DISTANCE: f32 = 600.0;
         const DEFAULT_FOV: Degrees = degrees(22.5);
         const DEFAULT_TARGET: Vec3 = vec3(0.0, 0.0, 0.0);
@@ -125,16 +85,18 @@ impl Application {
         );
         let control = OrbitControl::new(DEFAULT_TARGET, 50.0, 5000.0);
         let scene = Scene::default();
-        let gui = Gui::new(&context);
         let assets = Assets::new();
+
+        let (updater, receiver) = SceneUpdater::from_event_loop_proxy(event_loop_proxy);
+        let gui = Gui::from_config(&context, initial_config, updater);
 
         Self {
             control,
             camera,
             scene,
-            gui,
-            receiver,
             assets,
+            receiver,
+            gui,
             show_spinner: false,
         }
     }

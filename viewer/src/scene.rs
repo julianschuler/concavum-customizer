@@ -1,15 +1,12 @@
 use config::{Color, Colors};
 use glam::DVec3;
+use gui::{Meshes, Model};
 use three_d::{
     AmbientLight, Attenuation, Camera, ClearState, Context, CpuMesh, Gm, InstancedMesh, Instances,
     Light, Mat4, Mesh, PointLight, RenderTarget, SquareMatrix, Srgba,
 };
 
-use crate::{
-    assets::Assets,
-    material::Physical,
-    model::{Meshes, Model},
-};
+use crate::{assets::Assets, material::Physical};
 
 #[derive(Default)]
 pub struct Scene {
