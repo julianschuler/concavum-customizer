@@ -156,6 +156,20 @@ impl<const LOWER: i8, const UPPER: i8> From<Ranged<LOWER, UPPER>> for f64 {
     }
 }
 
+impl<const LOWER: i8, const UPPER: i8> TryFrom<f64> for Ranged<LOWER, UPPER> {
+    type Error = Error;
+
+    fn try_from(value: f64) -> Result<Self, Self::Error> {
+        let inner = FiniteFloat::try_from(value)?;
+
+        if inner.0 >= f64::from(LOWER) && inner.0 <= f64::from(UPPER) {
+            Ok(Self(inner))
+        } else {
+            Err(Error::OutOfRangeFloat)
+        }
+    }
+}
+
 impl<'de, const LOWER: i8, const UPPER: i8> Deserialize<'de> for Ranged<LOWER, UPPER> {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
