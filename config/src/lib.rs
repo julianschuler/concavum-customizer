@@ -131,7 +131,9 @@ impl<'de> Deserialize<'de> for Columns {
 
 impl Config {
     pub fn try_from_path(config_path: &Path) -> Result<Self, Error> {
-        Ok(toml::from_str(&read_to_string(config_path)?)?)
+        let config = toml::from_str(&read_to_string(config_path)?)?;
+        println!("{}", toml::to_string(&config).unwrap());
+        Ok(config)
     }
 }
 
@@ -168,4 +170,7 @@ pub enum Error {
     /// Float is not positive
     #[error("float is not positive")]
     NonPositiveFloat,
+    /// Float is out of range
+    #[error("float is out of range")]
+    OutOfRangeFloat,
 }
