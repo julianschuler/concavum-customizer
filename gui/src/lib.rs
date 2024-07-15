@@ -1,10 +1,11 @@
+mod config;
 mod model;
 mod reload;
 mod update;
 
-use config::Config;
+use config::{Config, Show};
 use three_d::{
-    egui::{Align2, Area, Spinner},
+    egui::{Align2, Area, SidePanel, Spinner},
     Context, FrameInput, RenderTarget, GUI,
 };
 
@@ -37,6 +38,8 @@ impl Gui {
 
     /// Updates the GUI using the given frame input.
     pub fn update(&mut self, frame_input: &mut FrameInput, show_spinner: bool) {
+        const SIDE_PANEL_WIDTH: f32 = 250.0;
+
         self.inner.update(
             &mut frame_input.events,
             frame_input.accumulated_time,
@@ -48,6 +51,11 @@ impl Gui {
                         .anchor(Align2::RIGHT_BOTTOM, [-15.0, -15.0])
                         .show(context, |ui| ui.add(Spinner::new().size(32.0)));
                 }
+
+                SidePanel::left("side_panel")
+                    .exact_width(SIDE_PANEL_WIDTH)
+                    .show_separator_line(false)
+                    .show(context, |ui| self.config.show(ui));
             },
         );
     }

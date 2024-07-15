@@ -12,7 +12,7 @@ light_positions = [[100, 0, 100], [-100, 0, 100], [100, -100, -100], [-100, -100
 
 
 [finger_cluster]
-# Amount of rows, automatic PCB generation is supported for 1 to 5 rows
+# Number of rows, automatic PCB generation is supported for 1 to 5 rows
 rows = 3
 # Settings per column, automatic PCB generation is supported for 2 to 6 columns
 columns = [
@@ -33,13 +33,13 @@ home_row_index = 1
 
 
 [thumb_cluster]
-# Amount of thumb keys, automatic PCB generation is supported for 1 to 6 keys
+# Number of thumb keys, automatic PCB generation is supported for 1 to 6 keys
 keys = 3
 # Thumb well curvature as angle between two neighbouring keys
 curvature_angle = 15
 # Rotation of the thumb cluster in relation to the finger cluster
 rotation = [-17, -29, 18.5]
-# Offset of the thumb cluster in relation to the finger cluster home row
+# Offset of the thumb cluster in relation to the finger cluster
 offset = [-3.05, -48, 10]
 # Distance between two neighbouring keys
 key_distance = 19.05
@@ -50,7 +50,7 @@ resting_key_index = 1
 [keyboard]
 # Keyboard tilting angle along X and Y
 tilting_angle = [15, 20]
-# Space around key cluster
+# Space around the key cluster
 circumference_distance = 7
 # Rounding radius of the top keyboard edges
 rounding_radius = 3
