@@ -11,7 +11,6 @@ use three_d::egui::{
 pub use config::Config;
 
 const DRAG_SPEED: f64 = 0.1;
-const MAX_VALUE: f64 = 100.0;
 
 /// A trait for showing a configuration widget.
 pub trait Show {
@@ -238,7 +237,7 @@ impl Show for NonZeroU8 {
     fn show(&mut self, ui: &mut Ui) {
         let mut value = u8::from(*self);
 
-        ui.add(DragValue::new(&mut value).clamp_range(1.0..=MAX_VALUE));
+        ui.add(DragValue::new(&mut value).clamp_range(1.0..=f64::MAX));
 
         *self = value.try_into().expect("value should be non-zero");
     }
@@ -267,7 +266,11 @@ impl Show for FiniteFloat {
     fn show(&mut self, ui: &mut Ui) {
         let mut value = f64::from(*self);
 
-        ui.add(DragValue::new(&mut value).speed(DRAG_SPEED));
+        ui.add(
+            DragValue::new(&mut value)
+                .clamp_range(f64::MIN..=f64::MAX)
+                .speed(DRAG_SPEED),
+        );
 
         *self = value.try_into().expect("value should be finite");
     }
@@ -279,7 +282,7 @@ impl Show for PositiveFloat {
 
         ui.add(
             DragValue::new(&mut value)
-                .clamp_range(DRAG_SPEED..=MAX_VALUE)
+                .clamp_range(DRAG_SPEED..=f64::MAX)
                 .speed(DRAG_SPEED),
         );
 
