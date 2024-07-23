@@ -9,8 +9,8 @@ use winit::event_loop::EventLoopProxy;
 
 use crate::model::{Meshes, Model};
 
-/// A scene update event.
-pub enum SceneUpdate {
+/// An scene update event.
+pub enum Update {
     New(Model, Meshes),
     Model(Model),
     Preview(CpuMesh),
@@ -20,16 +20,15 @@ pub enum SceneUpdate {
 
 /// An updater allowing to update a scene at runtime.
 #[derive(Clone)]
-pub struct SceneUpdater {
-    sender: Sender<SceneUpdate>,
+pub struct Updater {
+    sender: Sender<Update>,
     event_loop_proxy: EventLoopProxy<()>,
 }
 
-impl SceneUpdater {
-    /// Creates a new updater receiver pair from an event loop proxy.
-    pub fn from_event_loop_proxy(
-        event_loop_proxy: EventLoopProxy<()>,
-    ) -> (Self, Receiver<SceneUpdate>) {
+impl Updater {
+    /// Creates a new updater/receiver pair from an event loop proxy.
+    #[must_use]
+    pub fn from_event_loop_proxy(event_loop_proxy: EventLoopProxy<()>) -> (Self, Receiver<Update>) {
         let (sender, receiver) = channel();
 
         (
@@ -41,8 +40,8 @@ impl SceneUpdater {
         )
     }
 
-    /// Sends a scene update.
-    pub fn send_update(&self, update: SceneUpdate) {
+    /// Sends a update.
+    pub fn send_update(&self, update: Update) {
         let _ = self.sender.send(update);
         let _ = self.event_loop_proxy.send_event(());
     }
