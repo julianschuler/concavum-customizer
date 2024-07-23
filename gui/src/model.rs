@@ -1,10 +1,10 @@
 use config::{Colors, Preview};
 use glam::{DAffine3, DMat4};
-use model::{Mesh as ModelMesh, MeshSettings};
+use model::{Mesh as ModelMesh, MeshSettings, Model};
 use three_d::{CpuMesh, Indices, Mat4, Positions};
 
 #[derive(Clone)]
-pub struct Model {
+pub struct Settings {
     pub finger_key_positions: Vec<Mat4>,
     pub thumb_key_positions: Vec<Mat4>,
     pub interface_pcb_positions: Vec<Mat4>,
@@ -12,8 +12,8 @@ pub struct Model {
     pub settings: Preview,
 }
 
-impl From<&model::Model> for Model {
-    fn from(model: &model::Model) -> Self {
+impl From<&Model> for Settings {
+    fn from(model: &Model) -> Self {
         let finger_key_positions = model
             .keyboard
             .key_positions
@@ -60,7 +60,7 @@ pub trait Mesh {
     fn meshes(&self) -> Meshes;
 }
 
-impl Mesh for model::Model {
+impl Mesh for Model {
     fn mesh_settings_preview(&self) -> MeshSettings {
         self.keyboard
             .preview

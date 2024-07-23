@@ -130,15 +130,15 @@ impl Application {
 
     /// Handles a scene update for the given context.
     fn handle_scene_update(&mut self, context: &Context, scene_update: Update) {
-        self.show_spinner = matches!(&scene_update, Update::Model(_) | Update::Preview(_));
+        self.show_spinner = matches!(&scene_update, Update::Settings(_) | Update::Preview(_));
 
         match scene_update {
             Update::New(model, meshes) => {
-                self.scene = Scene::from_model(context, model, &self.assets);
+                self.scene = Scene::from_settings(context, model, &self.assets);
                 self.scene.update_objects(context, &meshes);
             }
-            Update::Model(model) => {
-                self.scene = Scene::from_model(context, model, &self.assets);
+            Update::Settings(settings) => {
+                self.scene = Scene::from_settings(context, settings, &self.assets);
             }
             Update::Preview(mesh) => {
                 self.scene.update_preview(context, &mesh);
