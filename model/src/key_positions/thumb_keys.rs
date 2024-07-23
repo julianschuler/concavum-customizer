@@ -99,7 +99,7 @@ impl ThumbKeys {
         .collect()
     }
 
-    /// The minimum z value of all thumb key positions.
+    /// Returns the minimum z value of all thumb key positions.
     pub fn min_z(&self) -> f64 {
         self.iter()
             .map(|position| position.translation.z)
@@ -107,7 +107,7 @@ impl ThumbKeys {
             .unwrap_or_default()
     }
 
-    /// The maximum z value of all thumb key positions.
+    /// Returns The maximum z value of all thumb key positions.
     pub fn max_z(&self) -> f64 {
         self.iter()
             .map(|position| position.translation.z)
