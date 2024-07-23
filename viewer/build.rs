@@ -1,3 +1,5 @@
+//! The build script for the viewer converts the OBJ asset files at compile time to a rust struct.
+
 use std::{
     env,
     ffi::OsStr,
