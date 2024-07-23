@@ -94,7 +94,7 @@ impl Show for FingerCluster {
             self.key_distance.show_with_name_and_description(
                 ui,
                 "Key distance",
-                "Distance between two neighbouring keys in X and Y direction",
+                "Distance between two neighboring keys in X and Y direction",
             );
             self.home_row_index.show_with_name_and_description(
                 ui,
@@ -116,7 +116,7 @@ impl Show for ThumbCluster {
             self.curvature_angle.show_with_name_and_description(
                 ui,
                 "Curvature angle",
-                "Thumb well curvature as angle between two neighbouring keys",
+                "Thumb well curvature as angle between two neighboring keys",
             );
             self.rotation.show_with_name_and_description(
                 ui,
@@ -131,7 +131,7 @@ impl Show for ThumbCluster {
             self.key_distance.show_with_name_and_description(
                 ui,
                 "Key distance",
-                "Distance between two neighbouring keys",
+                "Distance between two neighboring keys",
             );
             self.resting_key_index.show_with_name_and_description(
                 ui,
