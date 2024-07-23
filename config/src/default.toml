@@ -1,0 +1,43 @@
+[preview]
+show_keys = true
+show_interface_pcb = true
+show_bottom_plate = true
+resolution = 1.0
+light_positions = [[100, 0, 100], [-100, 0, 100], [100, -100, -100], [-100, -100, -100]]
+
+[finger_cluster]
+rows = 3
+columns = [
+  { side_angle = 15 },
+  { curvature_angle = 20, offset = [0, 0] },
+  { curvature_angle = 20, offset = [0, -3] },
+  { curvature_angle = 20, offset = [0, 0] },
+  { curvature_angle = 20, offset = [-20, 5] },
+  { side_angle = 15 },
+]
+key_distance = [19.05, 19.05]
+home_row_index = 1
+
+[thumb_cluster]
+keys = 3
+curvature_angle = 15
+rotation = [-17, -29, 18.5]
+offset = [-3.05, -48, 10]
+key_distance = 19.05
+resting_key_index = 1
+
+[keyboard]
+tilting_angle = [15, 20]
+circumference_distance = 7
+rounding_radius = 3
+shell_thickness = 2.1
+bottom_plate_thickness = 1.6
+
+[colors]
+keyboard = "#83A598"
+keycap = "#3F3F3F"
+switch = "#FFFFFF"
+matrix_pcb = "#008C4A"
+interface_pcb = "#6C0D5D"
+fpc_connector = "#8F8F8F"
+background = "#282828"
