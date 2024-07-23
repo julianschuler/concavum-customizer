@@ -1,12 +1,10 @@
 mod primitives;
 
 use std::{
-    fs::read_to_string,
     hash::{Hash, Hasher},
     io,
     num::NonZeroU8,
     ops::Deref,
-    path::Path,
 };
 
 use hex_color::HexColor;
@@ -129,11 +127,10 @@ impl<'de> Deserialize<'de> for Columns {
     }
 }
 
-impl Config {
-    pub fn try_from_path(config_path: &Path) -> Result<Self, Error> {
-        let config = toml::from_str(&read_to_string(config_path)?)?;
-        println!("{}", toml::to_string(&config).unwrap());
-        Ok(config)
+impl Default for Config {
+    fn default() -> Self {
+        let toml_string = include_str!("default.toml");
+        toml::from_str(toml_string).expect("default configuration should always be deserializable")
     }
 }
 

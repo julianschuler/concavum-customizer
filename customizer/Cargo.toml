@@ -6,7 +6,6 @@ license.workspace = true
 
 [dependencies]
 color-eyre = { workspace = true }
-config = { workspace = true }
 viewer = { workspace = true}
 
 [lints]

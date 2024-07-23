@@ -1,7 +1,6 @@
 use std::sync::mpsc::Receiver;
 
 use color_eyre::Report;
-use config::Config;
 use gui::{Gui, SceneUpdate, SceneUpdater};
 use three_d::{
     degrees, vec3, window, Camera, Context, Degrees, FrameInput, FrameOutput, InnerSpace,
@@ -38,11 +37,9 @@ impl Window {
         })
     }
 
-    /// Runs the render loop using the given initial config.
-    ///
-    /// This is blocking until the window is closed.
-    pub fn run_render_loop(self, initial_config: Config) {
-        let mut application = Application::new(&self.inner, self.event_loop_proxy, initial_config);
+    /// Runs the render loop. This is blocking until the window is closed.
+    pub fn run_render_loop(self) {
+        let mut application = Application::new(&self.inner, self.event_loop_proxy);
 
         self.inner.render_loop(move |frame_input| {
             application.handle_events(frame_input);
@@ -63,12 +60,8 @@ struct Application {
 }
 
 impl Application {
-    /// Creates a new Application given a window, event loop proxy and initial config.
-    fn new(
-        window: &window::Window,
-        event_loop_proxy: EventLoopProxy<()>,
-        initial_config: Config,
-    ) -> Self {
+    /// Creates a new Application given a window and event loop proxy.
+    fn new(window: &window::Window, event_loop_proxy: EventLoopProxy<()>) -> Self {
         const DEFAULT_DISTANCE: f32 = 600.0;
         const DEFAULT_FOV: Degrees = degrees(22.5);
         const DEFAULT_TARGET: Vec3 = vec3(0.0, 0.0, 0.0);
@@ -88,7 +81,7 @@ impl Application {
         let assets = Assets::new();
 
         let (updater, receiver) = SceneUpdater::from_event_loop_proxy(event_loop_proxy);
-        let gui = Gui::from_config(&context, initial_config, updater);
+        let gui = Gui::new(&context, updater);
 
         Self {
             control,

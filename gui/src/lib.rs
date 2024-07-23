@@ -22,9 +22,10 @@ pub struct Gui {
 }
 
 impl Gui {
-    /// Creates a new GUI from the initial config for the given context.
-    pub fn from_config(context: &Context, config: Config, updater: SceneUpdater) -> Self {
+    /// Creates a new GUI for the given context.
+    pub fn new(context: &Context, updater: SceneUpdater) -> Self {
         let inner = GUI::new(context);
+        let config = Config::default();
 
         let mut model_reloader = ModelReloader::new(updater);
         model_reloader.reload(Ok(config.clone()));
