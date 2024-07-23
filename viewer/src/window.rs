@@ -128,7 +128,7 @@ impl Application {
         self.gui.render(&screen);
     }
 
-    /// Handles a scene update for the given context.
+    /// Handles a scene update.
     fn handle_scene_update(&mut self, context: &Context, scene_update: Update) {
         self.show_spinner = matches!(&scene_update, Update::Settings(_) | Update::Preview(_));
 

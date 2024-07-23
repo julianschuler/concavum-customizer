@@ -21,7 +21,7 @@ pub struct Scene {
 }
 
 impl Scene {
-    /// Creates a scene from the given model settings using the given assets and context.
+    /// Creates a scene from the given model settings using the given assets.
     pub fn from_settings(context: &Context, settings: Settings, assets: &Assets) -> Scene {
         let switch_positions = settings
             .finger_key_positions
@@ -87,7 +87,7 @@ impl Scene {
         }
     }
 
-    /// Updates the preview.
+    /// Updates the preview using the given mesh.
     pub fn update_preview(&mut self, context: &Context, preview: &CpuMesh) {
         self.preview = Some(InstancedObject::new(
             context,
@@ -160,6 +160,7 @@ struct Object {
 }
 
 impl Object {
+    /// Creates a new object from a mesh and color.
     fn new(context: &Context, mesh: &CpuMesh, color: Color) -> Self {
         let mesh = Mesh::new(context, mesh);
         let material = Physical::new(color);
@@ -176,6 +177,7 @@ struct InstancedObject {
 }
 
 impl InstancedObject {
+    /// Creates a new instacnced object from a mesh, color and a vector of transformations.
     fn new(context: &Context, mesh: &CpuMesh, color: Color, transformations: Vec<Mat4>) -> Self {
         let instanced_mesh = InstancedMesh::new(
             context,
