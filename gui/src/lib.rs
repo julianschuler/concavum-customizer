@@ -1,3 +1,5 @@
+//! The gui crate contains everything related to displaying the GUI for changing the configuration.
+
 mod config;
 mod model;
 mod reload;

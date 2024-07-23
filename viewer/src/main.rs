@@ -1,3 +1,5 @@
+//! This file starts the viewer by creating a new window and running the render loop.
+
 use color_eyre::{config::HookBuilder, Result};
 use viewer::Window;
 

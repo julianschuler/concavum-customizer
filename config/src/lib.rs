@@ -1,3 +1,5 @@
+//! The config crate contains everything related to the available configuration options.
+
 mod primitives;
 
 use std::{
