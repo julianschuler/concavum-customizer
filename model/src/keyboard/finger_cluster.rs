@@ -11,16 +11,24 @@ use crate::{
     util::{corner_point, prism_from_projected_points, side_point, Side, SideX, SideY},
 };
 
+/// A finger cluster containing the finger keys.
 pub struct FingerCluster {
+    /// The tree of the finger cluster.
     pub cluster: Tree,
+    /// The outline of the finger cluster.
     pub outline: Tree,
+    /// The clearance required for the finger keys.
     pub key_clearance: Tree,
+    /// The insert holders positioned within the finger cluster.
     pub insert_holders: [InsertHolder; 3],
+    /// The interface PCB positioned within the finger cluster.
     pub interface_pcb: InterfacePcb,
+    /// The bounds of the finger cluster.
     pub bounds: Bounds,
 }
 
 impl FingerCluster {
+    /// Creates a new finger cluster from the given finger keys and configuration.
     pub fn new(columns: &Columns, config: &Keyboard) -> Self {
         let outline_points = columns.outline_points();
         let cluster_height = columns.max_z() + columns.key_clearance.length();

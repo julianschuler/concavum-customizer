@@ -9,7 +9,9 @@ use crate::{
     primitives::{BoxShape, Circle, Csg, IntoTree, Rectangle, Transforms},
 };
 
+/// A PCB containing the interfaces to the outside (USB and TRRS) and inside (FPC).
 pub struct InterfacePcb {
+    /// The position of the interface PCB.
     pub position: DAffine3,
 }
 
@@ -17,6 +19,7 @@ impl InterfacePcb {
     const SIZE: DVec3 = dvec3(36.0, 42.0, 1.6);
     const HOLDER_THICKNESS: f64 = 1.0;
 
+    /// Creates a new interface PCB using the given insert holder.
     pub fn from_insert_holder(insert_holder: &InsertHolder) -> Self {
         let top_edge = insert_holder.outline_segment(Self::SIZE.x);
         let translation = dvec3(top_edge.start.x, top_edge.start.y, Self::HOLDER_THICKNESS);
@@ -30,6 +33,7 @@ impl InterfacePcb {
         Self { position }
     }
 
+    /// Returns the holder for the interface PCB.
     pub fn holder(&self, bounds_diameter: f64) -> Tree {
         const WIDTH: f64 = 1.5;
         const LENGTH: f64 = 10.0;
@@ -56,6 +60,7 @@ impl InterfacePcb {
             .affine(self.position * DAffine3::from_translation(translation))
     }
 
+    /// Returns the cutouts required for the USB and TRRS ports.
     pub fn cutouts(&self, bounds_diameter: f64) -> Tree {
         const USB_SIZE: DVec2 = dvec2(9.2, 3.4);
         const USB_RADIUS: f64 = 1.1;

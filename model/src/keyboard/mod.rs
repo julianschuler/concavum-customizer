@@ -23,15 +23,22 @@ use bottom_plate::BottomPlate;
 use finger_cluster::FingerCluster;
 use thumb_cluster::ThumbCluster;
 
+/// A keyboard.
 pub struct Keyboard {
+    /// The shape of the keyboard.
     pub shape: Shape,
+    /// A simplified preview shape of the keyboard.
     pub preview: Shape,
+    /// The bottom plate of the keyboard.
     pub bottom_plate: Shape,
+    /// The position of the keys.
     pub key_positions: KeyPositions,
+    /// The position of the interface PCB.
     pub interface_pcb_position: DAffine3,
 }
 
 impl Keyboard {
+    /// Creates a keyboard from the given configuration.
     pub fn from_config(config: &Config) -> Self {
         let key_positions = KeyPositions::from_config(config);
 

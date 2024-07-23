@@ -14,8 +14,11 @@ pub use thumb_keys::ThumbKeys;
 const KEY_CLEARANCE: f64 = 1.0;
 const CURVATURE_HEIGHT: f64 = 6.6;
 
+/// The positions of the keys.
 pub struct KeyPositions {
+    /// The columns of the finger keys.
     pub columns: Columns,
+    /// The thumb keys.
     pub thumb_keys: ThumbKeys,
 }
 

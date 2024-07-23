@@ -13,13 +13,18 @@ use keyboard::Keyboard;
 
 pub use fidget::mesh::{Mesh, Settings as MeshSettings};
 
+/// A keyboard model with colors and preview settings.
 pub struct Model {
+    /// The keyboard model.
     pub keyboard: Keyboard,
+    /// Colors used for displaying the model.
     pub colors: Colors,
+    /// Preview settings used for displaying the model.
     pub settings: Preview,
 }
 
 impl Model {
+    /// Creates a new model from a given configuration.
     #[must_use]
     pub fn from_config(config: Config) -> Self {
         let keyboard = Keyboard::from_config(&config);
