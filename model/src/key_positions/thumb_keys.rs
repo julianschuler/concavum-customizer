@@ -8,12 +8,15 @@ use crate::{
     util::{corner_point, SideX, SideY},
 };
 
+/// The positions and clearance of the thumb keys.
 pub struct ThumbKeys {
     inner: Vec<DAffine3>,
+    /// The clearance between neighboring thumb keys.
     pub key_clearance: DVec2,
 }
 
 impl ThumbKeys {
+    /// Creates the thumb keys from the thumb cluster configuration.
     pub fn from_config(config: &ThumbCluster) -> Self {
         let curvature_angle = f64::from(config.curvature_angle).to_radians();
         let rotation: DVec3 = config.rotation.into();
@@ -65,18 +68,21 @@ impl ThumbKeys {
         }
     }
 
+    /// The position of the first thumb key.
     pub fn first(&self) -> &DAffine3 {
         self.inner
             .first()
             .expect("there has to be at least one thumb key")
     }
 
+    /// The position of the last thumb key.
     pub fn last(&self) -> &DAffine3 {
         self.inner
             .last()
             .expect("there has to be at least one thumb key")
     }
 
+    /// Returns the points for an outline containing all thumb keys.
     pub fn outline_points(&self) -> Vec<DVec2> {
         let key_clearance = &self.key_clearance;
         let first_thumb_key = self.first();
@@ -93,6 +99,7 @@ impl ThumbKeys {
         .collect()
     }
 
+    /// The minimum z value of all thumb key positions.
     pub fn min_z(&self) -> f64 {
         self.iter()
             .map(|position| position.translation.z)
@@ -100,6 +107,7 @@ impl ThumbKeys {
             .unwrap_or_default()
     }
 
+    /// The maximum z value of all thumb key positions.
     pub fn max_z(&self) -> f64 {
         self.iter()
             .map(|position| position.translation.z)

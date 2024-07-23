@@ -9,11 +9,14 @@ use crate::{
     util::{corner_point, SideX, SideY},
 };
 
+/// The positions of a column of finger keys.
 pub struct Column {
     keys: Vec<DAffine3>,
+    /// The type of the column.
     pub column_type: ColumnType,
 }
 
+/// The type of a finger key column.
 #[derive(Clone)]
 pub enum ColumnType {
     Normal,
@@ -21,6 +24,7 @@ pub enum ColumnType {
 }
 
 impl Column {
+    /// Creates a new column given the contained keys and a column type.
     pub fn new(keys: Vec<DAffine3>, column_type: &ConfigColumn) -> Self {
         let column_type = match column_type {
             ConfigColumn::Normal { .. } => ColumnType::Normal,
@@ -30,10 +34,12 @@ impl Column {
         Self { keys, column_type }
     }
 
+    /// Returns the first finger key of the column.
     pub fn first(&self) -> &DAffine3 {
         self.keys.first().expect("there has to be at least one row")
     }
 
+    /// Returns the last finger key of the column.
     pub fn last(&self) -> &DAffine3 {
         self.keys.last().expect("there has to be at least one row")
     }
@@ -60,12 +66,15 @@ impl Mul<&Column> for DAffine3 {
     }
 }
 
+/// The columns and clearances of the finger keys.
 pub struct Columns {
     inner: Vec<Column>,
+    /// The clearances between neighboring finger keys.
     pub key_clearance: DVec2,
 }
 
 impl Columns {
+    /// Creates the finger key columns from the finger cluster configuration.
     pub fn from_config(config: &FingerCluster) -> Self {
         let key_distance: DVec2 = config.key_distance.into();
 
@@ -173,18 +182,21 @@ impl Columns {
         }
     }
 
+    /// Returns the first column.
     pub fn first(&self) -> &Column {
         self.inner
             .first()
             .expect("there has to be at least one column")
     }
 
+    /// Returns the last column.
     pub fn last(&self) -> &Column {
         self.inner
             .last()
             .expect("there has to be at least one column")
     }
 
+    /// Returns the points for an outline containing all thumb keys.
     pub fn outline_points(&self) -> Vec<DVec2> {
         let key_clearance = &self.key_clearance;
         let bottom_points = self.windows(2).map(|window| {
@@ -210,6 +222,7 @@ impl Columns {
             .collect()
     }
 
+    /// The minimum z value of all finger key positions.
     pub fn min_z(&self) -> f64 {
         self.iter()
             .flat_map(|column| column.iter().map(|position| position.translation.z))
@@ -217,6 +230,7 @@ impl Columns {
             .unwrap_or_default()
     }
 
+    /// The maximum z value of all finger key positions.
     pub fn max_z(&self) -> f64 {
         self.iter()
             .flat_map(|column| column.iter().map(|position| position.translation.z))

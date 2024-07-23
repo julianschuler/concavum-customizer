@@ -5,10 +5,12 @@ use crate::{
     primitives::{Bounds as ShapeBounds, EPSILON},
 };
 
-/// Bounded region containing a cluster.
+/// Bounded region containing a cluster given by two points.
 #[derive(Clone)]
 pub struct Bounds {
+    /// Corner point with minimal coordinates.
     pub min: DVec3,
+    /// Corner point with maximal coordinates.
     pub max: DVec3,
 }
 

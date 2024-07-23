@@ -6,6 +6,7 @@ use crate::{
     primitives::{Circle, Csg, IntoTree, Transforms},
 };
 
+/// A bottom plate of the keyboard.
 pub struct BottomPlate {
     outline: Tree,
     hole_positions: Vec<DVec2>,
@@ -13,6 +14,7 @@ pub struct BottomPlate {
 }
 
 impl BottomPlate {
+    /// Creates a bottom plate with the given thickness from an outline and insert holders.
     pub fn from_outline_and_insert_holders<'a>(
         outline: Tree,
         insert_holders: impl IntoIterator<Item = &'a InsertHolder>,

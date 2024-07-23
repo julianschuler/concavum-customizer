@@ -10,15 +10,22 @@ use crate::{
     util::{prism_from_projected_points, sheared_prism_from_projected_points, side_point, Side},
 };
 
+/// A thumb cluster containing the thumb keys.
 pub struct ThumbCluster {
+    /// The tree of the thumb cluster.
     pub cluster: Tree,
+    /// The outline of the thumb cluster.
     pub outline: Tree,
+    /// The clearance required for the thumb keys.
     pub key_clearance: Tree,
+    /// The insert holder positioned within the thumb cluster.
     pub insert_holder: InsertHolder,
+    /// The bounds of the thumb cluster.
     pub bounds: Bounds,
 }
 
 impl ThumbCluster {
+    /// Creates a new thumb cluster from the given thumb keys and configuration.
     pub fn new(thumb_keys: &ThumbKeys, config: &Keyboard) -> Self {
         let outline_points = thumb_keys.outline_points();
         let cluster_height = thumb_keys.max_z() + thumb_keys.key_clearance.length();

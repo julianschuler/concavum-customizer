@@ -7,6 +7,7 @@ use crate::{
     primitives::{Circle, Corner, Csg, IntoTree, Transforms},
 };
 
+/// A holder for a threaded M3 heat set insert.
 pub struct InsertHolder {
     center: DVec2,
     edge1: DVec2,
@@ -20,6 +21,7 @@ impl InsertHolder {
     const HEIGHT: f64 = 7.0;
     const RADIUS: f64 = Self::INSERT_RADIUS + Self::WALL_THICKNESS;
 
+    /// Creates a new insert holder from the given outline points and an index.
     pub fn from_outline_points(vertices: &[DVec2], index: usize, config: &Keyboard) -> Self {
         let shell_thickness: f64 = config.shell_thickness.into();
         let circumference_distance: f64 = config.circumference_distance.into();

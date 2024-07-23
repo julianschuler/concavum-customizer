@@ -6,6 +6,7 @@ use crate::{
     primitives::{Csg, IntoTree, SimplePolygon, Transforms},
 };
 
+/// A side along the x-axis.
 #[derive(Clone, Copy)]
 pub enum SideX {
     Left,
@@ -13,6 +14,7 @@ pub enum SideX {
 }
 
 impl SideX {
+    /// Returns the sign of the direction of the side along the x-axis.
     pub fn direction(self) -> f64 {
         match self {
             SideX::Left => -1.0,
@@ -21,6 +23,7 @@ impl SideX {
     }
 }
 
+/// A side along the y-axis.
 #[derive(Clone, Copy)]
 pub enum SideY {
     Bottom,
@@ -28,6 +31,7 @@ pub enum SideY {
 }
 
 impl SideY {
+    /// Returns the sign of the direction of the side along y-axis.
     pub fn direction(self) -> f64 {
         match self {
             SideY::Bottom => -1.0,
@@ -36,6 +40,7 @@ impl SideY {
     }
 }
 
+/// A side along the x- or y-axis.
 #[derive(Clone, Copy)]
 pub enum Side {
     Left,
@@ -62,6 +67,7 @@ impl From<SideY> for Side {
     }
 }
 
+/// Creates a point in a corner given by two sides (e.g. Bottom and Left) and a clearance.
 pub fn corner_point(
     position: &DAffine3,
     side_x: SideX,
@@ -73,6 +79,7 @@ pub fn corner_point(
         + side_y.direction() * key_clearance.y * position.y_axis
 }
 
+/// Creates a point at the given side (e.g. Left) for the given clearance.
 pub fn side_point(position: &DAffine3, side: Side, key_clearance: &DVec2) -> DVec3 {
     match side {
         Side::Left => position.translation - key_clearance.x * position.x_axis,

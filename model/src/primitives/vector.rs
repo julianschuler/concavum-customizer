@@ -74,11 +74,14 @@ pub trait Vector: Sized {
     }
 }
 
-/// A 3-dimensional vector of nodes.
+/// A 3-dimensional vector of trees.
 #[derive(Clone)]
 pub struct Vec3 {
+    /// The x component of the vector.
     pub x: Tree,
+    /// The y component of the vector.
     pub y: Tree,
+    /// The z component of the vector.
     pub z: Tree,
 }
 
@@ -180,10 +183,12 @@ impl Mul<Vec3> for Tree {
     }
 }
 
-/// A 2-dimensional vector of nodes.
+/// A 2-dimensional vector of trees.
 #[derive(Clone)]
 pub struct Vec2 {
+    /// The x component of the vector.
     pub x: Tree,
+    /// The y component of the vector.
     pub y: Tree,
 }
 
