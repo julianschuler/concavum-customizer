@@ -32,7 +32,7 @@ pub trait Vector: Sized {
         self.map_unary(Tree::square)
     }
 
-    /// Calculates the element-wise mininum.
+    /// Calculates the element-wise minimum.
     fn min(&self, other: Self) -> Self {
         self.map_binary(other, Tree::min)
     }
@@ -77,16 +77,16 @@ pub trait Vector: Sized {
 /// A 3-dimensional vector of trees.
 #[derive(Clone)]
 pub struct Vec3 {
-    /// The x component of the vector.
+    /// The X component of the vector.
     pub x: Tree,
-    /// The y component of the vector.
+    /// The Y component of the vector.
     pub y: Tree,
-    /// The z component of the vector.
+    /// The Z component of the vector.
     pub z: Tree,
 }
 
 impl Vec3 {
-    /// Creates a vector from the x, y and z variables.
+    /// Creates a vector from the X, Y and Z variables.
     pub fn point() -> Self {
         let x = Tree::x();
         let y = Tree::y();
@@ -186,14 +186,14 @@ impl Mul<Vec3> for Tree {
 /// A 2-dimensional vector of trees.
 #[derive(Clone)]
 pub struct Vec2 {
-    /// The x component of the vector.
+    /// The X component of the vector.
     pub x: Tree,
-    /// The y component of the vector.
+    /// The Y component of the vector.
     pub y: Tree,
 }
 
 impl Vec2 {
-    /// Creates a vector from the x and y variables.
+    /// Creates a vector from the X and Y variables.
     pub fn point() -> Self {
         let x = Tree::x();
         let y = Tree::y();

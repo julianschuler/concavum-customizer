@@ -8,9 +8,9 @@ use crate::Error;
 /// A 2-dimensional vector.
 #[derive(Copy, Clone, Deserialize, PartialEq, Eq, Hash)]
 pub struct Vec2<T> {
-    /// The x component of the vector.
+    /// The X component of the vector.
     pub x: T,
-    /// The y component of the vector.
+    /// The Y component of the vector.
     pub y: T,
 }
 
@@ -35,11 +35,11 @@ impl<T: Serialize + Copy> Serialize for Vec2<T> {
 /// A 3-dimensional vector.
 #[derive(Copy, Clone, Deserialize, PartialEq, Eq, Hash)]
 pub struct Vec3<T> {
-    /// The x component of the vector.
+    /// The X component of the vector.
     pub x: T,
-    /// The y component of the vector.
+    /// The Y component of the vector.
     pub y: T,
-    /// The z component of the vector.
+    /// The Z component of the vector.
     pub z: T,
 }
 

@@ -15,7 +15,7 @@ pub struct Bounds {
 }
 
 impl Bounds {
-    /// Returns size of the bounds
+    /// Returns the size of the bounds
     pub fn size(&self) -> DVec3 {
         self.max - self.min
     }
@@ -28,7 +28,7 @@ impl Bounds {
         Self { min, max }
     }
 
-    /// Mirrors the bound along the yz-plane.
+    /// Mirrors the bound along the YZ-plane.
     pub fn mirror_yz(&self) -> Self {
         let min = dvec3(-self.max.x, self.min.y, self.min.z);
         let max = self.max;
