@@ -7,12 +7,12 @@ use config::Error;
 use three_d::CpuMesh;
 use winit::event_loop::EventLoopProxy;
 
-use crate::model::{Meshes, Model};
+use crate::model::{Meshes, Settings};
 
 /// An scene update event.
 pub enum Update {
-    New(Model, Meshes),
-    Model(Model),
+    New(Settings, Meshes),
+    Settings(Settings),
     Preview(CpuMesh),
     Meshes(Meshes),
     Error(Arc<Error>),

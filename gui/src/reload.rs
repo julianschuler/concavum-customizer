@@ -48,7 +48,7 @@ impl ModelReloader {
 
                     let start = Instant::now();
 
-                    self.updater.send_update(Update::Model((&model).into()));
+                    self.updater.send_update(Update::Settings((&model).into()));
 
                     let cancellation_token = self.cancellation_token.clone();
                     let updater = self.updater.clone();

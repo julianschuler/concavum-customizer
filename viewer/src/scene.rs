@@ -1,6 +1,6 @@
 use config::{Color, Colors};
 use glam::DVec3;
-use gui::{Meshes, Model};
+use gui::{Meshes, Settings};
 use three_d::{
     AmbientLight, Attenuation, Camera, ClearState, Context, CpuMesh, Gm, InstancedMesh, Instances,
     Light, Mat4, Mesh, PointLight, RenderTarget, SquareMatrix, Srgba,
@@ -21,46 +21,46 @@ pub struct Scene {
 }
 
 impl Scene {
-    /// Creates a scene from a model for the given assets and context.
-    pub fn from_model(context: &Context, model: Model, assets: &Assets) -> Scene {
-        let switch_positions = model
+    /// Creates a scene from the given model settings using the given assets and context.
+    pub fn from_settings(context: &Context, settings: Settings, assets: &Assets) -> Scene {
+        let switch_positions = settings
             .finger_key_positions
             .iter()
-            .chain(&model.thumb_key_positions)
+            .chain(&settings.thumb_key_positions)
             .copied()
             .collect();
-        let colors = model.colors.clone();
+        let colors = settings.colors.clone();
 
-        let mut instanced_objects = if model.settings.show_keys {
+        let mut instanced_objects = if settings.settings.show_keys {
             vec![
                 InstancedObject::new(context, &assets.switch, colors.switch, switch_positions),
                 InstancedObject::new(
                     context,
                     &assets.keycap_1u,
                     colors.keycap,
-                    model.finger_key_positions,
+                    settings.finger_key_positions,
                 ),
                 InstancedObject::new(
                     context,
                     &assets.keycap_1_5u,
                     colors.keycap,
-                    model.thumb_key_positions,
+                    settings.thumb_key_positions,
                 ),
             ]
         } else {
             Vec::new()
         };
-        if model.settings.show_interface_pcb {
+        if settings.settings.show_interface_pcb {
             instanced_objects.push(InstancedObject::new(
                 context,
                 &assets.interface_pcb,
                 colors.interface_pcb,
-                model.interface_pcb_positions,
+                settings.interface_pcb_positions,
             ));
         }
 
         let ambient = AmbientLight::new(context, 0.05, Srgba::WHITE);
-        let lights = model
+        let lights = settings
             .settings
             .light_positions
             .iter()
@@ -74,7 +74,7 @@ impl Scene {
                 )
             })
             .collect();
-        let show_bottom_plate = model.settings.show_bottom_plate;
+        let show_bottom_plate = settings.settings.show_bottom_plate;
 
         Scene {
             keyboard: None,
