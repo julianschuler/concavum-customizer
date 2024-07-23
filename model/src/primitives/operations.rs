@@ -17,7 +17,7 @@ pub trait Csg {
     /// Performs the intersection between two shapes.
     fn intersection<T: Into<Tree>>(&self, other: T) -> Self;
 
-    /// Extrudes a 2D shape between two `z_min` and `z_max`.
+    /// Extrudes a 2D shape between `z_min` and `z_max`.
     fn extrude(&self, z_min: f64, z_max: f64) -> Self;
 
     /// Offsets a shape by a given value.
@@ -96,22 +96,22 @@ pub trait Transforms {
     /// Translates a shape by a given vector.
     fn translate(&self, translation: DVec3) -> Tree;
 
-    /// Rotates a shape around the x-axis by a given angle.
+    /// Rotates a shape around the X-axis by a given angle.
     fn rotate_x(&self, angle: f64) -> Tree;
 
-    /// Rotates a shape around the y-axis by a given angle.
+    /// Rotates a shape around the Y-axis by a given angle.
     fn rotate_y(&self, angle: f64) -> Tree;
 
-    /// Rotates a shape around the z-axis by a given angle.
+    /// Rotates a shape around the Z-axis by a given angle.
     fn rotate_z(&self, angle: f64) -> Tree;
 
     /// Applies an affine linear transform.
     fn affine(&self, affine: DAffine3) -> Tree;
 
-    /// Tapers a shape to the given scale (in x/y) at the given height.
+    /// Tapers a shape to the given scale (in X/Y) at the given height.
     fn taper(&self, scale: DVec2, height: f64) -> Tree;
 
-    /// Shears a shape to the given offset (in x/y) at the given height.
+    /// Shears a shape to the given offset (in X/Y) at the given height.
     fn shear(&self, offset: DVec2, height: f64) -> Tree;
 }
 

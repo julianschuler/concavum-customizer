@@ -134,7 +134,7 @@ impl IntoCpuMesh for ModelMesh {
     }
 }
 
-/// Creates two key positions mirrored along the xy-plane given a single one.
+/// Creates two key positions mirrored along the XY-plane given a single one.
 fn mirrored_positions(position: DAffine3) -> [Mat4; 2] {
     let matrix: DMat4 = position.into();
     let position = matrix.as_mat4().to_cols_array_2d().into();

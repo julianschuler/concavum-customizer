@@ -1,6 +1,6 @@
 use glam::{dvec2, dvec3, DVec2, DVec3};
 
-/// Returns a vector along the z-axis with the given z-value.
+/// Returns a vector along the Z-axis with the given Z-value.
 pub fn zvec(z: f64) -> DVec3 {
     dvec3(0.0, 0.0, z)
 }
