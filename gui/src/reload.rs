@@ -13,18 +13,18 @@ use model::{MeshSettings, Model};
 
 use crate::{
     model::{Mesh, Meshes},
-    update::{SceneUpdate, SceneUpdater},
+    update::{Update, Updater},
 };
 
 pub struct ModelReloader {
-    updater: SceneUpdater,
+    updater: Updater,
     cancellation_token: CancellationToken,
     cache: Arc<Mutex<HashMap<Config, Meshes>>>,
 }
 
 impl ModelReloader {
     /// Creates a new model reloader using the given updater for updating the model.
-    pub fn new(updater: SceneUpdater) -> Self {
+    pub fn new(updater: Updater) -> Self {
         Self {
             updater,
             cancellation_token: CancellationToken::new(),
@@ -41,15 +41,14 @@ impl ModelReloader {
 
                 if let Some(meshes) = self.cache.lock().unwrap().get(&config).cloned() {
                     self.updater
-                        .send_update(SceneUpdate::New((&model).into(), meshes));
+                        .send_update(Update::New((&model).into(), meshes));
                 } else {
                     let cancellation_token = CancellationToken::new();
                     self.cancellation_token = cancellation_token.clone();
 
                     let start = Instant::now();
 
-                    self.updater
-                        .send_update(SceneUpdate::Model((&model).into()));
+                    self.updater.send_update(Update::Model((&model).into()));
 
                     let cancellation_token = self.cancellation_token.clone();
                     let updater = self.updater.clone();
@@ -72,7 +71,7 @@ impl ModelReloader {
                             if cancelled {
                                 break;
                             } else if mesh.triangle_count() > 0 {
-                                updater.send_update(SceneUpdate::Preview(mesh));
+                                updater.send_update(Update::Preview(mesh));
                             }
                         }
 
@@ -83,7 +82,7 @@ impl ModelReloader {
                             cache.lock().unwrap().insert(config, meshes.clone());
 
                             if !cancellation_token.cancelled() {
-                                updater.send_update(SceneUpdate::Meshes(meshes));
+                                updater.send_update(Update::Meshes(meshes));
 
                                 eprintln!("Reloaded model in {:?}", start.elapsed());
                             }
@@ -91,9 +90,7 @@ impl ModelReloader {
                     });
                 }
             }
-            Err(error) => self
-                .updater
-                .send_update(SceneUpdate::Error(Arc::new(error))),
+            Err(error) => self.updater.send_update(Update::Error(Arc::new(error))),
         }
     }
 }

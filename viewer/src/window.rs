@@ -1,7 +1,7 @@
 use std::sync::mpsc::Receiver;
 
 use color_eyre::Report;
-use gui::{Gui, SceneUpdate, SceneUpdater};
+use gui::{Gui, Update, Updater};
 use three_d::{
     degrees, vec3, window, Camera, Context, Degrees, FrameInput, FrameOutput, InnerSpace,
     MouseButton, OrbitControl, Vec3, WindowError, WindowSettings,
@@ -18,6 +18,8 @@ pub struct Window {
 
 impl Window {
     /// Creates a new window.
+    ///
+    /// # Errors
     ///
     /// Returns a [`WindowError`] the window could not be created.
     pub fn try_new() -> Result<Self, WindowError> {
@@ -54,7 +56,7 @@ struct Application {
     camera: Camera,
     scene: Scene,
     assets: Assets,
-    receiver: Receiver<SceneUpdate>,
+    receiver: Receiver<Update>,
     gui: Gui,
     show_spinner: bool,
 }
@@ -80,7 +82,7 @@ impl Application {
         let scene = Scene::default();
         let assets = Assets::new();
 
-        let (updater, receiver) = SceneUpdater::from_event_loop_proxy(event_loop_proxy);
+        let (updater, receiver) = Updater::from_event_loop_proxy(event_loop_proxy);
         let gui = Gui::new(&context, updater);
 
         Self {
@@ -123,29 +125,26 @@ impl Application {
         // Render scene and GUI
         let screen = frame_input.screen();
         self.scene.render(&self.camera, &screen);
-        self.gui.render(&screen)
+        self.gui.render(&screen);
     }
 
     /// Handles a scene update for the given context.
-    fn handle_scene_update(&mut self, context: &Context, scene_update: SceneUpdate) {
-        self.show_spinner = matches!(
-            &scene_update,
-            SceneUpdate::Model(_) | SceneUpdate::Preview(_)
-        );
+    fn handle_scene_update(&mut self, context: &Context, scene_update: Update) {
+        self.show_spinner = matches!(&scene_update, Update::Model(_) | Update::Preview(_));
 
         match scene_update {
-            SceneUpdate::New(model, meshes) => {
+            Update::New(model, meshes) => {
                 self.scene = Scene::from_model(context, model, &self.assets);
                 self.scene.update_objects(context, &meshes);
             }
-            SceneUpdate::Model(model) => {
+            Update::Model(model) => {
                 self.scene = Scene::from_model(context, model, &self.assets);
             }
-            SceneUpdate::Preview(mesh) => {
+            Update::Preview(mesh) => {
                 self.scene.update_preview(context, &mesh);
             }
-            SceneUpdate::Meshes(meshes) => self.scene.update_objects(context, &meshes),
-            SceneUpdate::Error(err) => eprintln!("Error:{:?}", Report::from(err.clone())),
+            Update::Meshes(meshes) => self.scene.update_objects(context, &meshes),
+            Update::Error(err) => eprintln!("Error:{:?}", Report::from(err.clone())),
         }
     }
 }

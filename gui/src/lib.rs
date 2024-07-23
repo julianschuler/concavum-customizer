@@ -12,7 +12,7 @@ use three_d::{
 use reload::ModelReloader;
 
 pub use model::{Meshes, Model};
-pub use update::{SceneUpdate, SceneUpdater};
+pub use update::{Update, Updater};
 
 /// A graphical user interface for changing the configuration.
 pub struct Gui {
@@ -23,7 +23,8 @@ pub struct Gui {
 
 impl Gui {
     /// Creates a new GUI for the given context.
-    pub fn new(context: &Context, updater: SceneUpdater) -> Self {
+    #[must_use]
+    pub fn new(context: &Context, updater: Updater) -> Self {
         let inner = GUI::new(context);
         let config = Config::default();
 
@@ -62,6 +63,10 @@ impl Gui {
     }
 
     /// Renders the GUI to the given render target.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the GUI could not be rendered.
     pub fn render(&self, render_target: &RenderTarget) {
         render_target
             .write(|| self.inner.render())

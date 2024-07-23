@@ -18,6 +18,7 @@ pub struct Model {
 }
 
 impl Model {
+    #[must_use]
     pub fn from_config(config: Config) -> Self {
         let keyboard = Keyboard::from_config(&config);
 
