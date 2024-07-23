@@ -16,6 +16,7 @@ use crate::{
     update::{Update, Updater},
 };
 
+/// A reloader for reloading a model from a given configuration.
 pub struct ModelReloader {
     updater: Updater,
     cancellation_token: CancellationToken,
@@ -23,7 +24,7 @@ pub struct ModelReloader {
 }
 
 impl ModelReloader {
-    /// Creates a new model reloader using the given updater for updating the model.
+    /// Creates a new model reloader using the given updater.
     pub fn new(updater: Updater) -> Self {
         Self {
             updater,
@@ -32,6 +33,7 @@ impl ModelReloader {
         }
     }
 
+    /// Reloads a model from the given configuration.
     pub fn reload(&mut self, config: Result<Config, Error>) {
         match config {
             Ok(config) => {
@@ -95,22 +97,26 @@ impl ModelReloader {
     }
 }
 
+/// A cancellation token to indicate cancellation between threads.
 #[derive(Clone)]
 struct CancellationToken {
     cancelled: Arc<AtomicBool>,
 }
 
 impl CancellationToken {
+    /// Creates a new cancellation token.
     fn new() -> Self {
         Self {
             cancelled: Arc::new(AtomicBool::new(false)),
         }
     }
 
+    /// Cancels the cancellation token.
     fn cancel(&self) {
         self.cancelled.store(true, Ordering::Release);
     }
 
+    /// Returns true if the token was cancelled.
     fn cancelled(&self) -> bool {
         self.cancelled.load(Ordering::Acquire)
     }

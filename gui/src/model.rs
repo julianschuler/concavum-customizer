@@ -3,12 +3,18 @@ use glam::{DAffine3, DMat4};
 use model::{Mesh as ModelMesh, MeshSettings, Model};
 use three_d::{CpuMesh, Indices, Mat4, Positions};
 
+/// The settings for displaying a model.
 #[derive(Clone)]
 pub struct Settings {
+    /// The positions of the finger keys.
     pub finger_key_positions: Vec<Mat4>,
+    /// The positions of the thumb keys.
     pub thumb_key_positions: Vec<Mat4>,
+    /// Positions of the interface PCBs.
     pub interface_pcb_positions: Vec<Mat4>,
+    /// The colors of the model.
     pub colors: Colors,
+    /// The preview settings of the model.
     pub settings: Preview,
 }
 
@@ -42,9 +48,12 @@ impl From<&Model> for Settings {
     }
 }
 
+/// The meshes of the keyboard and bottom plate.
 #[derive(Clone)]
 pub struct Meshes {
+    /// The mesh of the keyboard.
     pub keyboard: CpuMesh,
+    /// The mesh of the bottom plate.
     pub bottom_plate: CpuMesh,
 }
 

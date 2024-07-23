@@ -222,7 +222,7 @@ impl Columns {
             .collect()
     }
 
-    /// The minimum z value of all finger key positions.
+    /// Returns the minimum z value of all finger key positions.
     pub fn min_z(&self) -> f64 {
         self.iter()
             .flat_map(|column| column.iter().map(|position| position.translation.z))
@@ -230,7 +230,7 @@ impl Columns {
             .unwrap_or_default()
     }
 
-    /// The maximum z value of all finger key positions.
+    /// Returns the maximum z value of all finger key positions.
     pub fn max_z(&self) -> f64 {
         self.iter()
             .flat_map(|column| column.iter().map(|position| position.translation.z))

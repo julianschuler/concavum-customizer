@@ -24,7 +24,7 @@ pub struct Gui {
 }
 
 impl Gui {
-    /// Creates a new GUI for the given context.
+    /// Creates a new GUI using the given updater.
     #[must_use]
     pub fn new(context: &Context, updater: Updater) -> Self {
         let inner = GUI::new(context);

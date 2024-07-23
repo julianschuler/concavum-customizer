@@ -9,12 +9,17 @@ use winit::event_loop::EventLoopProxy;
 
 use crate::model::{Meshes, Settings};
 
-/// An scene update event.
+/// A model update.
 pub enum Update {
+    /// An update for the whole model.
     New(Settings, Meshes),
+    /// An update for the model settings.
     Settings(Settings),
+    /// An update for the preview mesh.
     Preview(CpuMesh),
+    /// An update for the model meshes.
     Meshes(Meshes),
+    /// An update containing an error.
     Error(Arc<Error>),
 }
 
