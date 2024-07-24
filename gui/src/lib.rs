@@ -1,4 +1,4 @@
-//! The gui crate contains everything related to displaying the GUI for changing the configuration.
+//! The `gui` crate contains everything related to displaying the GUI for changing the configuration.
 
 mod config;
 mod model;

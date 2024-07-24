@@ -1,4 +1,4 @@
-//! The viewer crate contains everything related to visualizing the keyboard.
+//! The `viewer` crate contains everything related to visualizing the keyboard.
 
 mod assets;
 mod material;
