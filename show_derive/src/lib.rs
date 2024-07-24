@@ -2,7 +2,6 @@
 
 extern crate proc_macro;
 
-use convert_case::{Case, Casing};
 use proc_macro::TokenStream;
 use quote::quote;
 use syn::{
@@ -27,9 +26,8 @@ pub fn derive_show(input: TokenStream) -> TokenStream {
         panic!("`Show` can only be derived for structs with named fields")
     };
 
-    let section_name = convert_case(&ident);
-
-    let sections = named.iter().map(|field| {
+    let section_title = title_from_struct_name(&ident.to_string());
+    let parameters = named.iter().map(|field| {
         let ident = field
             .ident
             .as_ref()
@@ -62,7 +60,7 @@ pub fn derive_show(input: TokenStream) -> TokenStream {
             });
 
         let description = docstring.trim_start().trim_end_matches('.');
-        let field_name = convert_case(&ident);
+        let field_name = name_from_struct_field(&ident.to_string());
 
         quote! {
             self.#ident.show_with_name_and_description(ui, #field_name, #description);
@@ -72,8 +70,8 @@ pub fn derive_show(input: TokenStream) -> TokenStream {
     quote! {
         impl Show for #ident {
             fn show(&mut self, ui: &mut show::egui::Ui) {
-                show::parameters_section(ui, #section_name, |ui| {
-                    #(#sections)*
+                show::parameters_section(ui, #section_title, |ui| {
+                    #(#parameters)*
                 });
             }
         }
@@ -81,6 +79,39 @@ pub fn derive_show(input: TokenStream) -> TokenStream {
     .into()
 }
 
-fn convert_case(value: &impl ToString) -> String {
-    value.to_string().to_case(Case::Title)
+fn title_from_struct_name(string: &str) -> String {
+    string
+        .chars()
+        .enumerate()
+        .flat_map(|(index, char)| {
+            if char.is_ascii_uppercase() {
+                if index == 0 {
+                    [Some(char), None]
+                } else {
+                    [Some(' '), Some(char.to_ascii_lowercase())]
+                }
+            } else {
+                [Some(char), None]
+            }
+        })
+        .flatten()
+        .collect()
+}
+
+fn name_from_struct_field(string: &str) -> String {
+    string
+        .replace("pcb", "PCB")
+        .replace("fpc", "FPC")
+        .chars()
+        .enumerate()
+        .map(|(index, char)| {
+            if index == 0 {
+                char.to_ascii_uppercase()
+            } else if char == '_' {
+                ' '
+            } else {
+                char
+            }
+        })
+        .collect()
 }
