@@ -1,4 +1,4 @@
-//! The config crate contains everything related to the available configuration options.
+//! The `config` crate contains everything related to the available configuration options.
 
 mod primitives;
 

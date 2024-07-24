@@ -1,4 +1,4 @@
-//! The model crate contains everything related to creating a keyboard model from a given configuration.
+//! The `model` crate contains everything related to creating a keyboard model from a given configuration.
 
 mod geometry;
 mod interface_pcb;
