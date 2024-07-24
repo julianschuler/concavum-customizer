@@ -2,8 +2,14 @@ use std::hash::{Hash, Hasher};
 
 use glam::{DVec2, DVec3};
 use serde::{de::Error as DeserializeError, Deserialize, Deserializer, Serialize};
+use show::{
+    egui::{DragValue, Ui},
+    Show,
+};
 
 use crate::Error;
+
+const DRAG_SPEED: f64 = 0.1;
 
 /// A 2-dimensional vector.
 #[derive(Copy, Clone, Deserialize, PartialEq, Eq, Hash)]
@@ -29,6 +35,15 @@ impl<T: Serialize + Copy> Serialize for Vec2<T> {
         S: serde::Serializer,
     {
         [self.x, self.y].serialize(serializer)
+    }
+}
+
+impl<T: Show> Show for Vec2<T> {
+    fn show(&mut self, ui: &mut Ui) {
+        ui.horizontal(|ui| {
+            self.x.show(ui);
+            self.y.show(ui);
+        });
     }
 }
 
@@ -59,6 +74,16 @@ impl<T: Serialize + Copy> Serialize for Vec3<T> {
         S: serde::Serializer,
     {
         [self.x, self.y, self.z].serialize(serializer)
+    }
+}
+
+impl<T: Show> Show for Vec3<T> {
+    fn show(&mut self, ui: &mut Ui) {
+        ui.horizontal(|ui| {
+            self.x.show(ui);
+            self.y.show(ui);
+            self.z.show(ui);
+        });
     }
 }
 
@@ -109,6 +134,20 @@ impl<'de> Deserialize<'de> for FiniteFloat {
     }
 }
 
+impl Show for FiniteFloat {
+    fn show(&mut self, ui: &mut Ui) {
+        let mut value = f64::from(*self);
+
+        ui.add(
+            DragValue::new(&mut value)
+                .clamp_range(f64::MIN..=f64::MAX)
+                .speed(DRAG_SPEED),
+        );
+
+        *self = value.try_into().expect("value should be finite");
+    }
+}
+
 /// A strictly positive finite 64-bit floating point type.
 #[derive(Copy, Clone, Serialize, Default, PartialEq, Eq, Hash)]
 pub struct PositiveFloat(FiniteFloat);
@@ -151,6 +190,22 @@ impl<'de> Deserialize<'de> for PositiveFloat {
     }
 }
 
+impl Show for PositiveFloat {
+    fn show(&mut self, ui: &mut Ui) {
+        let mut value = f64::from(*self);
+
+        ui.add(
+            DragValue::new(&mut value)
+                .clamp_range(DRAG_SPEED..=f64::MAX)
+                .speed(DRAG_SPEED),
+        );
+
+        *self = value
+            .try_into()
+            .expect("value should be finite and positive");
+    }
+}
+
 /// A range constrained 64-bit floating point type.
 #[derive(Copy, Clone, Serialize, PartialEq, Eq, Hash)]
 pub struct Ranged<const LOWER: i8, const UPPER: i8>(FiniteFloat);
@@ -190,5 +245,19 @@ impl<'de, const LOWER: i8, const UPPER: i8> Deserialize<'de> for Ranged<LOWER, U
                 inner.0
             )))
         }
+    }
+}
+
+impl<const LOWER: i8, const UPPER: i8> Show for Ranged<LOWER, UPPER> {
+    fn show(&mut self, ui: &mut Ui) {
+        let mut value = f64::from(*self);
+
+        ui.add(
+            DragValue::new(&mut value)
+                .clamp_range(LOWER..=UPPER)
+                .speed(DRAG_SPEED),
+        );
+
+        *self = value.try_into().expect("value should be within range");
     }
 }

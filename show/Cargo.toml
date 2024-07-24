@@ -1,16 +1,12 @@
 [package]
-name = "gui"
+name = "show"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
 
 [dependencies]
-config = { workspace = true }
-glam = { workspace = true }
-model = { workspace = true }
-show = { workspace = true }
+hex_color = { workspace = true }
 three-d = { workspace = true }
-winit = { workspace = true }
 
 [lints]
 workspace = true
