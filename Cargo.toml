@@ -3,6 +3,8 @@ members = [
   "config",
   "gui",
   "model",
+  "show",
+  "show_derive",
   "viewer",
 ]
 resolver = "2"
@@ -15,6 +17,7 @@ license = "GPL-3.0-only"
 [workspace.dependencies]
 color-eyre = { version = "0.6", default-features = false }
 config = { path = "config" }
+convert_case = "0.6.0"
 earcutr = "0.4.3"
 fidget = { git = "https://github.com/julianschuler/fidget.git", branch = "static-singular-value-truncation", default-features = false, features = ["jit", "mesh"] }
 futures = "0.3"
@@ -23,7 +26,11 @@ gui = { path = "gui" }
 hex_color = { version = "3.0", features = ["serde"] }
 model = { path = "model" }
 notify = "6.1"
+quote = "1.0.36"
 serde = { version = "1.0", features = ["derive"] }
+show = { path = "show" }
+show_derive = { path = "show_derive" }
+syn = "2.0.72"
 thiserror = "1.0"
 three-d = { version = "0.17", features = ["egui-gui"] }
 toml = "0.8"
@@ -32,6 +39,10 @@ winit = "0.28"
 
 [workspace.lints.clippy]
 pedantic = "warn"
+
+[workspace.lints.rust]
+missing_docs = "warn"
+unsafe_code = "forbid"
 
 [profile.dev]
 opt-level = 2

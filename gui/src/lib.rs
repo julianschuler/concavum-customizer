@@ -1,11 +1,11 @@
 //! The `gui` crate contains everything related to displaying the GUI for changing the configuration.
 
-mod config;
 mod model;
 mod reload;
 mod update;
 
-use config::{Config, Show};
+use config::Config;
+use show::Show;
 use three_d::{
     egui::{Align2, Area, SidePanel, Spinner},
     Context, FrameInput, RenderTarget, GUI,

@@ -9,13 +9,15 @@ use std::{
     ops::Deref,
 };
 
-use hex_color::HexColor;
 use serde::{de::Error as DeserializeError, Deserialize, Deserializer, Serialize};
+use show::{
+    egui::{Frame, Margin, RichText, ScrollArea, Ui},
+    Show,
+};
+use show_derive::Show;
 
 pub use primitives::{FiniteFloat, PositiveFloat, Ranged, Vec2, Vec3};
-
-/// A color.
-pub type Color = HexColor;
+pub use show::Color;
 
 /// A curvature angle between two neighboring keys.
 pub type CurvatureAngle = Ranged<-20, 50>;
@@ -39,7 +41,7 @@ pub struct Config {
 }
 
 /// A configuration for previewing a keyboard.
-#[derive(Clone, Default, Serialize, Deserialize, PartialEq, Eq, Hash)]
+#[derive(Clone, Default, Serialize, Deserialize, Show, PartialEq, Eq, Hash)]
 pub struct Preview {
     /// Whether to show the keys during preview.
     pub show_keys: bool,
@@ -54,7 +56,7 @@ pub struct Preview {
 }
 
 /// A configuration of a finger cluster.
-#[derive(Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
+#[derive(Clone, Serialize, Deserialize, Show, PartialEq, Eq, Hash)]
 pub struct FingerCluster {
     /// The number of rows, automatic PCB generation is supported for 1 to 5 rows.
     pub rows: NonZeroU8,
@@ -67,7 +69,7 @@ pub struct FingerCluster {
 }
 
 /// A configuration of a thumb cluster.
-#[derive(Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
+#[derive(Clone, Serialize, Deserialize, Show, PartialEq, Eq, Hash)]
 pub struct ThumbCluster {
     /// The number of thumb keys, automatic PCB generation is supported for 1 to 6 keys.
     pub keys: NonZeroU8,
@@ -84,7 +86,7 @@ pub struct ThumbCluster {
 }
 
 /// A configuration of other keyboard settings.
-#[derive(Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
+#[derive(Clone, Serialize, Deserialize, Show, PartialEq, Eq, Hash)]
 pub struct Keyboard {
     /// The keyboard tilting angle along X and Y
     pub tilting_angle: Vec2<FiniteFloat>,
@@ -99,7 +101,7 @@ pub struct Keyboard {
 }
 
 /// A configuration of the colors used for displaying the keyboard.
-#[derive(Clone, Default, Serialize, Deserialize, PartialEq, Eq, Hash)]
+#[derive(Clone, Default, Serialize, Deserialize, Show, PartialEq, Eq, Hash)]
 pub struct Colors {
     /// The color of the keyboard.
     pub keyboard: Color,
@@ -161,6 +163,10 @@ impl<'de> Deserialize<'de> for Columns {
     }
 }
 
+impl Show for Columns {
+    fn show(&mut self, _ui: &mut Ui) {}
+}
+
 /// A configuration of a single finger cluster column.
 #[derive(Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
 #[serde(untagged, deny_unknown_fields)]
@@ -202,6 +208,29 @@ impl Hash for Config {
         self.finger_cluster.hash(state);
         self.thumb_cluster.hash(state);
         self.keyboard.hash(state);
+    }
+}
+
+impl Show for Config {
+    fn show(&mut self, ui: &mut Ui) {
+        const MARGIN: Margin = Margin {
+            left: 0.0,
+            right: 8.0,
+            top: 4.0,
+            bottom: 8.0,
+        };
+
+        ui.add_space(8.0);
+        ui.label(RichText::new("Configuration").strong().size(16.0));
+        ScrollArea::vertical().show(ui, |ui| {
+            Frame::default().inner_margin(MARGIN).show(ui, |ui| {
+                self.preview.show(ui);
+                self.finger_cluster.show(ui);
+                self.thumb_cluster.show(ui);
+                self.keyboard.show(ui);
+                self.colors.show(ui);
+            });
+        });
     }
 }
 
