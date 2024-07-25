@@ -1,29 +1,24 @@
 //! The `config` crate contains everything related to the available configuration options.
 
+mod columns;
 mod primitives;
 
 use std::{
     hash::{Hash, Hasher},
     io,
     num::NonZeroU8,
-    ops::Deref,
 };
 
-use serde::{de::Error as DeserializeError, Deserialize, Deserializer, Serialize};
+use serde::{Deserialize, Serialize};
 use show::{
     egui::{Frame, Margin, RichText, ScrollArea, Ui},
     Show,
 };
 use show_derive::Show;
 
-pub use primitives::{FiniteFloat, PositiveFloat, Ranged, Vec2, Vec3};
+pub use columns::{ColumnConfig, ColumnType, Columns, NormalColumn, SideColumn};
+pub use primitives::{CurvatureAngle, FiniteFloat, PositiveFloat, Ranged, SideAngle, Vec2, Vec3};
 pub use show::Color;
-
-/// A curvature angle between two neighboring keys.
-pub type CurvatureAngle = Ranged<-20, 50>;
-
-/// A side angle between two columns.
-pub type SideAngle = Ranged<0, 30>;
 
 /// A configuration of a keyboard.
 #[derive(Clone, Serialize, Deserialize, Eq)]
@@ -117,72 +112,6 @@ pub struct Colors {
     pub fpc_connector: Color,
     /// The color of the background.
     pub background: Color,
-}
-
-/// A per column configuration for the finger cluster keys.
-#[derive(Clone, Serialize, PartialEq, Eq, Hash)]
-pub struct Columns(Vec<Column>);
-
-impl Deref for Columns {
-    type Target = Vec<Column>;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-impl<'de> Deserialize<'de> for Columns {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        let inner: Vec<Column> = Vec::deserialize(deserializer)?;
-
-        if inner.is_empty() {
-            return Err(D::Error::custom("invalid value: columns must not be empty"));
-        }
-
-        if inner.iter().enumerate().any(|(i, column)| {
-            i != 0 && i != inner.len() - 1 && matches!(column, Column::Side { .. })
-        }) {
-            return Err(D::Error::custom(
-                "invalid value: only the first and last column can have a side angle",
-            ));
-        }
-
-        if !inner
-            .iter()
-            .any(|column| matches!(column, Column::Normal { .. }))
-        {
-            return Err(D::Error::custom(
-                "invalid value: there has to be at least one column with curvature and offset",
-            ));
-        }
-
-        Ok(Self(inner))
-    }
-}
-
-impl Show for Columns {
-    fn show(&mut self, _ui: &mut Ui) {}
-}
-
-/// A configuration of a single finger cluster column.
-#[derive(Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
-#[serde(untagged, deny_unknown_fields)]
-pub enum Column {
-    /// A configuration of a normal column.
-    Normal {
-        /// The column curvature as an angle between two neighboring keys.
-        curvature_angle: CurvatureAngle,
-        /// The offset of the column in Y and Z.
-        offset: Vec2<FiniteFloat>,
-    },
-    /// A configuration of a side column.
-    Side {
-        /// The angle of the side column to the neighboring normal one.
-        side_angle: SideAngle,
-    },
 }
 
 impl Default for Config {

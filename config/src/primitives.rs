@@ -11,6 +11,12 @@ use crate::Error;
 
 const DRAG_SPEED: f64 = 0.1;
 
+/// A curvature angle between two neighboring keys.
+pub type CurvatureAngle = Ranged<-20, 50>;
+
+/// A side angle between two columns.
+pub type SideAngle = Ranged<0, 30>;
+
 /// A 2-dimensional vector.
 #[derive(Copy, Clone, Deserialize, PartialEq, Eq, Hash)]
 pub struct Vec2<T> {

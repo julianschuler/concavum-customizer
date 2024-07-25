@@ -1,6 +1,6 @@
 use std::ops::{Deref, Mul};
 
-use config::{Column as ConfigColumn, FingerCluster};
+use config::{ColumnConfig, ColumnType as ConfigColumnType, FingerCluster};
 use glam::{dvec2, dvec3, DAffine3, DVec2, DVec3, Vec3Swizzles};
 
 use crate::{
@@ -19,18 +19,24 @@ pub struct Column {
 /// The type of a finger key column.
 #[derive(Clone)]
 pub enum ColumnType {
+    /// A normal column.
     Normal,
+    /// A side column.
     Side,
+}
+
+impl From<ConfigColumnType> for ColumnType {
+    fn from(column_type: ConfigColumnType) -> Self {
+        match column_type {
+            ConfigColumnType::Normal { .. } => ColumnType::Normal,
+            ConfigColumnType::LeftSide | ConfigColumnType::RightSide => ColumnType::Side,
+        }
+    }
 }
 
 impl Column {
     /// Creates a new column given the contained keys and a column type.
-    pub fn new(keys: Vec<DAffine3>, column_type: &ConfigColumn) -> Self {
-        let column_type = match column_type {
-            ConfigColumn::Normal { .. } => ColumnType::Normal,
-            ConfigColumn::Side { .. } => ColumnType::Side,
-        };
-
+    pub fn new(keys: Vec<DAffine3>, column_type: ColumnType) -> Self {
         Self { keys, column_type }
     }
 
@@ -77,41 +83,20 @@ impl Columns {
     /// Creates the finger key columns from the finger cluster configuration.
     pub fn from_config(config: &FingerCluster) -> Self {
         let key_distance: DVec2 = config.key_distance.into();
+        let column_configs: Vec<ColumnConfig> = (&config.columns).into();
 
-        let inner = config
-            .columns
-            .iter()
+        let inner = column_configs
+            .into_iter()
             .enumerate()
-            .map(|(i, column)| {
-                let (curvature_angle, offset, side_angle, side): (f64, DVec2, f64, _) =
-                    match *column {
-                        ConfigColumn::Normal {
-                            curvature_angle,
-                            offset,
-                        } => (curvature_angle.into(), offset.into(), 0.0, 0.0),
-                        ConfigColumn::Side { side_angle } => {
-                            let (side, column) = if i == 0 {
-                                (1.0, config.columns.get(1))
-                            } else {
-                                (-1.0, config.columns.get(config.columns.len() - 2))
-                            };
+            .map(|(i, column_config)| {
+                let ColumnConfig {
+                    column_type,
+                    curvature_angle,
+                    offset,
+                    side_angle,
+                } = column_config;
+                let side = column_type.side();
 
-                            if let &ConfigColumn::Normal {
-                                curvature_angle,
-                                offset,
-                            } = column.expect("there has to be at least one normal column")
-                            {
-                                (
-                                    curvature_angle.into(),
-                                    offset.into(),
-                                    side_angle.into(),
-                                    side,
-                                )
-                            } else {
-                                panic!("there has to be at least one normal column")
-                            }
-                        }
-                    };
                 let side_angle = side_angle.to_radians();
                 let side_angle_tan = side_angle.tan();
 
@@ -167,7 +152,7 @@ impl Columns {
                         .collect()
                 };
 
-                Column::new(keys, column)
+                Column::new(keys, column_type.into())
             })
             .collect();
 
