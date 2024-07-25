@@ -141,7 +141,7 @@ impl Hash for Config {
 }
 
 impl Show for Config {
-    fn show(&mut self, ui: &mut Ui) {
+    fn show(&mut self, ui: &mut Ui) -> bool {
         const MARGIN: Margin = Margin {
             left: 0.0,
             right: 8.0,
@@ -149,17 +149,21 @@ impl Show for Config {
             bottom: 8.0,
         };
 
+        let mut changed = false;
+
         ui.add_space(8.0);
         ui.label(RichText::new("Configuration").strong().size(16.0));
         ScrollArea::vertical().show(ui, |ui| {
             Frame::default().inner_margin(MARGIN).show(ui, |ui| {
-                self.preview.show_section(ui);
-                self.finger_cluster.show_section(ui);
-                self.thumb_cluster.show_section(ui);
-                self.keyboard.show_section(ui);
-                self.colors.show_section(ui);
-            });
+                changed |= self.preview.show_section(ui);
+                changed |= self.finger_cluster.show_section(ui);
+                changed |= self.thumb_cluster.show_section(ui);
+                changed |= self.keyboard.show_section(ui);
+                changed |= self.colors.show_section(ui);
+            })
         });
+
+        changed
     }
 }
 

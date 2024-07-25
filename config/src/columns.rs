@@ -21,15 +21,28 @@ pub struct Columns {
 }
 
 impl Show for Columns {
-    fn show(&mut self, ui: &mut Ui) {
-        column_section("Left side column", ui, |ui| self.left_side_column.show(ui));
-        self.normal_columns.show(ui);
-        column_section("Right side column", ui, |ui| {
-            self.right_side_column.show(ui);
+    fn show(&mut self, ui: &mut Ui) -> bool {
+        let mut changed = false;
+
+        column_section("Left side column", ui, |ui| {
+            changed |= self.left_side_column.show(ui);
         });
+        changed |= self.normal_columns.show(ui);
+        column_section("Right side column", ui, |ui| {
+            changed |= self.right_side_column.show(ui);
+        });
+
+        changed
     }
 
-    fn show_with_name_and_description(&mut self, ui: &mut Ui, label: &str, description: &str) {
+    fn show_with_name_and_description(
+        &mut self,
+        ui: &mut Ui,
+        label: &str,
+        description: &str,
+    ) -> bool {
+        let mut changed = false;
+
         ui.horizontal(|ui| {
             ui.label(label).on_hover_text(description);
             ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
@@ -37,10 +50,13 @@ impl Show for Columns {
                     self.normal_columns
                         .0
                         .push(self.normal_columns.last().clone());
+                    changed = true;
                 }
             });
         });
-        self.show(ui);
+        changed |= self.show(ui);
+
+        changed
     }
 }
 
@@ -79,13 +95,15 @@ impl<'de> Deserialize<'de> for NormalColumns {
 }
 
 impl Show for NormalColumns {
-    fn show(&mut self, ui: &mut Ui) {
+    fn show(&mut self, ui: &mut Ui) -> bool {
+        let mut changed = false;
+
         let multiple_columns = self.0.len() > 1;
         let mut column_to_delete = None;
 
         for (index, column) in self.0.iter_mut().enumerate() {
             column_section(&format!("Normal column {}", index + 1), ui, |ui| {
-                column.show(ui);
+                changed |= column.show(ui);
 
                 if multiple_columns && ui.button("Delete column").clicked() {
                     column_to_delete = Some(index);
@@ -95,7 +113,10 @@ impl Show for NormalColumns {
 
         if let Some(index) = column_to_delete {
             self.0.remove(index);
+            return true;
         }
+
+        changed
     }
 }
 
