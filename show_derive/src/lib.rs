@@ -69,10 +69,10 @@ pub fn derive_show(input: TokenStream) -> TokenStream {
 
     quote! {
         impl Show for #ident {
+            const TITLE: &'static str = #section_title;
+
             fn show(&mut self, ui: &mut show::egui::Ui) {
-                show::parameters_section(ui, #section_title, |ui| {
-                    #(#parameters)*
-                });
+                #(#parameters)*
             }
         }
     }

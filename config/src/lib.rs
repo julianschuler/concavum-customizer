@@ -153,11 +153,11 @@ impl Show for Config {
         ui.label(RichText::new("Configuration").strong().size(16.0));
         ScrollArea::vertical().show(ui, |ui| {
             Frame::default().inner_margin(MARGIN).show(ui, |ui| {
-                self.preview.show(ui);
-                self.finger_cluster.show(ui);
-                self.thumb_cluster.show(ui);
-                self.keyboard.show(ui);
-                self.colors.show(ui);
+                self.preview.show_section(ui);
+                self.finger_cluster.show_section(ui);
+                self.thumb_cluster.show_section(ui);
+                self.keyboard.show_section(ui);
+                self.colors.show_section(ui);
             });
         });
     }

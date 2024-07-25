@@ -12,6 +12,9 @@ pub type Color = HexColor;
 
 /// A trait for showing a configuration widget.
 pub trait Show {
+    /// The title of the widget.
+    const TITLE: &'static str = "";
+
     /// Shows a widget allowing to modify self.
     fn show(&mut self, ui: &mut Ui);
 
@@ -24,13 +27,13 @@ pub trait Show {
             });
         });
     }
-}
 
-/// Creates a collapseable section with a title and the given UI function as content.
-pub fn parameters_section(ui: &mut Ui, title: &str, add_contents: impl FnOnce(&mut Ui)) {
-    CollapsingHeader::new(RichText::new(title).size(14.0))
-        .default_open(true)
-        .show(ui, add_contents);
+    /// Shows a widget as a collapsable section.
+    fn show_section(&mut self, ui: &mut Ui) {
+        CollapsingHeader::new(RichText::new(Self::TITLE).size(14.0))
+            .default_open(true)
+            .show(ui, |ui| self.show(ui));
+    }
 }
 
 impl Show for Color {
