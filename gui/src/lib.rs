@@ -34,7 +34,7 @@ impl Gui {
         let config = Config::default();
 
         let mut model_reloader = ModelReloader::new(updater);
-        model_reloader.reload(Ok(config.clone()));
+        model_reloader.reload(config.clone());
 
         Self {
             inner,
@@ -60,7 +60,11 @@ impl Gui {
                 SidePanel::left("side_panel")
                     .exact_width(Self::SIDE_PANEL_WIDTH)
                     .show_separator_line(false)
-                    .show(context, |ui| self.config.show(ui));
+                    .show(context, |ui| {
+                        if self.config.show(ui) {
+                            self.model_reloader.reload(self.config.clone());
+                        }
+                    });
             },
         );
     }
