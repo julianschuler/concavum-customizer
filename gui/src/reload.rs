@@ -8,7 +8,7 @@ use std::{
     time::Instant,
 };
 
-use config::{Config, Error};
+use config::Config;
 use model::{MeshSettings, Model};
 
 use crate::{
@@ -34,65 +34,60 @@ impl ModelReloader {
     }
 
     /// Reloads a model from the given configuration.
-    pub fn reload(&mut self, config: Result<Config, Error>) {
-        match config {
-            Ok(config) => {
-                self.cancellation_token.cancel();
+    pub fn reload(&mut self, config: Config) {
+        self.cancellation_token.cancel();
 
-                let model = Model::from_config(config.clone());
+        let model = Model::from_config(config.clone());
 
-                if let Some(meshes) = self.cache.lock().unwrap().get(&config).cloned() {
-                    self.updater
-                        .send_update(Update::New((&model).into(), meshes));
-                } else {
-                    let cancellation_token = CancellationToken::new();
-                    self.cancellation_token = cancellation_token.clone();
+        if let Some(meshes) = self.cache.lock().unwrap().get(&config).cloned() {
+            self.updater
+                .send_update(Update::New((&model).into(), meshes));
+        } else {
+            let cancellation_token = CancellationToken::new();
+            self.cancellation_token = cancellation_token.clone();
 
-                    let start = Instant::now();
+            let start = Instant::now();
 
-                    self.updater.send_update(Update::Settings((&model).into()));
+            self.updater.send_update(Update::Settings((&model).into()));
 
-                    let cancellation_token = self.cancellation_token.clone();
-                    let updater = self.updater.clone();
-                    let cache = self.cache.clone();
+            let cancellation_token = self.cancellation_token.clone();
+            let updater = self.updater.clone();
+            let cache = self.cache.clone();
 
-                    spawn(move || {
-                        let mesh_settings = model.mesh_settings_preview();
+            spawn(move || {
+                let mesh_settings = model.mesh_settings_preview();
 
-                        // Preview
-                        let mut cancelled = false;
-                        for depth in 0..mesh_settings.depth {
-                            let mesh_settings = MeshSettings {
-                                depth,
-                                bounds: mesh_settings.bounds,
-                                threads: mesh_settings.threads,
-                            };
-                            let mesh = model.mesh_preview(mesh_settings);
+                // Preview
+                let mut cancelled = false;
+                for depth in 0..mesh_settings.depth {
+                    let mesh_settings = MeshSettings {
+                        depth,
+                        bounds: mesh_settings.bounds,
+                        threads: mesh_settings.threads,
+                    };
+                    let mesh = model.mesh_preview(mesh_settings);
 
-                            cancelled = cancellation_token.cancelled();
-                            if cancelled {
-                                break;
-                            } else if mesh.triangle_count() > 0 {
-                                updater.send_update(Update::Preview(mesh));
-                            }
-                        }
-
-                        // Final Mesh
-                        if !cancelled {
-                            let meshes = model.meshes();
-
-                            cache.lock().unwrap().insert(config, meshes.clone());
-
-                            if !cancellation_token.cancelled() {
-                                updater.send_update(Update::Meshes(meshes));
-
-                                eprintln!("Reloaded model in {:?}", start.elapsed());
-                            }
-                        }
-                    });
+                    cancelled = cancellation_token.cancelled();
+                    if cancelled {
+                        break;
+                    } else if mesh.triangle_count() > 0 {
+                        updater.send_update(Update::Preview(mesh));
+                    }
                 }
-            }
-            Err(error) => self.updater.send_update(Update::Error(Arc::new(error))),
+
+                // Final Mesh
+                if !cancelled {
+                    let meshes = model.meshes();
+
+                    cache.lock().unwrap().insert(config, meshes.clone());
+
+                    if !cancellation_token.cancelled() {
+                        updater.send_update(Update::Meshes(meshes));
+
+                        eprintln!("Reloaded model in {:?}", start.elapsed());
+                    }
+                }
+            });
         }
     }
 }

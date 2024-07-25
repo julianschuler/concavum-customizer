@@ -15,7 +15,6 @@ edition = "2021"
 license = "GPL-3.0-only"
 
 [workspace.dependencies]
-color-eyre = { version = "0.6", default-features = false }
 config = { path = "config" }
 earcutr = "0.4.3"
 fidget = { git = "https://github.com/julianschuler/fidget.git", branch = "static-singular-value-truncation", default-features = false, features = ["jit", "mesh"] }

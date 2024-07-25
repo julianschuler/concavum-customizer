@@ -1,9 +1,5 @@
-use std::sync::{
-    mpsc::{channel, Receiver, Sender},
-    Arc,
-};
+use std::sync::mpsc::{channel, Receiver, Sender};
 
-use config::Error;
 use three_d::CpuMesh;
 use winit::event_loop::EventLoopProxy;
 
@@ -19,8 +15,6 @@ pub enum Update {
     Preview(CpuMesh),
     /// An update for the model meshes.
     Meshes(Meshes),
-    /// An update containing an error.
-    Error(Arc<Error>),
 }
 
 /// An updater allowing to update a scene at runtime.

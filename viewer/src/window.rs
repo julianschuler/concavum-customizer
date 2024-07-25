@@ -1,6 +1,5 @@
 use std::sync::mpsc::Receiver;
 
-use color_eyre::Report;
 use gui::{Gui, Update, Updater};
 use three_d::{
     degrees, vec3, window, Camera, Context, Degrees, FrameInput, FrameOutput, InnerSpace,
@@ -153,7 +152,6 @@ impl Application {
                 self.scene.update_preview(context, &mesh);
             }
             Update::Meshes(meshes) => self.scene.update_objects(context, &meshes),
-            Update::Error(err) => eprintln!("Error:{:?}", Report::from(err.clone())),
         }
     }
 }
