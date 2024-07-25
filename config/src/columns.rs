@@ -1,6 +1,10 @@
 use glam::DVec2;
 use serde::{de::Error as DeserializeError, Deserialize, Deserializer, Serialize};
-use show::{egui::Ui, Show};
+use show::{
+    egui::{Align, CollapsingHeader, Layout, Ui},
+    Show,
+};
+use show_derive::Show;
 
 use crate::{CurvatureAngle, FiniteFloat, SideAngle, Vec2};
 
@@ -17,7 +21,27 @@ pub struct Columns {
 }
 
 impl Show for Columns {
-    fn show(&mut self, ui: &mut Ui) {}
+    fn show(&mut self, ui: &mut Ui) {
+        column_section("Left side column", ui, |ui| self.left_side_column.show(ui));
+        self.normal_columns.show(ui);
+        column_section("Right side column", ui, |ui| {
+            self.right_side_column.show(ui);
+        });
+    }
+
+    fn show_with_name_and_description(&mut self, ui: &mut Ui, label: &str, description: &str) {
+        ui.horizontal(|ui| {
+            ui.label(label).on_hover_text(description);
+            ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                if ui.button("Add column").clicked() {
+                    self.normal_columns
+                        .0
+                        .push(self.normal_columns.last().clone());
+                }
+            });
+        });
+        self.show(ui);
+    }
 }
 
 /// A per column configuration for the finger cluster keys.
@@ -54,8 +78,29 @@ impl<'de> Deserialize<'de> for NormalColumns {
     }
 }
 
+impl Show for NormalColumns {
+    fn show(&mut self, ui: &mut Ui) {
+        let multiple_columns = self.0.len() > 1;
+        let mut column_to_delete = None;
+
+        for (index, column) in self.0.iter_mut().enumerate() {
+            column_section(&format!("Normal column {}", index + 1), ui, |ui| {
+                column.show(ui);
+
+                if multiple_columns && ui.button("Delete column").clicked() {
+                    column_to_delete = Some(index);
+                }
+            });
+        }
+
+        if let Some(index) = column_to_delete {
+            self.0.remove(index);
+        }
+    }
+}
+
 /// A configuration of a normal finger cluster column.
-#[derive(Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
+#[derive(Clone, Serialize, Deserialize, Show, PartialEq, Eq, Hash)]
 pub struct NormalColumn {
     /// The column curvature as an angle between two neighboring keys.
     pub curvature_angle: CurvatureAngle,
@@ -64,7 +109,7 @@ pub struct NormalColumn {
 }
 
 /// A configuration of a side column.
-#[derive(Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
+#[derive(Clone, Serialize, Deserialize, Show, PartialEq, Eq, Hash)]
 pub struct SideColumn {
     /// Whether the side column is active.
     pub active: bool,
@@ -154,4 +199,10 @@ impl From<&Columns> for Vec<ColumnConfig> {
 
         configs
     }
+}
+
+fn column_section(title: &str, ui: &mut Ui, add_content: impl FnOnce(&mut Ui)) {
+    CollapsingHeader::new(title)
+        .default_open(true)
+        .show(ui, add_content);
 }
