@@ -7,16 +7,18 @@ light_positions = [[100, 0, 100], [-100, 0, 100], [100, -100, -100], [-100, -100
 
 [finger_cluster]
 rows = 3
-columns = [
-  { side_angle = 15 },
+key_distance = [19.05, 19.05]
+home_row_index = 1
+
+[finger_cluster.columns]
+left_side_column = { active = true, side_angle = 15 }
+normal_columns = [
   { curvature_angle = 20, offset = [0, 0] },
   { curvature_angle = 20, offset = [0, -3] },
   { curvature_angle = 20, offset = [0, 0] },
-  { curvature_angle = 20, offset = [-20, 5] },
-  { side_angle = 15 },
+  { curvature_angle = 20, offset = [-20, 5] }   
 ]
-key_distance = [19.05, 19.05]
-home_row_index = 1
+right_side_column = { active = true, side_angle = 15 }
 
 [thumb_cluster]
 keys = 3
