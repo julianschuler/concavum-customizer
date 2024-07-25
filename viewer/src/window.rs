@@ -4,7 +4,7 @@ use color_eyre::Report;
 use gui::{Gui, Update, Updater};
 use three_d::{
     degrees, vec3, window, Camera, Context, Degrees, FrameInput, FrameOutput, InnerSpace,
-    MouseButton, OrbitControl, Vec3, WindowError, WindowSettings,
+    MouseButton, OrbitControl, Vec3, Viewport, WindowError, WindowSettings,
 };
 use winit::event_loop::{EventLoop, EventLoopProxy};
 
@@ -100,7 +100,16 @@ impl Application {
     fn handle_events(&mut self, mut frame_input: FrameInput) {
         self.gui.update(&mut frame_input, self.show_spinner);
 
-        self.camera.set_viewport(frame_input.viewport);
+        #[allow(clippy::cast_possible_truncation)]
+        let viewport = Viewport {
+            x: (Gui::SIDE_PANEL_WIDTH * frame_input.device_pixel_ratio) as i32,
+            y: 0,
+            #[allow(clippy::cast_sign_loss)]
+            width: frame_input.viewport.width
+                - (Gui::SIDE_PANEL_WIDTH * frame_input.device_pixel_ratio) as u32,
+            height: frame_input.viewport.height,
+        };
+        self.camera.set_viewport(viewport);
         self.control
             .handle_events(&mut self.camera, &mut frame_input.events);
 
