@@ -24,6 +24,9 @@ pub struct Gui {
 }
 
 impl Gui {
+    /// The width of the side panel.
+    pub const SIDE_PANEL_WIDTH: f32 = 250.0;
+
     /// Creates a new GUI using the given updater.
     #[must_use]
     pub fn new(context: &Context, updater: Updater) -> Self {
@@ -42,8 +45,6 @@ impl Gui {
 
     /// Updates the GUI using the given frame input.
     pub fn update(&mut self, frame_input: &mut FrameInput, show_spinner: bool) {
-        const SIDE_PANEL_WIDTH: f32 = 250.0;
-
         self.inner.update(
             &mut frame_input.events,
             frame_input.accumulated_time,
@@ -57,7 +58,7 @@ impl Gui {
                 }
 
                 SidePanel::left("side_panel")
-                    .exact_width(SIDE_PANEL_WIDTH)
+                    .exact_width(Self::SIDE_PANEL_WIDTH)
                     .show_separator_line(false)
                     .show(context, |ui| self.config.show(ui));
             },
