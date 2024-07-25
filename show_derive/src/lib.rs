@@ -63,7 +63,7 @@ pub fn derive_show(input: TokenStream) -> TokenStream {
         let field_name = name_from_struct_field(&ident.to_string());
 
         quote! {
-            self.#ident.show_with_name_and_description(ui, #field_name, #description);
+            changed |= self.#ident.show_with_name_and_description(ui, #field_name, #description);
         }
     });
 
@@ -71,8 +71,12 @@ pub fn derive_show(input: TokenStream) -> TokenStream {
         impl Show for #ident {
             const TITLE: &'static str = #section_title;
 
-            fn show(&mut self, ui: &mut show::egui::Ui) {
+            fn show(&mut self, ui: &mut show::egui::Ui) -> bool {
+                let mut changed = false;
+
                 #(#parameters)*
+
+                changed
             }
         }
     }

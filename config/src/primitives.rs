@@ -45,12 +45,16 @@ impl<T: Serialize + Copy> Serialize for Vec2<T> {
 }
 
 impl<T: Show> Show for Vec2<T> {
-    fn show(&mut self, ui: &mut Ui) {
+    fn show(&mut self, ui: &mut Ui) -> bool {
+        let mut changed = false;
+
         ui.horizontal(|ui| {
             // Reverse order since widgets are placed right to left
-            self.y.show(ui);
-            self.x.show(ui);
+            changed |= self.y.show(ui);
+            changed |= self.x.show(ui);
         });
+
+        changed
     }
 }
 
@@ -85,13 +89,17 @@ impl<T: Serialize + Copy> Serialize for Vec3<T> {
 }
 
 impl<T: Show> Show for Vec3<T> {
-    fn show(&mut self, ui: &mut Ui) {
+    fn show(&mut self, ui: &mut Ui) -> bool {
+        let mut changed = false;
+
         ui.horizontal(|ui| {
             // Reverse order since widgets are placed right to left
-            self.z.show(ui);
-            self.y.show(ui);
-            self.x.show(ui);
+            changed |= self.z.show(ui);
+            changed |= self.y.show(ui);
+            changed |= self.x.show(ui);
         });
+
+        changed
     }
 }
 
@@ -143,16 +151,20 @@ impl<'de> Deserialize<'de> for FiniteFloat {
 }
 
 impl Show for FiniteFloat {
-    fn show(&mut self, ui: &mut Ui) {
+    fn show(&mut self, ui: &mut Ui) -> bool {
         let mut value = f64::from(*self);
 
-        ui.add(
-            DragValue::new(&mut value)
-                .clamp_range(f64::MIN..=f64::MAX)
-                .speed(DRAG_SPEED),
-        );
+        let changed = ui
+            .add(
+                DragValue::new(&mut value)
+                    .clamp_range(f64::MIN..=f64::MAX)
+                    .speed(DRAG_SPEED),
+            )
+            .changed();
 
         *self = value.try_into().expect("value should be finite");
+
+        changed
     }
 }
 
@@ -199,18 +211,22 @@ impl<'de> Deserialize<'de> for PositiveFloat {
 }
 
 impl Show for PositiveFloat {
-    fn show(&mut self, ui: &mut Ui) {
+    fn show(&mut self, ui: &mut Ui) -> bool {
         let mut value = f64::from(*self);
 
-        ui.add(
-            DragValue::new(&mut value)
-                .clamp_range(DRAG_SPEED..=f64::MAX)
-                .speed(DRAG_SPEED),
-        );
+        let changed = ui
+            .add(
+                DragValue::new(&mut value)
+                    .clamp_range(DRAG_SPEED..=f64::MAX)
+                    .speed(DRAG_SPEED),
+            )
+            .changed();
 
         *self = value
             .try_into()
             .expect("value should be finite and positive");
+
+        changed
     }
 }
 
@@ -257,15 +273,19 @@ impl<'de, const LOWER: i8, const UPPER: i8> Deserialize<'de> for Ranged<LOWER, U
 }
 
 impl<const LOWER: i8, const UPPER: i8> Show for Ranged<LOWER, UPPER> {
-    fn show(&mut self, ui: &mut Ui) {
+    fn show(&mut self, ui: &mut Ui) -> bool {
         let mut value = f64::from(*self);
 
-        ui.add(
-            DragValue::new(&mut value)
-                .clamp_range(LOWER..=UPPER)
-                .speed(DRAG_SPEED),
-        );
+        let changed = ui
+            .add(
+                DragValue::new(&mut value)
+                    .clamp_range(LOWER..=UPPER)
+                    .speed(DRAG_SPEED),
+            )
+            .changed();
 
         *self = value.try_into().expect("value should be within range");
+
+        changed
     }
 }
