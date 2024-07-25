@@ -47,8 +47,9 @@ impl<T: Serialize + Copy> Serialize for Vec2<T> {
 impl<T: Show> Show for Vec2<T> {
     fn show(&mut self, ui: &mut Ui) {
         ui.horizontal(|ui| {
-            self.x.show(ui);
+            // Reverse order since widgets are placed right to left
             self.y.show(ui);
+            self.x.show(ui);
         });
     }
 }
@@ -86,9 +87,10 @@ impl<T: Serialize + Copy> Serialize for Vec3<T> {
 impl<T: Show> Show for Vec3<T> {
     fn show(&mut self, ui: &mut Ui) {
         ui.horizontal(|ui| {
-            self.x.show(ui);
-            self.y.show(ui);
+            // Reverse order since widgets are placed right to left
             self.z.show(ui);
+            self.y.show(ui);
+            self.x.show(ui);
         });
     }
 }
