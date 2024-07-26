@@ -7,7 +7,6 @@ use std::num::NonZeroUsize;
 
 use fidget::{
     context::Tree,
-    eval::MathShape,
     jit::JitShape,
     mesh::{Mesh, Octree, Settings},
     shape, Context,
