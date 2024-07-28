@@ -5,14 +5,12 @@ use three_d::{
     degrees, vec3, window, Camera, Context, Degrees, FrameInput, FrameOutput, InnerSpace,
     MouseButton, OrbitControl, Vec3, Viewport, WindowError, WindowSettings,
 };
-use winit::event_loop::{EventLoop, EventLoopProxy};
 
 use crate::{assets::Assets, scene::Scene};
 
 /// An application window.
 pub struct Window {
     inner: window::Window,
-    event_loop_proxy: EventLoopProxy<()>,
 }
 
 impl Window {
@@ -22,25 +20,17 @@ impl Window {
     ///
     /// Returns a [`WindowError`] the window could not be created.
     pub fn try_new() -> Result<Self, WindowError> {
-        let event_loop = EventLoop::new();
-        let event_loop_proxy = event_loop.create_proxy();
-        let inner = window::Window::from_event_loop(
-            WindowSettings {
-                title: "Concavum customizer".to_owned(),
-                ..Default::default()
-            },
-            event_loop,
-        )?;
+        let inner = window::Window::new(WindowSettings {
+            title: "Concavum customizer".to_owned(),
+            ..Default::default()
+        })?;
 
-        Ok(Self {
-            inner,
-            event_loop_proxy,
-        })
+        Ok(Self { inner })
     }
 
     /// Runs the render loop. This is blocking until the window is closed.
     pub fn run_render_loop(self) {
-        let mut application = Application::new(&self.inner, self.event_loop_proxy);
+        let mut application = Application::new(&self.inner);
 
         self.inner.render_loop(move |frame_input| {
             application.handle_events(frame_input);
@@ -62,7 +52,7 @@ struct Application {
 
 impl Application {
     /// Creates a new Application given a window and event loop proxy.
-    fn new(window: &window::Window, event_loop_proxy: EventLoopProxy<()>) -> Self {
+    fn new(window: &window::Window) -> Self {
         const DEFAULT_DISTANCE: f32 = 600.0;
         const DEFAULT_FOV: Degrees = degrees(22.5);
         const DEFAULT_TARGET: Vec3 = vec3(0.0, 0.0, 0.0);
@@ -81,7 +71,7 @@ impl Application {
         let scene = Scene::default();
         let assets = Assets::new();
 
-        let (updater, receiver) = Updater::from_event_loop_proxy(event_loop_proxy);
+        let (updater, receiver) = Updater::new();
         let gui = Gui::new(&context, updater);
 
         Self {

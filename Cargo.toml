@@ -33,7 +33,6 @@ thiserror = "1.0"
 three-d = { version = "0.17", features = ["egui-gui"] }
 toml = "0.8"
 viewer = { path = "viewer" }
-winit = "0.28"
 
 [workspace.lints.clippy]
 pedantic = "warn"

@@ -10,7 +10,6 @@ glam = { workspace = true }
 model = { workspace = true }
 show = { workspace = true }
 three-d = { workspace = true }
-winit = { workspace = true }
 
 [lints]
 workspace = true

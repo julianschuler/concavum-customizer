@@ -1,7 +1,6 @@
 use std::sync::mpsc::{channel, Receiver, Sender};
 
 use three_d::CpuMesh;
-use winit::event_loop::EventLoopProxy;
 
 use crate::model::{Meshes, Settings};
 
@@ -21,27 +20,19 @@ pub enum Update {
 #[derive(Clone)]
 pub struct Updater {
     sender: Sender<Update>,
-    event_loop_proxy: EventLoopProxy<()>,
 }
 
 impl Updater {
-    /// Creates a new updater/receiver pair from an event loop proxy.
+    /// Creates a new updater/receiver pair.
     #[must_use]
-    pub fn from_event_loop_proxy(event_loop_proxy: EventLoopProxy<()>) -> (Self, Receiver<Update>) {
+    pub fn new() -> (Self, Receiver<Update>) {
         let (sender, receiver) = channel();
 
-        (
-            Self {
-                sender,
-                event_loop_proxy,
-            },
-            receiver,
-        )
+        (Self { sender }, receiver)
     }
 
     /// Sends a update.
     pub fn send_update(&self, update: Update) {
         let _ = self.sender.send(update);
-        let _ = self.event_loop_proxy.send_event(());
     }
 }

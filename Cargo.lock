@@ -747,7 +747,6 @@ dependencies = [
  "model",
  "show",
  "three-d",
- "winit",
 ]
 
 [[package]]
@@ -1813,7 +1812,6 @@ dependencies = [
  "gui",
  "thiserror",
  "three-d",
- "winit",
 ]
 
 [[package]]
