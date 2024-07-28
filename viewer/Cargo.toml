@@ -10,7 +10,6 @@ glam = { workspace = true }
 gui = { workspace = true }
 thiserror = { workspace = true }
 three-d = { workspace = true }
-winit = { workspace = true }
 
 [lints]
 workspace = true
