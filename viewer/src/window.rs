@@ -18,7 +18,7 @@ impl Window {
     ///
     /// # Errors
     ///
-    /// Returns a [`WindowError`] the window could not be created.
+    /// Returns a [`WindowError`] if the window could not be created.
     pub fn try_new() -> Result<Self, WindowError> {
         let inner = window::Window::new(WindowSettings {
             title: "Concavum customizer".to_owned(),

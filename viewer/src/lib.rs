@@ -5,4 +5,5 @@ mod material;
 mod scene;
 mod window;
 
+pub use three_d::WindowError;
 pub use window::Window;
