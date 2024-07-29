@@ -10,6 +10,11 @@ glam = { workspace = true }
 model = { workspace = true }
 show = { workspace = true }
 three-d = { workspace = true }
+web-time = { workspace = true }
 
 [lints]
 workspace = true
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+wasm-bindgen = { workspace = true }
+web-sys = { workspace = true }

@@ -3,11 +3,16 @@ mod shapes2d;
 mod shapes3d;
 mod vector;
 
+#[cfg(not(target_arch = "wasm32"))]
 use std::num::NonZeroUsize;
+
+#[cfg(not(target_arch = "wasm32"))]
+use fidget::jit::JitShape as FidgetShape;
+#[cfg(target_arch = "wasm32")]
+use fidget::vm::VmShape as FidgetShape;
 
 use fidget::{
     context::Tree,
-    jit::JitShape,
     mesh::{Mesh, Octree, Settings},
     shape, Context,
 };
@@ -21,7 +26,7 @@ pub const EPSILON: f64 = 0.001;
 
 /// A generic shape
 pub struct Shape {
-    inner: JitShape,
+    inner: FidgetShape,
     bounds: Bounds,
 }
 
@@ -32,7 +37,8 @@ impl Shape {
     pub fn new(tree: &Tree, bounds: Bounds) -> Self {
         let mut context = Context::new();
         let root = context.import(tree);
-        let inner = JitShape::new(&context, root).expect("root node should belong to same context");
+        let inner =
+            FidgetShape::new(&context, root).expect("root node should belong to same context");
         Self { inner, bounds }
     }
 
@@ -52,9 +58,10 @@ impl Shape {
         let bounds = shape::Bounds { center, size };
 
         Settings {
-            threads: NonZeroUsize::new(12).unwrap(),
             depth,
             bounds,
+            #[cfg(not(target_arch = "wasm32"))]
+            threads: NonZeroUsize::new(12).unwrap(),
         }
     }
 }

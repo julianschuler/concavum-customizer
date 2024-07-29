@@ -4,17 +4,31 @@ use std::{
         atomic::{AtomicBool, Ordering},
         Arc, Mutex,
     },
-    thread::spawn,
-    time::Instant,
 };
+
+#[cfg(not(target_arch = "wasm32"))]
+use std::thread::spawn;
+
+#[cfg(target_arch = "wasm32")]
+use wasm_bindgen::prelude::*;
 
 use config::Config;
 use model::{MeshSettings, Model};
+use web_time::Instant;
 
 use crate::{
     model::{Mesh, Meshes},
     update::{Update, Updater},
 };
+
+macro_rules! info {
+    ($($arg:tt)*) => {
+        #[cfg(not(target_arch = "wasm32"))]
+        eprintln!($($arg)*);
+        #[cfg(target_arch = "wasm32")]
+        web_sys::console::log_1(&format!($($arg)*).into());
+    };
+}
 
 /// A reloader for reloading a model from a given configuration.
 pub struct ModelReloader {
@@ -63,6 +77,7 @@ impl ModelReloader {
                     let mesh_settings = MeshSettings {
                         depth,
                         bounds: mesh_settings.bounds,
+                        #[cfg(not(target_arch = "wasm32"))]
                         threads: mesh_settings.threads,
                     };
                     let mesh = model.mesh_preview(mesh_settings);
@@ -84,7 +99,7 @@ impl ModelReloader {
                     if !cancellation_token.cancelled() {
                         updater.send_update(Update::Meshes(meshes));
 
-                        eprintln!("Reloaded model in {:?}", start.elapsed());
+                        info!("Reloaded model in {:?}", start.elapsed());
                     }
                 }
             });
@@ -115,4 +130,32 @@ impl CancellationToken {
     fn cancelled(&self) -> bool {
         self.cancelled.load(Ordering::Acquire)
     }
+}
+
+#[cfg(target_arch = "wasm32")]
+fn spawn(f: impl FnOnce() + Send + 'static) {
+    let worker = web_sys::Worker::new("./worker.js")
+        .expect("should be able to create worker using `worker.js`");
+
+    // Double-boxing because `dyn FnOnce` is unsized and so `Box<dyn FnOnce()>` is a fat pointer.
+    // But `Box<Box<dyn FnOnce()>>` is just a plain pointer, and since wasm has 32-bit pointers,
+    // we can cast it to a `u32` and back.
+    let function_pointer = Box::into_raw(Box::new(Box::new(f) as Box<dyn FnOnce()>));
+
+    let message = web_sys::js_sys::Array::new();
+    message.push(&wasm_bindgen::memory());
+    message.push(&JsValue::from(function_pointer as u32));
+
+    worker
+        .post_message(&message)
+        .expect("should be able to send message to worker");
+}
+
+/// This fucntion is the entry point called in `worker.js`.
+#[cfg(target_arch = "wasm32")]
+#[wasm_bindgen]
+pub fn worker_entry_point(addr: u32) {
+    // Interpret the address we were given as a pointer to a closure to call.
+    let closure = unsafe { Box::from_raw(addr as *mut Box<dyn FnOnce()>) };
+    (*closure)();
 }
