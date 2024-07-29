@@ -1,6 +1,7 @@
 [workspace]
 members = [
   "config",
+  "customizer",
   "gui",
   "model",
   "show",
