@@ -5,7 +5,7 @@
 This repository contains the source code of the interactive customizer for the [Concavum](https://github.com/julianschuler/keyboards/tree/master/concavum), a fully parametric split keyboard featuring an ergonomic layout with ortholinear (non-staggered) columns and a concave key wells.
 The customizer allows for changing all kinds of parameters like the number of columns, rows and thumb keys, the curvature, the distance between keys and many more.
 
-You can use the customizer directly in the browser by heading over to [https://julianschuler.github.io/concavum-customizer]. For better performance, you can also run it natively as described in the following section.
+You can use the customizer directly in the browser by heading over to https://julianschuler.github.io/concavum-customizer. For better performance, you can also run it natively as described in the following section.
 
 ## Running the customizer natively
 
@@ -36,8 +36,8 @@ The files in the `web` subfolder can now be served using any HTTP server, e.g. i
 python -m http.server -b localhost -d web
 ```
 
-For the above example, the customizer should now be accessible under [http://localhost:8000].
+For the above example, the customizer should now be accessible under http://localhost:8000.
 
 ## License
 
-This project is licensed under the MIT license, see [`LICENSE.txt`](LICENSE.txt) for further information.
+This project is licensed under the GNU GPLv3 license, see [`LICENSE.txt`](LICENSE.txt) for further information.
