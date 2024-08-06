@@ -44,8 +44,6 @@ pub struct Preview {
     pub show_interface_pcb: bool,
     /// Whether to show the bottom plate during preview.
     pub show_bottom_plate: bool,
-    /// The resolution used for meshing, size of the smallest feature.
-    pub resolution: PositiveFloat,
     /// The light positions, will be hardcoded at a later stage.
     pub light_positions: Vec<Vec3<FiniteFloat>>,
 }
@@ -93,6 +91,8 @@ pub struct Keyboard {
     pub shell_thickness: PositiveFloat,
     /// The thickness of the bottom plate
     pub bottom_plate_thickness: PositiveFloat,
+    /// The resolution used for meshing, size of the smallest feature.
+    pub resolution: PositiveFloat,
 }
 
 /// A configuration of the colors used for displaying the keyboard.
@@ -124,8 +124,7 @@ impl Default for Config {
 // Exclude fields independent from the calculated mesh from Hash and PartialEq
 impl PartialEq for Config {
     fn eq(&self, other: &Self) -> bool {
-        self.preview.resolution == other.preview.resolution
-            && self.finger_cluster == other.finger_cluster
+        self.finger_cluster == other.finger_cluster
             && self.thumb_cluster == other.thumb_cluster
             && self.keyboard == other.keyboard
     }
@@ -133,7 +132,6 @@ impl PartialEq for Config {
 
 impl Hash for Config {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        self.preview.resolution.hash(state);
         self.finger_cluster.hash(state);
         self.thumb_cluster.hash(state);
         self.keyboard.hash(state);
