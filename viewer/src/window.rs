@@ -128,7 +128,9 @@ impl Application {
 
     /// Handles a scene update.
     fn handle_scene_update(&mut self, context: &Context, scene_update: Update) {
-        self.show_spinner = matches!(&scene_update, Update::Settings(_) | Update::Preview(_));
+        if !matches!(&scene_update, Update::DisplaySettings(_)) {
+            self.show_spinner = matches!(&scene_update, Update::Settings(_) | Update::Preview(_));
+        }
 
         match scene_update {
             Update::New(model, meshes) => {
@@ -137,6 +139,9 @@ impl Application {
             }
             Update::Settings(settings) => {
                 self.scene = Scene::from_settings(context, settings, &self.assets);
+            }
+            Update::DisplaySettings(display_settings) => {
+                self.scene.update_display_settings(display_settings);
             }
             Update::Preview(mesh) => {
                 self.scene.update_preview(context, &mesh);

@@ -119,6 +119,26 @@ impl Scene {
         ));
     }
 
+    /// Updates the scene using the given display settings.
+    pub fn update_display_settings(&mut self, display_settings: DisplaySettings) {
+        if let Some(keyboard) = &mut self.keyboard {
+            keyboard.update_color(display_settings.colors.keyboard);
+        }
+        if let Some(bottom_plate) = &mut self.bottom_plate {
+            bottom_plate.update_color(display_settings.colors.keyboard);
+        }
+        if let Some(preview) = &mut self.preview {
+            preview.update_color(display_settings.colors.keyboard);
+        }
+        self.switches.update_color(display_settings.colors.switch);
+        self.finger_keycaps
+            .update_color(display_settings.colors.keycap);
+        self.thumb_keycaps
+            .update_color(display_settings.colors.keycap);
+
+        self.display_settings = display_settings;
+    }
+
     /// Renders the scene with a given camera and render target.
     pub fn render(&self, camera: &Camera, render_target: &RenderTarget) {
         let Color { r, g, b, a } = self.display_settings.colors.background;
@@ -183,6 +203,11 @@ impl Object {
             inner: Gm::new(mesh, material),
         }
     }
+
+    /// Updates the color of the object.
+    fn update_color(&mut self, color: Color) {
+        self.inner.material.update(color);
+    }
 }
 
 /// An instanced object which can be rendered in a scene.
@@ -206,5 +231,10 @@ impl InstancedObject {
         Self {
             inner: Gm::new(instanced_mesh, material),
         }
+    }
+
+    /// Updates the color of the instanced object.
+    fn update_color(&mut self, color: Color) {
+        self.inner.material.update(color);
     }
 }

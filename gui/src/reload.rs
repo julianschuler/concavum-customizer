@@ -33,6 +33,7 @@ macro_rules! info {
 /// A reloader for reloading a model from a given configuration.
 pub struct ModelReloader {
     updater: Updater,
+    previous_config: Option<Config>,
     cancellation_token: CancellationToken,
     cache: Arc<Mutex<HashMap<Config, Meshes>>>,
 }
@@ -42,6 +43,7 @@ impl ModelReloader {
     pub fn new(updater: Updater) -> Self {
         Self {
             updater,
+            previous_config: None,
             cancellation_token: CancellationToken::new(),
             cache: Arc::default(),
         }
@@ -49,7 +51,18 @@ impl ModelReloader {
 
     /// Reloads a model from the given configuration.
     pub fn reload(&mut self, config: Config) {
+        if self
+            .previous_config
+            .as_ref()
+            .is_some_and(|previous_config| previous_config == &config)
+        {
+            self.updater
+                .send_update(Update::DisplaySettings(config.clone().into()));
+            return;
+        }
+
         self.cancellation_token.cancel();
+        self.previous_config = Some(config.clone());
 
         let model = Model::from_config(config.clone());
 
