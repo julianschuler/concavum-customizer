@@ -13,16 +13,32 @@ use keyboard::Keyboard;
 
 pub use fidget::mesh::{Mesh, Settings as MeshSettings};
 
+/// A set of settings used for displaying a model.
+#[derive(Clone, Default)]
+pub struct DisplaySettings {
+    /// The preview settings of the model.
+    pub preview: Preview,
+    /// The colors of the model.
+    pub colors: Colors,
+}
+
+impl From<Config> for DisplaySettings {
+    fn from(config: Config) -> Self {
+        DisplaySettings {
+            preview: config.preview,
+            colors: config.colors,
+        }
+    }
+}
+
 /// A keyboard model with colors and preview settings.
 pub struct Model {
     /// The keyboard model.
     pub keyboard: Keyboard,
     /// The resolution used for meshing.
     pub resolution: f64,
-    /// Colors used for displaying the model.
-    pub colors: Colors,
-    /// Preview settings used for displaying the model.
-    pub settings: Preview,
+    /// The settings used for displaying the model.
+    pub display_settings: DisplaySettings,
 }
 
 impl Model {
@@ -34,8 +50,7 @@ impl Model {
         Self {
             keyboard,
             resolution: config.keyboard.resolution.into(),
-            colors: config.colors,
-            settings: config.preview,
+            display_settings: config.into(),
         }
     }
 }

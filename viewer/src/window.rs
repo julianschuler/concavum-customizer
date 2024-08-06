@@ -1,6 +1,6 @@
 use std::sync::mpsc::Receiver;
 
-use gui::{Gui, Update, Updater};
+use gui::{Gui, Settings, Update, Updater};
 use three_d::{
     degrees, vec3, window, Camera, Context, Degrees, FrameInput, FrameOutput, InnerSpace,
     MouseButton, OrbitControl, Vec3, Viewport, WindowError, WindowSettings,
@@ -68,8 +68,8 @@ impl Application {
             10000.0,
         );
         let control = OrbitControl::new(DEFAULT_TARGET, 50.0, 5000.0);
-        let scene = Scene::default();
         let assets = Assets::new();
+        let scene = Scene::from_settings(&context, Settings::default(), &assets);
 
         let (updater, receiver) = Updater::new();
         let gui = Gui::new(&context, updater);

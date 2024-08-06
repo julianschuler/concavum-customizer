@@ -13,7 +13,7 @@ use three_d::{
 
 use reload::ModelReloader;
 
-pub use model::{Meshes, Settings};
+pub use model::{DisplaySettings, Meshes, Settings};
 pub use update::{Update, Updater};
 
 /// A graphical user interface for changing the configuration.
