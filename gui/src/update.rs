@@ -1,5 +1,6 @@
 use std::sync::mpsc::{channel, Receiver, Sender};
 
+use model::DisplaySettings;
 use three_d::CpuMesh;
 
 use crate::model::{Meshes, Settings};
@@ -10,6 +11,8 @@ pub enum Update {
     New(Settings, Meshes),
     /// An update for the model settings.
     Settings(Settings),
+    /// An update for the display settings.
+    DisplaySettings(DisplaySettings),
     /// An update for the preview mesh.
     Preview(CpuMesh),
     /// An update for the model meshes.

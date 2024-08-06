@@ -14,6 +14,11 @@ impl Physical {
     pub fn new(albedo: Color) -> Self {
         Self { albedo }
     }
+
+    /// Updates the albedo of the physical material.
+    pub fn update(&mut self, albedo: Color) {
+        self.albedo = albedo;
+    }
 }
 
 impl Material for Physical {
