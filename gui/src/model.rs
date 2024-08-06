@@ -1,10 +1,11 @@
-use config::{Colors, Preview};
 use glam::{DAffine3, DMat4};
 use model::{Mesh as ModelMesh, MeshSettings, Model};
 use three_d::{CpuMesh, Indices, Mat4, Positions};
 
+pub use model::DisplaySettings;
+
 /// The settings for displaying a model.
-#[derive(Clone)]
+#[derive(Clone, Default)]
 pub struct Settings {
     /// The positions of the finger keys.
     pub finger_key_positions: Vec<Mat4>,
@@ -12,12 +13,8 @@ pub struct Settings {
     pub thumb_key_positions: Vec<Mat4>,
     /// Positions of the interface PCBs.
     pub interface_pcb_positions: Vec<Mat4>,
-    /// The resolution used for meshing.
-    pub resolution: f64,
-    /// The colors of the model.
-    pub colors: Colors,
-    /// The preview settings of the model.
-    pub settings: Preview,
+    /// The display settings of the model.
+    pub display_settings: DisplaySettings,
 }
 
 impl From<&Model> for Settings {
@@ -44,9 +41,7 @@ impl From<&Model> for Settings {
             finger_key_positions,
             thumb_key_positions,
             interface_pcb_positions,
-            resolution: model.resolution,
-            colors: model.colors.clone(),
-            settings: model.settings.clone(),
+            display_settings: model.display_settings.clone(),
         }
     }
 }

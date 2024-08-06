@@ -1,6 +1,6 @@
-use config::{Color, Colors};
+use config::Color;
 use glam::DVec3;
-use gui::{Meshes, Settings};
+use gui::{DisplaySettings, Meshes, Settings};
 use three_d::{
     AmbientLight, Attenuation, Camera, ClearState, Context, CpuMesh, Gm, InstancedMesh, Instances,
     Light, Mat4, Mesh, PointLight, RenderTarget, SquareMatrix, Srgba,
@@ -9,15 +9,17 @@ use three_d::{
 use crate::{assets::Assets, material::Physical};
 
 /// A scene rendering a keyboard model.
-#[derive(Default)]
 pub struct Scene {
     keyboard: Option<Object>,
+    bottom_plate: Option<InstancedObject>,
     preview: Option<InstancedObject>,
-    instanced_objects: Vec<InstancedObject>,
+    switches: InstancedObject,
+    finger_keycaps: InstancedObject,
+    thumb_keycaps: InstancedObject,
+    interface_pcb: InstancedObject,
     lights: Vec<PointLight>,
     ambient: AmbientLight,
-    colors: Colors,
-    show_bottom_plate: bool,
+    display_settings: DisplaySettings,
 }
 
 impl Scene {
@@ -29,39 +31,35 @@ impl Scene {
             .chain(&settings.thumb_key_positions)
             .copied()
             .collect();
-        let colors = settings.colors.clone();
-
-        let mut instanced_objects = if settings.settings.show_keys {
-            vec![
-                InstancedObject::new(context, &assets.switch, colors.switch, switch_positions),
-                InstancedObject::new(
-                    context,
-                    &assets.keycap_1u,
-                    colors.keycap,
-                    settings.finger_key_positions,
-                ),
-                InstancedObject::new(
-                    context,
-                    &assets.keycap_1_5u,
-                    colors.keycap,
-                    settings.thumb_key_positions,
-                ),
-            ]
-        } else {
-            Vec::new()
-        };
-        if settings.settings.show_interface_pcb {
-            instanced_objects.push(InstancedObject::new(
-                context,
-                &assets.interface_pcb,
-                colors.interface_pcb,
-                settings.interface_pcb_positions,
-            ));
-        }
+        let display_settings = settings.display_settings.clone();
+        let switches = InstancedObject::new(
+            context,
+            &assets.switch,
+            display_settings.colors.switch,
+            switch_positions,
+        );
+        let finger_keycaps = InstancedObject::new(
+            context,
+            &assets.keycap_1u,
+            display_settings.colors.keycap,
+            settings.finger_key_positions,
+        );
+        let thumb_keycaps = InstancedObject::new(
+            context,
+            &assets.keycap_1_5u,
+            display_settings.colors.keycap,
+            settings.thumb_key_positions,
+        );
+        let interface_pcb = InstancedObject::new(
+            context,
+            &assets.interface_pcb,
+            display_settings.colors.interface_pcb,
+            settings.interface_pcb_positions,
+        );
 
         let ambient = AmbientLight::new(context, 0.05, Srgba::WHITE);
-        let lights = settings
-            .settings
+        let lights = display_settings
+            .preview
             .light_positions
             .iter()
             .map(|direction| {
@@ -74,16 +72,18 @@ impl Scene {
                 )
             })
             .collect();
-        let show_bottom_plate = settings.settings.show_bottom_plate;
 
         Scene {
             keyboard: None,
+            bottom_plate: None,
             preview: None,
-            instanced_objects,
+            switches,
+            finger_keycaps,
+            thumb_keycaps,
+            interface_pcb,
             lights,
             ambient,
-            colors,
-            show_bottom_plate,
+            display_settings,
         }
     }
 
@@ -92,7 +92,7 @@ impl Scene {
         self.preview = Some(InstancedObject::new(
             context,
             preview,
-            self.colors.keyboard,
+            self.display_settings.colors.keyboard,
             vec![
                 Mat4::identity(),
                 Mat4::from_nonuniform_scale(-1.0, 1.0, 1.0),
@@ -102,28 +102,26 @@ impl Scene {
 
     /// Updates the objects using the given meshes.
     pub fn update_objects(&mut self, context: &Context, meshes: &Meshes) {
-        if self.keyboard.is_none() {
-            self.keyboard = Some(Object::new(context, &meshes.keyboard, self.colors.keyboard));
-        }
+        self.keyboard = Some(Object::new(
+            context,
+            &meshes.keyboard,
+            self.display_settings.colors.keyboard,
+        ));
 
-        if self.show_bottom_plate {
-            let transforms = vec![
+        self.bottom_plate = Some(InstancedObject::new(
+            context,
+            &meshes.bottom_plate,
+            self.display_settings.colors.keyboard,
+            vec![
                 Mat4::identity(),
                 Mat4::from_nonuniform_scale(-1.0, 1.0, 1.0),
-            ];
-
-            self.instanced_objects.push(InstancedObject::new(
-                context,
-                &meshes.bottom_plate,
-                self.colors.keyboard,
-                transforms,
-            ));
-        }
+            ],
+        ));
     }
 
     /// Renders the scene with a given camera and render target.
     pub fn render(&self, camera: &Camera, render_target: &RenderTarget) {
-        let Color { r, g, b, a } = self.colors.background;
+        let Color { r, g, b, a } = self.display_settings.colors.background;
 
         let mut lights: Vec<_> = self
             .lights
@@ -132,24 +130,40 @@ impl Scene {
             .collect();
         lights.push(&self.ambient as &dyn Light);
 
-        let render_target = render_target
-            .clear(ClearState::color_and_depth(
-                f32::from(r) / 255.0,
-                f32::from(g) / 255.0,
-                f32::from(b) / 255.0,
-                f32::from(a) / 255.0,
-                1.0,
-            ))
-            .render(
-                camera,
-                self.instanced_objects.iter().map(|object| &object.inner),
-                &lights,
-            );
+        let render_target = render_target.clear(ClearState::color_and_depth(
+            f32::from(r) / 255.0,
+            f32::from(g) / 255.0,
+            f32::from(b) / 255.0,
+            f32::from(a) / 255.0,
+            1.0,
+        ));
 
         if let Some(keyboard) = &self.keyboard {
             render_target.render(camera, &keyboard.inner, &lights);
         } else if let Some(preview) = &self.preview {
             render_target.render(camera, &preview.inner, &lights);
+        }
+
+        if self.display_settings.preview.show_keys {
+            render_target.render(
+                camera,
+                [
+                    &self.switches.inner,
+                    &self.finger_keycaps.inner,
+                    &self.thumb_keycaps.inner,
+                ],
+                &lights,
+            );
+        }
+
+        if self.display_settings.preview.show_interface_pcb {
+            render_target.render(camera, &self.interface_pcb.inner, &lights);
+        }
+
+        if self.display_settings.preview.show_bottom_plate {
+            if let Some(bottom_plate) = &self.bottom_plate {
+                render_target.render(camera, &bottom_plate.inner, &lights);
+            }
         }
     }
 }
@@ -177,7 +191,7 @@ struct InstancedObject {
 }
 
 impl InstancedObject {
-    /// Creates a new instacnced object from a mesh, color and a vector of transformations.
+    /// Creates a new instanced object from a mesh, color and a vector of transformations.
     fn new(context: &Context, mesh: &CpuMesh, color: Color, transformations: Vec<Mat4>) -> Self {
         let instanced_mesh = InstancedMesh::new(
             context,
