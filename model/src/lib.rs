@@ -17,6 +17,8 @@ pub use fidget::mesh::{Mesh, Settings as MeshSettings};
 pub struct Model {
     /// The keyboard model.
     pub keyboard: Keyboard,
+    /// The resolution used for meshing.
+    pub resolution: f64,
     /// Colors used for displaying the model.
     pub colors: Colors,
     /// Preview settings used for displaying the model.
@@ -31,6 +33,7 @@ impl Model {
 
         Self {
             keyboard,
+            resolution: config.keyboard.resolution.into(),
             colors: config.colors,
             settings: config.preview,
         }

@@ -2,7 +2,6 @@
 show_keys = true
 show_interface_pcb = true
 show_bottom_plate = true
-resolution = 1.0
 light_positions = [[100, 0, 100], [-100, 0, 100], [100, -100, -100], [-100, -100, -100]]
 
 [finger_cluster]
@@ -34,6 +33,7 @@ circumference_distance = 7
 rounding_radius = 3
 shell_thickness = 2.1
 bottom_plate_thickness = 1.6
+resolution = 1.0
 
 [colors]
 keyboard = "#83A598"

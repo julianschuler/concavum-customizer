@@ -12,6 +12,8 @@ pub struct Settings {
     pub thumb_key_positions: Vec<Mat4>,
     /// Positions of the interface PCBs.
     pub interface_pcb_positions: Vec<Mat4>,
+    /// The resolution used for meshing.
+    pub resolution: f64,
     /// The colors of the model.
     pub colors: Colors,
     /// The preview settings of the model.
@@ -42,6 +44,7 @@ impl From<&Model> for Settings {
             finger_key_positions,
             thumb_key_positions,
             interface_pcb_positions,
+            resolution: model.resolution,
             colors: model.colors.clone(),
             settings: model.settings.clone(),
         }
@@ -71,9 +74,7 @@ pub trait Mesh {
 
 impl Mesh for Model {
     fn mesh_settings_preview(&self) -> MeshSettings {
-        self.keyboard
-            .preview
-            .mesh_settings(self.settings.resolution.into())
+        self.keyboard.preview.mesh_settings(self.resolution)
     }
 
     fn mesh_preview(&self, settings: MeshSettings) -> CpuMesh {
@@ -81,16 +82,10 @@ impl Mesh for Model {
     }
 
     fn meshes(&self) -> Meshes {
-        let settings = self
-            .keyboard
-            .shape
-            .mesh_settings(self.settings.resolution.into());
+        let settings = self.keyboard.shape.mesh_settings(self.resolution);
         let keyboard = self.keyboard.shape.mesh(settings).into_cpu_mesh();
 
-        let settings = self
-            .keyboard
-            .bottom_plate
-            .mesh_settings(self.settings.resolution.into());
+        let settings = self.keyboard.bottom_plate.mesh_settings(self.resolution);
         let bottom_plate = self.keyboard.bottom_plate.mesh(settings).into_cpu_mesh();
 
         Meshes {
