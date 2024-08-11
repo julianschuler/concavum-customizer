@@ -5,7 +5,6 @@ mod primitives;
 
 use std::{
     hash::{Hash, Hasher},
-    io,
     num::NonZeroU8,
 };
 
@@ -165,22 +164,16 @@ impl Show for Config {
     }
 }
 
-/// The error type for errors regarding parsing configurations.
+/// An error type for configuration parsing errors.
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
-    /// Failed to open file.
-    #[error("failed to open file")]
-    FileOpen(#[from] io::Error),
-    /// Failed to parse TOML.
-    #[error("failed to parse TOML")]
-    TomlParse(#[from] toml::de::Error),
-    /// Float is not finite.
+    /// A float is not finite.
     #[error("float is not finite")]
     NonFiniteFloat,
-    /// Float is not positive.
+    /// A float is not positive.
     #[error("float is not positive")]
     NonPositiveFloat,
-    /// Float is out of range.
+    /// A float is out of range.
     #[error("float is out of range")]
     OutOfRangeFloat,
 }
