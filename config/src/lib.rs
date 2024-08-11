@@ -10,7 +10,7 @@ use std::{
 
 use serde::{Deserialize, Serialize};
 use show::{
-    egui::{Frame, Margin, RichText, ScrollArea, Ui},
+    egui::{Frame, Margin, ScrollArea, Ui},
     Show,
 };
 use show_derive::Show;
@@ -148,8 +148,6 @@ impl Show for Config {
 
         let mut changed = false;
 
-        ui.add_space(8.0);
-        ui.label(RichText::new("Configuration").strong().size(16.0));
         ScrollArea::vertical().show(ui, |ui| {
             Frame::default().inner_margin(MARGIN).show(ui, |ui| {
                 changed |= self.preview.show_section(ui);

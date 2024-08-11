@@ -119,6 +119,11 @@ impl ModelReloader {
             });
         }
     }
+
+    /// Returns the cached meshes corresponding to the given configuration.
+    pub fn cached_meshes(&self, config: &Config) -> Option<Meshes> {
+        self.cache.lock().unwrap().get(config).cloned()
+    }
 }
 
 /// A cancellation token to indicate cancellation between threads.

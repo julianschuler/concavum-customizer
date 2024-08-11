@@ -8,13 +8,21 @@ license.workspace = true
 config = { workspace = true }
 glam = { workspace = true }
 model = { workspace = true }
+rfd = { workspace = true }
 show = { workspace = true }
 three-d = { workspace = true }
+toml = { workspace = true }
+thiserror = { workspace = true }
 web-time = { workspace = true }
+zip = { workspace = true }
 
 [lints]
 workspace = true
 
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+pollster = { workspace = true }
+
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 wasm-bindgen = { workspace = true }
+wasm-bindgen-futures = { workspace = true }
 web-sys = { workspace = true }
