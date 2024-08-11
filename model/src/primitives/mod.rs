@@ -4,9 +4,6 @@ mod shapes3d;
 mod vector;
 
 #[cfg(not(target_arch = "wasm32"))]
-use std::num::NonZeroUsize;
-
-#[cfg(not(target_arch = "wasm32"))]
 use fidget::jit::JitShape as FidgetShape;
 #[cfg(target_arch = "wasm32")]
 use fidget::vm::VmShape as FidgetShape;
@@ -61,7 +58,8 @@ impl Shape {
             depth,
             bounds,
             #[cfg(not(target_arch = "wasm32"))]
-            threads: NonZeroUsize::new(12).unwrap(),
+            threads: std::thread::available_parallelism()
+                .expect("available parallelism should be known"),
         }
     }
 }
