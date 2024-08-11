@@ -34,7 +34,7 @@ impl Gui {
         let config = Config::default();
 
         let mut model_reloader = ModelReloader::new(updater);
-        model_reloader.reload(config.clone());
+        model_reloader.reload(&config);
 
         Self {
             inner,

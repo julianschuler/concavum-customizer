@@ -50,23 +50,23 @@ impl ModelReloader {
     }
 
     /// Reloads a model from the given configuration.
-    pub fn reload(&mut self, config: Config) {
+    pub fn reload(&mut self, config: &Config) {
         if self
             .previous_config
             .as_ref()
-            .is_some_and(|previous_config| previous_config == &config)
+            .is_some_and(|previous_config| previous_config == config)
         {
             self.updater
-                .send_update(Update::DisplaySettings(config.clone().into()));
+                .send_update(Update::DisplaySettings(config.into()));
             return;
         }
 
         self.cancellation_token.cancel();
         self.previous_config = Some(config.clone());
 
-        let model = Model::from_config(config.clone());
+        let model = Model::from_config(config);
 
-        if let Some(meshes) = self.cache.lock().unwrap().get(&config).cloned() {
+        if let Some(meshes) = self.cache.lock().unwrap().get(config).cloned() {
             self.updater
                 .send_update(Update::New((&model).into(), meshes));
         } else {
@@ -80,6 +80,7 @@ impl ModelReloader {
             let cancellation_token = self.cancellation_token.clone();
             let updater = self.updater.clone();
             let cache = self.cache.clone();
+            let config = config.clone();
 
             spawn(move || {
                 let mesh_settings = model.mesh_settings_preview();

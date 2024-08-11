@@ -22,11 +22,11 @@ pub struct DisplaySettings {
     pub colors: Colors,
 }
 
-impl From<Config> for DisplaySettings {
-    fn from(config: Config) -> Self {
+impl From<&Config> for DisplaySettings {
+    fn from(config: &Config) -> Self {
         DisplaySettings {
-            preview: config.preview,
-            colors: config.colors,
+            preview: config.preview.clone(),
+            colors: config.colors.clone(),
         }
     }
 }
@@ -44,8 +44,8 @@ pub struct Model {
 impl Model {
     /// Creates a new model from a given configuration.
     #[must_use]
-    pub fn from_config(config: Config) -> Self {
-        let keyboard = Keyboard::from_config(&config);
+    pub fn from_config(config: &Config) -> Self {
+        let keyboard = Keyboard::from_config(config);
 
         Self {
             keyboard,
