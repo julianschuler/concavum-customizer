@@ -1,8 +1,12 @@
+use std::io::Write;
+
 use glam::{DAffine3, DMat4};
 use model::{Mesh as ModelMesh, MeshSettings, Model};
 use three_d::{CpuMesh, Indices, Mat4, Positions};
 
 pub use model::DisplaySettings;
+
+use crate::Error;
 
 /// The settings for displaying a model.
 #[derive(Clone, Default)]
@@ -120,6 +124,50 @@ impl IntoCpuMesh for ModelMesh {
             positions: Positions::F32(vertices),
             indices: Indices::U32(indices),
             ..Default::default()
+        }
+    }
+}
+
+pub trait WriteStl: Write {
+    /// Writes the given mesh to a binary STL.
+    fn write_stl(&mut self, mesh: CpuMesh) -> Result<(), Error>;
+}
+
+impl<W: Write> WriteStl for W {
+    fn write_stl(&mut self, mesh: CpuMesh) -> Result<(), Error> {
+        const HEADER: &[u8] = b"This is a binary STL file exported by the concavum customizer";
+
+        if let CpuMesh {
+            positions: Positions::F32(vertices),
+            indices: Indices::U32(indices),
+            ..
+        } = mesh
+        {
+            let triangle_count = indices.len() / 3;
+
+            self.write_all(HEADER)?;
+            self.write_all(&[0; 80 - HEADER.len()])?;
+            #[allow(clippy::cast_possible_truncation)]
+            self.write_all(&(triangle_count as u32).to_le_bytes())?;
+
+            for triangle in indices.chunks_exact(3) {
+                let a = vertices[triangle[0] as usize];
+                let b = vertices[triangle[1] as usize];
+                let c = vertices[triangle[2] as usize];
+
+                let normal = (b - a).cross(c - a);
+
+                for vector in [normal, a, b, c] {
+                    self.write_all(&vector.x.to_le_bytes())?;
+                    self.write_all(&vector.y.to_le_bytes())?;
+                    self.write_all(&vector.z.to_le_bytes())?;
+                }
+                self.write_all(&[0; size_of::<u16>()])?;
+            }
+
+            Ok(())
+        } else {
+            Err(Error::InvalidMesh("The mesh representation is invalid"))
         }
     }
 }
