@@ -6,7 +6,7 @@ use std::{
 
 use config::Config;
 use rfd::AsyncFileDialog;
-use show::egui::{Align, Layout, RichText, Ui};
+use show::egui::{Align, Button, Layout, RichText, Ui};
 use zip::{write::SimpleFileOptions, ZipWriter};
 
 use crate::{model::WriteStl, reload::ModelReloader, Error, Meshes};
@@ -39,6 +39,7 @@ impl FileMenu {
         ui: &mut Ui,
         config: &mut Config,
         model_reloader: &ModelReloader,
+        is_reloading: bool,
     ) -> bool {
         ui.add_space(8.0);
         ui.horizontal(|ui| {
@@ -47,7 +48,7 @@ impl FileMenu {
             ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
                 // Reverse order since widgets are placed right to left
                 if ui
-                    .button("Export")
+                    .add_enabled(!is_reloading, Button::new("Export"))
                     .on_hover_text("Exports all the model files in a ZIP archive")
                     .clicked()
                 {

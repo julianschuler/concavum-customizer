@@ -47,7 +47,7 @@ struct Application {
     assets: Assets,
     receiver: Receiver<Update>,
     gui: Gui,
-    show_spinner: bool,
+    is_reloading: bool,
 }
 
 impl Application {
@@ -81,13 +81,13 @@ impl Application {
             assets,
             receiver,
             gui,
-            show_spinner: false,
+            is_reloading: false,
         }
     }
 
     /// Handles events for the given frame input.
     fn handle_events(&mut self, mut frame_input: FrameInput) {
-        self.gui.update(&mut frame_input, self.show_spinner);
+        self.gui.update(&mut frame_input, self.is_reloading);
 
         #[allow(clippy::cast_possible_truncation)]
         let viewport = Viewport {
@@ -129,7 +129,7 @@ impl Application {
     /// Handles a scene update.
     fn handle_scene_update(&mut self, context: &Context, scene_update: Update) {
         if !matches!(&scene_update, Update::DisplaySettings(_)) {
-            self.show_spinner = matches!(&scene_update, Update::Settings(_) | Update::Preview(_));
+            self.is_reloading = matches!(&scene_update, Update::Settings(_) | Update::Preview(_));
         }
 
         match scene_update {

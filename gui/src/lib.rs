@@ -60,7 +60,7 @@ impl Gui {
     }
 
     /// Updates the GUI using the given frame input.
-    pub fn update(&mut self, frame_input: &mut FrameInput, show_spinner: bool) {
+    pub fn update(&mut self, frame_input: &mut FrameInput, is_reloading: bool) {
         const MARGIN: f32 = 15.0;
 
         self.inner.update(
@@ -69,21 +69,18 @@ impl Gui {
             frame_input.viewport,
             frame_input.device_pixel_ratio,
             |context| {
-                if show_spinner {
-                    Area::new("spinner")
-                        .anchor(Align2::RIGHT_BOTTOM, [-MARGIN, -MARGIN])
-                        .show(context, |ui| ui.add(Spinner::new().size(32.0)));
-                }
-
                 SidePanel::left("side_panel")
                     .exact_width(Self::SIDE_PANEL_WIDTH)
                     .show_separator_line(false)
                     .show(context, |ui| {
                         let mut changed = false;
 
-                        changed |= self
-                            .file_menu
-                            .show(ui, &mut self.config, &self.model_reloader);
+                        changed |= self.file_menu.show(
+                            ui,
+                            &mut self.config,
+                            &self.model_reloader,
+                            is_reloading,
+                        );
                         changed |= self.config.show(ui);
 
                         if changed {
@@ -100,6 +97,12 @@ impl Gui {
                                 .color(Color32::LIGHT_RED),
                         )
                     });
+
+                if is_reloading {
+                    Area::new("spinner")
+                        .anchor(Align2::RIGHT_BOTTOM, [-MARGIN, -MARGIN])
+                        .show(context, |ui| ui.add(Spinner::new().size(32.0)));
+                }
             },
         );
     }
