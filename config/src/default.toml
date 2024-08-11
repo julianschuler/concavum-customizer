@@ -1,7 +1,7 @@
 [preview]
 show_keys = true
 show_interface_pcb = true
-show_bottom_plate = true
+show_bottom_plate = false
 light_positions = [[100, 0, 100], [-100, 0, 100], [100, -100, -100], [-100, -100, -100]]
 
 [finger_cluster]
