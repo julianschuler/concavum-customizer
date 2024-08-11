@@ -160,7 +160,7 @@ impl ColumnType {
     }
 }
 
-/// The config of a single finger cluster column.
+/// The configuration of a single finger cluster column.
 pub struct ColumnConfig {
     /// The type of the column.
     pub column_type: ColumnType,
