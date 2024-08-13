@@ -179,7 +179,14 @@ impl<'a> SerdeSerializer for &'a mut Serializer {
     }
 
     fn serialize_u64(self, value: u64) -> Result<()> {
-        self.serialize_integer(value);
+        // This is implemented to match KiCADs formatting of LSETs.
+        let upper = (value >> 32) as u32;
+        #[allow(clippy::cast_possible_truncation)]
+        let lower = value as u32;
+
+        self.space_if_needed();
+        self.output += &format!("{upper:#09x}_{lower:08x}");
+
         Ok(())
     }
 
@@ -189,7 +196,7 @@ impl<'a> SerdeSerializer for &'a mut Serializer {
 
     fn serialize_f64(self, value: f64) -> Result<()> {
         self.space_if_needed();
-        self.output += &value.to_string();
+        self.output += &format!("{value:.6}");
         Ok(())
     }
 
