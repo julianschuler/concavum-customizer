@@ -4,6 +4,7 @@ members = [
   "customizer",
   "gui",
   "model",
+  "pcb",
   "show",
   "show_derive",
   "viewer",
@@ -23,7 +24,9 @@ fidget = { git = "https://github.com/julianschuler/fidget.git", branch = "static
 glam = { version = "0.27", features = ["serde"] }
 gui = { path = "gui" }
 hex_color = { version = "3.0", features = ["serde"] }
+itoa = "1.0.11"
 model = { path = "model" }
+pcb = { path = "pcb" }
 pollster = "0.3.0"
 quote = "1.0.36"
 rfd = { version = "0.14.1", default-features = false, features = ["gtk3"] }
