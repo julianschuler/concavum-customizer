@@ -118,7 +118,7 @@ struct PlotParameters {
 impl Default for PlotParameters {
     fn default() -> Self {
         Self {
-            layerselection: 0x000_10fc_ffff_ffff,
+            layerselection: 0x000_0030_ffff_ffff,
             plot_on_all_layers_selection: 0x000_0000_0000_0000,
             disableapertmacros: false,
             usegerberextensions: false,
@@ -150,7 +150,7 @@ impl Default for PlotParameters {
             subtractmaskfromsilk: false,
             outputformat: 1,
             mirror: false,
-            drillshape: 1,
+            drillshape: 0,
             scaleselection: 1,
             outputdirectory: String::new(),
         }
