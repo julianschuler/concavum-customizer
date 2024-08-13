@@ -14,6 +14,47 @@ pub struct KicadPcb {
     nets: Vec<Net>,
 }
 
+impl Default for KicadPcb {
+    fn default() -> Self {
+        Self::new(1.6)
+    }
+}
+
+impl KicadPcb {
+    /// Creates a new matrix PCB from the given configuration.
+    #[must_use]
+    pub fn new(thickness: f32) -> Self {
+        Self {
+            #[allow(clippy::unreadable_literal)]
+            version: 20240108,
+            generator: "concavum_customizer".to_owned(),
+            general: General {
+                thickness,
+                legacy_teardrops: false,
+            },
+            paper: "A4".to_owned(),
+            layers: Layers::default(),
+            setup: SetupSettings::default(),
+            nets: vec![Net(0, String::new())],
+        }
+    }
+
+    /// Serializes the PCB to the KiCAD board file format.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the PCB could not be serialized.
+    #[must_use]
+    pub fn to_board_file(&self) -> String {
+        let mut serializer = Serializer::new("kicad_pcb");
+
+        self.serialize(&mut serializer)
+            .expect("PCB should always be serializable");
+
+        serializer.finish()
+    }
+}
+
 #[derive(Serialize)]
 struct General {
     thickness: f32,
@@ -159,44 +200,3 @@ impl Default for PlotParameters {
 
 #[derive(Serialize)]
 struct Net(u32, String);
-
-impl KicadPcb {
-    /// Creates a new matrix PCB from the given configuration.
-    #[must_use]
-    pub fn new(thickness: f32) -> Self {
-        Self {
-            #[allow(clippy::unreadable_literal)]
-            version: 20240108,
-            generator: "concavum_customizer".to_owned(),
-            general: General {
-                thickness,
-                legacy_teardrops: false,
-            },
-            paper: "A4".to_owned(),
-            layers: Layers::default(),
-            setup: SetupSettings::default(),
-            nets: vec![Net(0, String::new())],
-        }
-    }
-
-    /// Serializes the PCB to the KiCAD board file format.
-    ///
-    /// # Panics
-    ///
-    /// Panics if the PCB could not be serialized.
-    #[must_use]
-    pub fn to_board_file(&self) -> String {
-        let mut serializer = Serializer::new("kicad_pcb");
-
-        self.serialize(&mut serializer)
-            .expect("PCB should always be serializable");
-
-        serializer.finish()
-    }
-}
-
-impl Default for KicadPcb {
-    fn default() -> Self {
-        Self::new(1.6)
-    }
-}
