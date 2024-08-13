@@ -5,6 +5,7 @@ use std::{
 };
 
 use config::Config;
+use pcb::MatrixPcb;
 use rfd::AsyncFileDialog;
 use show::egui::{Align, Button, Layout, RichText, Ui};
 use zip::{write::SimpleFileOptions, ZipWriter};
@@ -153,6 +154,7 @@ async fn save_config(config: Config) -> Update {
 /// Exports all the model files in a ZIP archive.
 async fn export_model(config: Config, meshes: Meshes) -> Update {
     let toml = toml::to_string(&config)?;
+    let matrix_pcb = MatrixPcb::from_config(&config);
     let mut zip = ZipWriter::new(Cursor::new(Vec::new()));
 
     zip.start_file("config.toml", SimpleFileOptions::default())?;
@@ -163,6 +165,9 @@ async fn export_model(config: Config, meshes: Meshes) -> Update {
 
     zip.start_file("bottom_plate.stl", SimpleFileOptions::default())?;
     zip.write_stl(meshes.bottom_plate)?;
+
+    zip.start_file("matrix_pcb.kicad_pcb", SimpleFileOptions::default())?;
+    zip.write_all(matrix_pcb.to_kicad_board().as_bytes())?;
 
     let data = zip.finish()?;
 

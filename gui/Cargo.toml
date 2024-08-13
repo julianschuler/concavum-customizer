@@ -8,6 +8,7 @@ license.workspace = true
 config = { workspace = true }
 glam = { workspace = true }
 model = { workspace = true }
+pcb = { workspace = true }
 rfd = { workspace = true }
 show = { workspace = true }
 three-d = { workspace = true }
