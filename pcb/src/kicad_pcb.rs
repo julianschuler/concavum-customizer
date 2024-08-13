@@ -2,6 +2,10 @@ use serde::Serialize;
 
 use crate::serializer::Serializer;
 
+/// A 2-dimensional point.
+#[derive(Serialize, Clone, Copy)]
+pub struct Point(f32, f32);
+
 /// A KiCAD PCB.
 #[derive(Serialize)]
 pub struct KicadPcb {
@@ -12,6 +16,8 @@ pub struct KicadPcb {
     layers: Layers,
     setup: SetupSettings,
     nets: Vec<Net>,
+    segments: Vec<Segment>,
+    arcs: Vec<Arc>,
 }
 
 impl Default for KicadPcb {
@@ -36,6 +42,8 @@ impl KicadPcb {
             layers: Layers::default(),
             setup: SetupSettings::default(),
             nets: vec![Net(0, String::new())],
+            segments: Vec::default(),
+            arcs: Vec::default(),
         }
     }
 
@@ -52,6 +60,46 @@ impl KicadPcb {
             .expect("PCB should always be serializable");
 
         serializer.finish()
+    }
+
+    /// Adds a segment to the PCB.
+    pub fn add_segment(
+        &mut self,
+        start: Point,
+        end: Point,
+        width: f32,
+        layer: &'static str,
+        net: u32,
+    ) {
+        self.segments.push(Segment {
+            start,
+            end,
+            width,
+            layer,
+            net,
+            uuid: Uuid::new(),
+        });
+    }
+
+    /// Adds an arc to the PCB.
+    pub fn add_arc(
+        &mut self,
+        start: Point,
+        mid: Point,
+        end: Point,
+        width: f32,
+        layer: &'static str,
+        net: u32,
+    ) {
+        self.arcs.push(Arc {
+            start,
+            mid,
+            end,
+            width,
+            layer,
+            net,
+            uuid: Uuid::new(),
+        });
     }
 }
 
@@ -200,3 +248,41 @@ impl Default for PlotParameters {
 
 #[derive(Serialize)]
 struct Net(u32, String);
+
+#[derive(Serialize)]
+struct Segment {
+    start: Point,
+    end: Point,
+    width: f32,
+    layer: &'static str,
+    net: u32,
+    uuid: Uuid,
+}
+
+#[derive(Serialize)]
+struct Arc {
+    start: Point,
+    mid: Point,
+    end: Point,
+    width: f32,
+    layer: &'static str,
+    net: u32,
+    uuid: Uuid,
+}
+
+struct Uuid(uuid::Uuid);
+
+impl Serialize for Uuid {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        serializer.serialize_str(&self.0.to_string())
+    }
+}
+
+impl Uuid {
+    fn new() -> Self {
+        Self(uuid::Uuid::new_v4())
+    }
+}
