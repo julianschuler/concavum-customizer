@@ -9,6 +9,7 @@ config = { workspace = true }
 itoa = { workspace = true }
 serde = { workspace = true }
 thiserror = { workspace = true }
+uuid = { workspace = true }
 
 [lints]
 workspace = true
