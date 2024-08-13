@@ -5,6 +5,7 @@ members = [
   "customizer_wasm",
   "gui",
   "model",
+  "pcb",
   "show",
   "show_derive",
   "viewer",
@@ -24,8 +25,10 @@ fidget = { git = "https://github.com/julianschuler/fidget.git", branch = "static
 glam = { version = "0.29", features = ["serde"] }
 gui = { path = "gui" }
 hex_color = { version = "3.0", features = ["serde"] }
+itoa = "1.0"
 model = { path = "model" }
 nalgebra = { version = "0.33", default-features = false, features = ["std"] }
+pcb = { path = "pcb" }
 pollster = "0.3"
 quote = "1.0"
 rfd = { version = "0.15" }
