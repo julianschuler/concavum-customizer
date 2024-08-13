@@ -57,6 +57,7 @@ impl Serializer {
     /// Finishes the serialization and returns the output.
     pub fn finish(mut self) -> String {
         self.end_s_expression();
+        self.output += "\n";
         self.output
     }
 
@@ -68,7 +69,9 @@ impl Serializer {
     }
 
     fn begin_s_expression(&mut self) {
-        self.newline();
+        if self.indentation_level > 0 {
+            self.newline();
+        }
         self.output += "(";
         self.indentation_level += 1;
     }
