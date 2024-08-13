@@ -45,6 +45,7 @@ web-time = "1.1.0"
 zip = { version = "2.1.6", default-features = false }
 
 [workspace.lints.clippy]
+doc_markdown = { level = "allow", priority = 1 }
 pedantic = "warn"
 
 [workspace.lints.rust]
