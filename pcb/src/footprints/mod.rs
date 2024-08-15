@@ -1,4 +1,5 @@
 mod fpc_connector;
+mod switch;
 
 use serde::Serialize;
 
@@ -9,6 +10,7 @@ use crate::{
 };
 
 pub use fpc_connector::FpcConnector;
+pub use switch::Switch;
 
 #[derive(Serialize)]
 pub struct Footprint(&'static str, FootprintSettings);
