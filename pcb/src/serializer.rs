@@ -159,18 +159,21 @@ impl<'a> SerdeSerializer for &'a mut Serializer {
         // KiCAD uses i32s to store lengths and angles.
         // We assume here that all i32s are used to represent lengths and angles.
         // For serialization, this value is converted to millimeters/degrees.
+        const FRACTIONAL_DIGITS: usize = VALUE_TO_UNIT.ilog10() as usize;
+
         let integer_part = value / VALUE_TO_UNIT;
         let fractional_part = (value % VALUE_TO_UNIT).abs();
 
         self.serialize_integer(integer_part);
 
         if fractional_part != 0 {
-            let output = self
-                .itoa_buffer
-                .format(fractional_part)
-                .trim_end_matches('0');
+            let output = self.itoa_buffer.format(fractional_part);
+
             self.output += ".";
-            self.output += output;
+            for _ in 0..(FRACTIONAL_DIGITS - output.len()) {
+                self.output += "0";
+            }
+            self.output += output.trim_end_matches('0');
         }
 
         Ok(())
