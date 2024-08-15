@@ -15,10 +15,10 @@ pub trait Show {
     /// The title of the widget.
     const TITLE: &'static str = "";
 
-    /// Shows a widget allowing to modify self. Returns true if self was changed.
+    /// Shows a widget allowing to modify `self`. Returns true if `self` was changed.
     fn show(&mut self, ui: &mut Ui) -> bool;
 
-    /// Shows a widget with a name and description. Returns true if self was changed.
+    /// Shows a widget with a name and description. Returns true if `self` was changed.
     fn show_with_name_and_description(
         &mut self,
         ui: &mut Ui,
@@ -37,7 +37,7 @@ pub trait Show {
         changed
     }
 
-    /// Shows a widget as a collapsable section. Returns true if self was changed.
+    /// Shows a widget as a collapsable section. Returns true if `self` was changed.
     fn show_section(&mut self, ui: &mut Ui) -> bool {
         let mut changed = false;
 

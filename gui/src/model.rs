@@ -67,7 +67,7 @@ pub trait Mesh {
     /// Meshes the preview using the given mesh settings.
     fn mesh_preview(&self, settings: MeshSettings) -> CpuMesh;
 
-    /// Meshes self.
+    /// Meshes `self`.
     fn meshes(&self) -> Meshes;
 }
 
@@ -96,7 +96,7 @@ impl Mesh for Model {
 
 /// A trait for converting a mesh into a `CpuMesh`.
 trait IntoCpuMesh {
-    /// Converts self into a `CpuMesh`.
+    /// Converts `self` into a `CpuMesh`.
     fn into_cpu_mesh(self) -> CpuMesh;
 }
 

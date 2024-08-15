@@ -79,7 +79,7 @@ impl Bounds {
 
 /// A trait for converting a shape into a `Tree`.
 pub trait IntoTree {
-    /// Converts self into a `Tree`
+    /// Converts `self` into a `Tree`.
     fn into_tree(self) -> Tree;
 }
 
