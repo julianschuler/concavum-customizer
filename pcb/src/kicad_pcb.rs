@@ -67,7 +67,7 @@ impl KicadPcb {
         &mut self,
         start: Point,
         end: Point,
-        width: f32,
+        width: Length,
         layer: &'static str,
         net: u32,
     ) {
@@ -87,7 +87,7 @@ impl KicadPcb {
         start: Point,
         mid: Point,
         end: Point,
-        width: f32,
+        width: Length,
         layer: &'static str,
         net: u32,
     ) {
@@ -254,7 +254,7 @@ struct Net(u32, String);
 struct Segment {
     start: Point,
     end: Point,
-    width: f32,
+    width: Length,
     layer: &'static str,
     net: u32,
     uuid: Uuid,
@@ -265,7 +265,7 @@ struct Arc {
     start: Point,
     mid: Point,
     end: Point,
-    width: f32,
+    width: Length,
     layer: &'static str,
     net: u32,
     uuid: Uuid,
