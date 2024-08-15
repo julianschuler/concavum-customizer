@@ -1,6 +1,7 @@
 use serde::Serialize;
 
 use crate::{
+    footprints::Footprint,
     primitives::{Point, Uuid},
     serializer::Serializer,
     unit::{IntoUnit, Length},
@@ -16,6 +17,7 @@ pub struct KicadPcb {
     layers: Layers,
     setup: SetupSettings,
     nets: Vec<Net>,
+    footprints: Vec<Footprint>,
     segments: Vec<Segment>,
     arcs: Vec<Arc>,
 }
@@ -42,6 +44,7 @@ impl KicadPcb {
             layers: Layers::default(),
             setup: SetupSettings::default(),
             nets: vec![Net(0, String::new())],
+            footprints: Vec::default(),
             segments: Vec::default(),
             arcs: Vec::default(),
         }
@@ -100,6 +103,11 @@ impl KicadPcb {
             net,
             uuid: Uuid::new(),
         });
+    }
+
+    /// Adds the given footprint to the PCB.
+    pub fn add_footprint(&mut self, footprint: Footprint) {
+        self.footprints.push(footprint);
     }
 }
 
