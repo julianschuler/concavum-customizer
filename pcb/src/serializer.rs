@@ -264,7 +264,7 @@ impl<'a> SerdeSerializer for &'a mut Serializer {
         variant: &'static str,
     ) -> Result<()> {
         self.space_if_needed();
-        self.output += &variant.to_lowercase();
+        self.output += variant;
         Ok(())
     }
 
