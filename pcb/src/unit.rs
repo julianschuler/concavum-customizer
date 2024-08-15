@@ -39,6 +39,16 @@ pub trait IntoUnit {
     fn deg(self) -> Angle;
 }
 
+impl IntoUnit for i32 {
+    fn mm(self) -> Length {
+        Length(self * VALUE_TO_UNIT)
+    }
+
+    fn deg(self) -> Angle {
+        Angle(self * VALUE_TO_UNIT)
+    }
+}
+
 impl IntoUnit for f32 {
     fn mm(self) -> Length {
         #[allow(clippy::cast_possible_truncation, clippy::cast_precision_loss)]
