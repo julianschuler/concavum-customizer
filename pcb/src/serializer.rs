@@ -330,11 +330,12 @@ impl<'a> SerdeSerializer for &'a mut Serializer {
 
     fn serialize_struct_variant(
         self,
-        _name: &'static str,
-        _variant_index: u32,
+        name: &'static str,
+        variant_index: u32,
         variant: &'static str,
         len: usize,
     ) -> Result<Self::SerializeStructVariant> {
+        self.serialize_unit_variant(name, variant_index, variant)?;
         self.serialize_struct(variant, len)
     }
 }
