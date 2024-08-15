@@ -1,13 +1,10 @@
 use serde::Serialize;
 
 use crate::{
+    primitives::{Point, Uuid},
     serializer::Serializer,
     unit::{IntoUnit, Unit},
 };
-
-/// A 2-dimensional point.
-#[derive(Serialize, Clone, Copy)]
-pub struct Point(Unit, Unit);
 
 /// A KiCAD PCB.
 #[derive(Serialize)]
@@ -272,21 +269,4 @@ struct Arc {
     layer: &'static str,
     net: u32,
     uuid: Uuid,
-}
-
-struct Uuid(uuid::Uuid);
-
-impl Serialize for Uuid {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
-        serializer.serialize_str(&self.0.to_string())
-    }
-}
-
-impl Uuid {
-    fn new() -> Self {
-        Self(uuid::Uuid::new_v4())
-    }
 }
