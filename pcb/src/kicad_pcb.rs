@@ -119,6 +119,7 @@ struct Layers(Vec<Layer>);
 struct Layer(u32, &'static str, LayerType, Option<&'static str>);
 
 #[derive(Serialize)]
+#[serde(rename_all = "snake_case")]
 enum LayerType {
     Signal,
     User,
