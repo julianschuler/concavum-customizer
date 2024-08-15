@@ -13,6 +13,14 @@ impl Point {
     }
 }
 
+/// Creates a point from the given coordinates in millimeter.
+#[macro_export]
+macro_rules! point {
+    ($x:expr, $y:expr) => {
+        $crate::primitives::Point::new(($x).mm(), ($y).mm())
+    };
+}
+
 /// A size of an object as width and height.
 #[derive(Serialize, Clone, Copy)]
 pub struct Size(Length, Length);
@@ -24,20 +32,36 @@ impl Size {
     }
 }
 
+/// Creates a size tuple from the given values in millimeter.
+#[macro_export]
+macro_rules! size {
+    ($width:expr, $height:expr) => {
+        $crate::primitives::Size::new(($width).mm(), ($height).mm())
+    };
+}
+
 /// A 2-dimensional position with an optional orientation angle.
 #[derive(Serialize, Clone, Copy)]
 pub struct Position(Length, Length, Option<Angle>);
 
 impl Position {
-    /// Creates a new position from the given coordinates.
-    pub fn new(x: Length, y: Length) -> Self {
-        Self(x, y, None)
+    /// Creates a new position from the given coordinates and optional angle.
+    pub fn new(x: Length, y: Length, angle: Option<Angle>) -> Self {
+        Self(x, y, angle)
     }
 
-    /// Creates a new position from the given coordinates and angle.
-    pub fn new_with_angle(x: Length, y: Length, angle: Angle) -> Self {
-        Self(x, y, Some(angle))
+    /// Returns the angle of the position.
+    pub fn angle(&self) -> Option<Angle> {
+        self.2
     }
+}
+
+/// Creates a position from the given values in millimeter and the angle.
+#[macro_export]
+macro_rules! position {
+    ($x:expr, $y:expr, $angle:expr) => {
+        $crate::primitives::Position::new(($x).mm(), ($y).mm(), $angle)
+    };
 }
 
 /// A Universally Unique Identifier (UUID).
