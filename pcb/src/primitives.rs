@@ -13,6 +13,17 @@ impl Point {
     }
 }
 
+/// A size of an object as width and height.
+#[derive(Serialize, Clone, Copy)]
+pub struct Size(Length, Length);
+
+impl Size {
+    /// Creates a new size from the given width and height.
+    pub fn new(width: Length, height: Length) -> Self {
+        Self(width, height)
+    }
+}
+
 /// A 2-dimensional position with an optional orientation angle.
 #[derive(Serialize, Clone, Copy)]
 pub struct Position(Length, Length, Option<Angle>);
