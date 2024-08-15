@@ -1,14 +1,14 @@
 use serde::Serialize;
 
-use crate::unit::Unit;
+use crate::unit::Length;
 
 /// A 2-dimensional point.
 #[derive(Serialize, Clone, Copy)]
-pub struct Point(Unit, Unit);
+pub struct Point(Length, Length);
 
 impl Point {
     /// Creates a new point from the given coordinates.
-    pub fn new(x: Unit, y: Unit) -> Self {
+    pub fn new(x: Length, y: Length) -> Self {
         Self(x, y)
     }
 }
