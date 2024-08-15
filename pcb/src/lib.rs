@@ -3,5 +3,6 @@
 mod kicad_pcb;
 mod matrix_pcb;
 mod serializer;
+mod unit;
 
 pub use matrix_pcb::MatrixPcb;
