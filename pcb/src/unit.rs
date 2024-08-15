@@ -2,15 +2,28 @@ use std::ops::Deref;
 
 use serde::Serialize;
 
-/// The conversion factor between millimiters and the internal unit of length.
-pub const MM_TO_UNIT: i32 = 1_000_000;
+/// The conversion factor between an i32 value and the units of length or rotation.
+pub const VALUE_TO_UNIT: i32 = 1_000_000;
 
-/// An internal unit of length.
+/// A unit of length.
 #[derive(Serialize, Clone, Copy, Default)]
 #[serde(transparent)]
-pub struct Unit(i32);
+pub struct Length(i32);
 
-impl Deref for Unit {
+impl Deref for Length {
+    type Target = i32;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+/// A unit of rotation.
+#[derive(Serialize, Clone, Copy)]
+#[serde(transparent)]
+pub struct Angle(i32);
+
+impl Deref for Angle {
     type Target = i32;
 
     fn deref(&self) -> &Self::Target {
@@ -19,13 +32,21 @@ impl Deref for Unit {
 }
 
 pub trait IntoUnit {
-    /// Returns a unit with the length of `self` in millimeters.
-    fn mm(self) -> Unit;
+    /// Returns a length with the value of `self` in millimeters.
+    fn mm(self) -> Length;
+
+    /// Returns an angle with the value of `self` in degree.
+    fn deg(self) -> Angle;
 }
 
 impl IntoUnit for f32 {
-    fn mm(self) -> Unit {
+    fn mm(self) -> Length {
         #[allow(clippy::cast_possible_truncation, clippy::cast_precision_loss)]
-        Unit((self * MM_TO_UNIT as f32) as i32)
+        Length((self * VALUE_TO_UNIT as f32) as i32)
+    }
+
+    fn deg(self) -> Angle {
+        #[allow(clippy::cast_possible_truncation, clippy::cast_precision_loss)]
+        Angle((self * VALUE_TO_UNIT as f32) as i32)
     }
 }

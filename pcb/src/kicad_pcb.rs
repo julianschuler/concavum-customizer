@@ -3,7 +3,7 @@ use serde::Serialize;
 use crate::{
     primitives::{Point, Uuid},
     serializer::Serializer,
-    unit::{IntoUnit, Unit},
+    unit::{IntoUnit, Length},
 };
 
 /// A KiCAD PCB.
@@ -29,7 +29,7 @@ impl Default for KicadPcb {
 impl KicadPcb {
     /// Creates an empty KiCAD PCB with the given thickness.
     #[must_use]
-    pub fn new(thickness: Unit) -> Self {
+    pub fn new(thickness: Length) -> Self {
         Self {
             #[allow(clippy::unreadable_literal)]
             version: 20240108,
@@ -105,7 +105,7 @@ impl KicadPcb {
 
 #[derive(Serialize)]
 struct General {
-    thickness: Unit,
+    thickness: Length,
     legacy_teardrops: bool,
 }
 
@@ -160,7 +160,7 @@ impl Default for Layers {
 
 #[derive(Serialize, Default)]
 struct SetupSettings {
-    pad_to_mask_clearance: Unit,
+    pad_to_mask_clearance: Length,
     allow_soldermask_bridges_in_footprints: bool,
     pcbplotparams: PlotParameters,
 }
