@@ -1,6 +1,6 @@
 use serde::Serialize;
 
-use crate::unit::Length;
+use crate::unit::{Angle, Length};
 
 /// A 2-dimensional point.
 #[derive(Serialize, Clone, Copy)]
@@ -10,6 +10,22 @@ impl Point {
     /// Creates a new point from the given coordinates.
     pub fn new(x: Length, y: Length) -> Self {
         Self(x, y)
+    }
+}
+
+/// A 2-dimensional position with an optional orientation angle.
+#[derive(Serialize, Clone, Copy)]
+pub struct Position(Length, Length, Option<Angle>);
+
+impl Position {
+    /// Creates a new position from the given coordinates.
+    pub fn new(x: Length, y: Length) -> Self {
+        Self(x, y, None)
+    }
+
+    /// Creates a new position from the given coordinates and angle.
+    pub fn new_with_angle(x: Length, y: Length, angle: Angle) -> Self {
+        Self(x, y, Some(angle))
     }
 }
 
