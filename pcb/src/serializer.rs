@@ -160,7 +160,7 @@ impl<'a> SerdeSerializer for &'a mut Serializer {
         // We assume here that all i32s are used to represent lengths and angles.
         // For serialization, this value is converted to millimeters/degrees.
         let integer_part = value / VALUE_TO_UNIT;
-        let fractional_part = value % VALUE_TO_UNIT;
+        let fractional_part = (value % VALUE_TO_UNIT).abs();
 
         self.serialize_integer(integer_part);
 
