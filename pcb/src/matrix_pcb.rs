@@ -1,6 +1,6 @@
 use config::Config;
 
-use crate::kicad_pcb::KicadPcb;
+use crate::{kicad_pcb::KicadPcb, unit::IntoUnit};
 
 /// A key matrix PCB generated from a configuration.
 pub struct MatrixPcb {
@@ -11,7 +11,7 @@ impl MatrixPcb {
     /// Creates a new matrix PCB from the given configuration.
     #[must_use]
     pub fn from_config(_config: &Config) -> Self {
-        let inner = KicadPcb::new(0.6);
+        let inner = KicadPcb::new(0.6.mm());
 
         Self { inner }
     }

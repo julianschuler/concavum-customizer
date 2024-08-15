@@ -1,10 +1,13 @@
 use serde::Serialize;
 
-use crate::serializer::Serializer;
+use crate::{
+    serializer::Serializer,
+    unit::{IntoUnit, Unit},
+};
 
 /// A 2-dimensional point.
 #[derive(Serialize, Clone, Copy)]
-pub struct Point(f32, f32);
+pub struct Point(Unit, Unit);
 
 /// A KiCAD PCB.
 #[derive(Serialize)]
@@ -22,14 +25,14 @@ pub struct KicadPcb {
 
 impl Default for KicadPcb {
     fn default() -> Self {
-        Self::new(1.6)
+        Self::new(1.6.mm())
     }
 }
 
 impl KicadPcb {
-    /// Creates a new matrix PCB from the given configuration.
+    /// Creates an empty KiCAD PCB with the given thickness.
     #[must_use]
-    pub fn new(thickness: f32) -> Self {
+    pub fn new(thickness: Unit) -> Self {
         Self {
             #[allow(clippy::unreadable_literal)]
             version: 20240108,
@@ -105,7 +108,7 @@ impl KicadPcb {
 
 #[derive(Serialize)]
 struct General {
-    thickness: f32,
+    thickness: Unit,
     legacy_teardrops: bool,
 }
 
@@ -159,7 +162,7 @@ impl Default for Layers {
 
 #[derive(Serialize, Default)]
 struct SetupSettings {
-    pad_to_mask_clearance: f32,
+    pad_to_mask_clearance: Unit,
     allow_soldermask_bridges_in_footprints: bool,
     pcbplotparams: PlotParameters,
 }
