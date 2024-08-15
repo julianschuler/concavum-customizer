@@ -164,7 +164,11 @@ impl<'a> SerdeSerializer for &'a mut Serializer {
         let integer_part = value / VALUE_TO_UNIT;
         let fractional_part = (value % VALUE_TO_UNIT).abs();
 
-        self.serialize_integer(integer_part);
+        self.space_if_needed();
+        if value.is_negative() {
+            self.output += "-";
+        }
+        self.output += self.itoa_buffer.format(integer_part.abs());
 
         if fractional_part != 0 {
             let output = self.itoa_buffer.format(fractional_part);
