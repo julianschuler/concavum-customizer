@@ -2,6 +2,7 @@
 
 mod kicad_pcb;
 mod matrix_pcb;
+mod primitives;
 mod serializer;
 mod unit;
 
