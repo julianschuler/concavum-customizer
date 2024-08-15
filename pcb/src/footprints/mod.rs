@@ -1,3 +1,5 @@
+mod fpc_connector;
+
 use serde::Serialize;
 
 use crate::{
@@ -5,6 +7,8 @@ use crate::{
     size,
     unit::{IntoUnit, Length},
 };
+
+pub use fpc_connector::FpcConnector;
 
 #[derive(Serialize)]
 pub struct Footprint(&'static str, FootprintSettings);
