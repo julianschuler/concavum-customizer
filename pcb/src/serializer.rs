@@ -9,6 +9,8 @@ use serde::{
     Serialize,
 };
 
+use crate::unit::MM_TO_UNIT;
+
 type Result<T> = result::Result<T, Error>;
 
 #[derive(Clone, Debug, thiserror::Error)]
@@ -154,7 +156,23 @@ impl<'a> SerdeSerializer for &'a mut Serializer {
     }
 
     fn serialize_i32(self, value: i32) -> Result<()> {
-        self.serialize_integer(value);
+        // KiCAD uses nanometers stored in an i32 as internal unit of length.
+        // We assume here that all i32s are used to represent lengths.
+        // For serialization, this value is converted to millimeters.
+        let integer_part = value / MM_TO_UNIT;
+        let fractional_part = value % MM_TO_UNIT;
+
+        self.serialize_integer(integer_part);
+
+        if fractional_part != 0 {
+            let output = self
+                .itoa_buffer
+                .format(fractional_part)
+                .trim_end_matches('0');
+            self.output += ".";
+            self.output += output;
+        }
+
         Ok(())
     }
 
