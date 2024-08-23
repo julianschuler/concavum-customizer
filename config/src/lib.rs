@@ -84,10 +84,13 @@ impl Show for Config {
 }
 
 /// A configuration for previewing a keyboard.
+#[allow(clippy::struct_excessive_bools)]
 #[derive(Clone, Default, Serialize, Deserialize, Show, PartialEq, Eq, Hash)]
 pub struct Preview {
     /// Whether to show the keys during preview.
     pub show_keys: bool,
+    /// Whether to show the interface PCB during preview.
+    pub show_matrix_pcb: bool,
     /// Whether to show the interface PCB during preview.
     pub show_interface_pcb: bool,
     /// Whether to show the bottom plate during preview.

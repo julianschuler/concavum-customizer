@@ -40,6 +40,7 @@ fn main() {
                 ));
                 constants.push_str(&format!(
                     "
+#[allow(clippy::approx_constant)]
 #[allow(clippy::unreadable_literal)]
 const {uppercase_name}_POSITIONS: [Vec3; {}] = [
 {}];
