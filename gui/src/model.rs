@@ -28,18 +28,17 @@ impl From<&Model> for Settings {
             .key_positions
             .columns
             .iter()
-            .flat_map(|column| column.iter().copied().flat_map(mirrored_positions))
+            .flat_map(|column| column.iter().flat_map(mirrored_positions))
             .collect();
         let thumb_key_positions = model
             .keyboard
             .key_positions
             .thumb_keys
             .iter()
-            .copied()
             .flat_map(mirrored_positions)
             .collect();
         let interface_pcb_positions =
-            mirrored_positions(model.keyboard.interface_pcb_position).to_vec();
+            mirrored_positions(&model.keyboard.interface_pcb_position).to_vec();
 
         Self {
             finger_key_positions,
@@ -77,15 +76,15 @@ impl Mesh for Model {
     }
 
     fn mesh_preview(&self, settings: MeshSettings) -> CpuMesh {
-        self.keyboard.preview.mesh(settings).into_cpu_mesh()
+        self.keyboard.preview.mesh(settings).to_cpu_mesh()
     }
 
     fn meshes(&self) -> Meshes {
         let settings = self.keyboard.shape.mesh_settings(self.resolution);
-        let keyboard = self.keyboard.shape.mesh(settings).into_cpu_mesh();
+        let keyboard = self.keyboard.shape.mesh(settings).to_cpu_mesh();
 
         let settings = self.keyboard.bottom_plate.mesh_settings(self.resolution);
-        let bottom_plate = self.keyboard.bottom_plate.mesh(settings).into_cpu_mesh();
+        let bottom_plate = self.keyboard.bottom_plate.mesh(settings).to_cpu_mesh();
 
         Meshes {
             keyboard,
@@ -94,14 +93,14 @@ impl Mesh for Model {
     }
 }
 
-/// A trait for converting a mesh into a `CpuMesh`.
-trait IntoCpuMesh {
-    /// Converts `self` into a `CpuMesh`.
-    fn into_cpu_mesh(self) -> CpuMesh;
+/// A trait for converting `self` to a `CpuMesh`.
+trait ToCpuMesh {
+    /// Converts `self` to a `CpuMesh`.
+    fn to_cpu_mesh(&self) -> CpuMesh;
 }
 
-impl IntoCpuMesh for ModelMesh {
-    fn into_cpu_mesh(self) -> CpuMesh {
+impl ToCpuMesh for ModelMesh {
+    fn to_cpu_mesh(&self) -> CpuMesh {
         let vertices = self
             .vertices
             .iter()
@@ -173,8 +172,8 @@ impl<W: Write> WriteStl for W {
 }
 
 /// Creates two key positions mirrored along the XY-plane given a single one.
-fn mirrored_positions(position: DAffine3) -> [Mat4; 2] {
-    let matrix: DMat4 = position.into();
+fn mirrored_positions(position: &DAffine3) -> [Mat4; 2] {
+    let matrix: DMat4 = (*position).into();
     let position = matrix.as_mat4().to_cols_array_2d().into();
     let mirror_transform = Mat4::from_nonuniform_scale(-1.0, 1.0, 1.0);
 
