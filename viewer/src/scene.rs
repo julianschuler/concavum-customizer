@@ -1,4 +1,4 @@
-use config::Color;
+use config::{Color, Colors};
 use glam::DVec3;
 use gui::{DisplaySettings, Meshes, Settings};
 use three_d::{
@@ -13,9 +13,7 @@ pub struct Scene {
     keyboard: Option<Object>,
     bottom_plate: Option<InstancedObject>,
     preview: Option<InstancedObject>,
-    switches: InstancedObject,
-    finger_keycaps: InstancedObject,
-    thumb_keycaps: InstancedObject,
+    keys: Keys,
     interface_pcb: InstancedObject,
     lights: Vec<PointLight>,
     ambient: AmbientLight,
@@ -25,29 +23,20 @@ pub struct Scene {
 impl Scene {
     /// Creates a scene from the given model settings using the given assets.
     pub fn from_settings(context: &Context, settings: Settings, assets: &Assets) -> Scene {
-        let switch_positions = settings
+        let switch_positions: Vec<_> = settings
             .finger_key_positions
             .iter()
             .chain(&settings.thumb_key_positions)
             .copied()
             .collect();
         let display_settings = settings.display_settings.clone();
-        let switches = InstancedObject::new(
+
+        let keys = Keys::new(
             context,
-            &assets.switch,
-            display_settings.colors.switch,
-            switch_positions,
-        );
-        let finger_keycaps = InstancedObject::new(
-            context,
-            &assets.keycap_1u,
-            display_settings.colors.keycap,
+            assets,
+            &display_settings,
+            switch_positions.clone(),
             settings.finger_key_positions,
-        );
-        let thumb_keycaps = InstancedObject::new(
-            context,
-            &assets.keycap_1_5u,
-            display_settings.colors.keycap,
             settings.thumb_key_positions,
         );
         let interface_pcb = InstancedObject::new(
@@ -77,9 +66,7 @@ impl Scene {
             keyboard: None,
             bottom_plate: None,
             preview: None,
-            switches,
-            finger_keycaps,
-            thumb_keycaps,
+            keys,
             interface_pcb,
             lights,
             ambient,
@@ -130,11 +117,9 @@ impl Scene {
         if let Some(preview) = &mut self.preview {
             preview.update_color(display_settings.colors.keyboard);
         }
-        self.switches.update_color(display_settings.colors.switch);
-        self.finger_keycaps
-            .update_color(display_settings.colors.keycap);
-        self.thumb_keycaps
-            .update_color(display_settings.colors.keycap);
+        self.keys.update_colors(&display_settings.colors);
+        self.interface_pcb
+            .update_color(display_settings.colors.interface_pcb);
 
         self.display_settings = display_settings;
     }
@@ -165,15 +150,7 @@ impl Scene {
         }
 
         if self.display_settings.preview.show_keys {
-            render_target.render(
-                camera,
-                [
-                    &self.switches.inner,
-                    &self.finger_keycaps.inner,
-                    &self.thumb_keycaps.inner,
-                ],
-                &lights,
-            );
+            self.keys.render(render_target, camera, &lights);
         }
 
         if self.display_settings.preview.show_interface_pcb {
@@ -236,5 +213,69 @@ impl InstancedObject {
     /// Updates the color of the instanced object.
     fn update_color(&mut self, color: Color) {
         self.inner.material.update(color);
+    }
+}
+
+/// A set of keys to display.
+struct Keys {
+    switches: InstancedObject,
+    finger_keycaps: InstancedObject,
+    thumb_keycaps: InstancedObject,
+}
+
+impl Keys {
+    /// Creates a new set of keys.
+    fn new(
+        context: &Context,
+        assets: &Assets,
+        display_settings: &DisplaySettings,
+        switch_positions: Vec<Mat4>,
+        finger_key_positions: Vec<Mat4>,
+        thumb_key_positions: Vec<Mat4>,
+    ) -> Self {
+        let switches = InstancedObject::new(
+            context,
+            &assets.switch,
+            display_settings.colors.switch,
+            switch_positions,
+        );
+        let finger_keycaps = InstancedObject::new(
+            context,
+            &assets.keycap_1u,
+            display_settings.colors.keycap,
+            finger_key_positions,
+        );
+        let thumb_keycaps = InstancedObject::new(
+            context,
+            &assets.keycap_1_5u,
+            display_settings.colors.keycap,
+            thumb_key_positions,
+        );
+
+        Self {
+            switches,
+            finger_keycaps,
+            thumb_keycaps,
+        }
+    }
+
+    /// Updates the colors of the keys.
+    fn update_colors(&mut self, colors: &Colors) {
+        self.switches.update_color(colors.switch);
+        self.finger_keycaps.update_color(colors.keycap);
+        self.thumb_keycaps.update_color(colors.keycap);
+    }
+
+    /// Renders the keys to the given render target.
+    fn render(&self, render_target: &RenderTarget, camera: &Camera, lights: &[&dyn Light]) {
+        render_target.render(
+            camera,
+            [
+                &self.switches.inner,
+                &self.finger_keycaps.inner,
+                &self.thumb_keycaps.inner,
+            ],
+            lights,
+        );
     }
 }
