@@ -1,3 +1,5 @@
+use std::iter::once;
+
 use config::{Color, Colors};
 use glam::DVec3;
 use gui::{DisplaySettings, Meshes, Settings};
@@ -15,6 +17,7 @@ pub struct Scene {
     preview: Option<InstancedObject>,
     keys: Keys,
     interface_pcb: InstancedObject,
+    matrix_pcb: MatrixPcbs,
     lights: Vec<PointLight>,
     ambient: AmbientLight,
     display_settings: DisplaySettings,
@@ -45,6 +48,13 @@ impl Scene {
             display_settings.colors.interface_pcb,
             settings.interface_pcb_positions,
         );
+        let matrix_pcb = MatrixPcbs::new(
+            context,
+            settings.matrix_pcb_meshes,
+            assets,
+            display_settings.colors.matrix_pcb,
+            switch_positions,
+        );
 
         let ambient = AmbientLight::new(context, 0.05, Srgba::WHITE);
         let lights = display_settings
@@ -68,6 +78,7 @@ impl Scene {
             preview: None,
             keys,
             interface_pcb,
+            matrix_pcb,
             lights,
             ambient,
             display_settings,
@@ -118,6 +129,8 @@ impl Scene {
             preview.update_color(display_settings.colors.keyboard);
         }
         self.keys.update_colors(&display_settings.colors);
+        self.matrix_pcb
+            .update_color(display_settings.colors.matrix_pcb);
         self.interface_pcb
             .update_color(display_settings.colors.interface_pcb);
 
@@ -155,6 +168,10 @@ impl Scene {
 
         if self.display_settings.preview.show_interface_pcb {
             render_target.render(camera, &self.interface_pcb.inner, &lights);
+        }
+
+        if self.display_settings.preview.show_matrix_pcb {
+            self.matrix_pcb.render(render_target, camera, &lights);
         }
 
         if self.display_settings.preview.show_bottom_plate {
@@ -202,6 +219,32 @@ impl InstancedObject {
                 ..Default::default()
             },
             mesh,
+        );
+        let material = Physical::new(color);
+
+        Self {
+            inner: Gm::new(instanced_mesh, material),
+        }
+    }
+
+    /// Creates a new instanced object from an instanced mesh and color.
+    fn from_instanced_mesh(
+        context: &Context,
+        instanced_mesh: gui::InstancedMesh,
+        color: Color,
+    ) -> Self {
+        let gui::InstancedMesh {
+            mesh,
+            transformations,
+        } = instanced_mesh;
+
+        let instanced_mesh = InstancedMesh::new(
+            context,
+            &Instances {
+                transformations,
+                ..Default::default()
+            },
+            &mesh,
         );
         let material = Physical::new(color);
 
@@ -275,6 +318,51 @@ impl Keys {
                 &self.finger_keycaps.inner,
                 &self.thumb_keycaps.inner,
             ],
+            lights,
+        );
+    }
+}
+
+/// Two matrix PCBs, one for each side.
+struct MatrixPcbs {
+    objects: Vec<InstancedObject>,
+}
+
+impl MatrixPcbs {
+    /// Creates a new set of matrix PCBs.
+    fn new(
+        context: &Context,
+        meshes: Vec<gui::InstancedMesh>,
+        assets: &Assets,
+        color: Color,
+        switch_postitions: Vec<Mat4>,
+    ) -> Self {
+        let objects = meshes
+            .into_iter()
+            .map(|mesh| InstancedObject::from_instanced_mesh(context, mesh, color))
+            .chain(once(InstancedObject::new(
+                context,
+                &assets.matrix_pcb_pad,
+                color,
+                switch_postitions,
+            )))
+            .collect();
+
+        Self { objects }
+    }
+
+    /// Updates the color of the matrix PCBs.
+    fn update_color(&mut self, color: Color) {
+        for object in &mut self.objects {
+            object.update_color(color);
+        }
+    }
+
+    /// Renders the matrix PCBs to the given render target.
+    fn render(&self, render_target: &RenderTarget, camera: &Camera, lights: &[&dyn Light]) {
+        render_target.render(
+            camera,
+            self.objects.iter().map(|object| &object.inner),
             lights,
         );
     }

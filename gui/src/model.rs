@@ -15,8 +15,10 @@ pub struct Settings {
     pub finger_key_positions: Vec<Mat4>,
     /// The positions of the thumb keys.
     pub thumb_key_positions: Vec<Mat4>,
-    /// Positions of the interface PCBs.
+    /// The positions of the interface PCBs.
     pub interface_pcb_positions: Vec<Mat4>,
+    /// The meshes of the matrix PCBs.
+    pub matrix_pcb_meshes: Vec<InstancedMesh>,
     /// The display settings of the model.
     pub display_settings: DisplaySettings,
 }
@@ -39,11 +41,13 @@ impl From<&Model> for Settings {
             .collect();
         let interface_pcb_positions =
             mirrored_positions(&model.keyboard.interface_pcb_position).to_vec();
+        let matrix_pcb_meshes = Vec::default();
 
         Self {
             finger_key_positions,
             thumb_key_positions,
             interface_pcb_positions,
+            matrix_pcb_meshes,
             display_settings: model.display_settings.clone(),
         }
     }
@@ -169,6 +173,15 @@ impl<W: Write> WriteStl for W {
             Err(Error::InvalidMesh("The mesh representation is invalid"))
         }
     }
+}
+
+/// An instanced mesh.
+#[derive(Clone, Default)]
+pub struct InstancedMesh {
+    /// The mesh itself.
+    pub mesh: CpuMesh,
+    /// The transformations to apply to the mesh.
+    pub transformations: Vec<Mat4>,
 }
 
 /// Creates two key positions mirrored along the XY-plane given a single one.
