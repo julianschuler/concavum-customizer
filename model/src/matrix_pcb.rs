@@ -1,4 +1,4 @@
-use glam::{dvec2, dvec3, DAffine3, DVec2, DVec3};
+use glam::{dvec2, dvec3, DAffine3, DMat3, DVec2, DVec3};
 
 use crate::{
     geometry::{Line as GeometricLine, Plane},
@@ -201,4 +201,79 @@ impl KeyConnectors {
 fn key_connector_point(position: DAffine3, side: SideY) -> DVec3 {
     position.translation + side.direction() * PAD_SIZE.y / 2.0 * position.y_axis
         - (SWITCH_HEIGHT + THICKNESS / 2.0) * position.z_axis
+}
+
+/// A cubic Bézier curve.
+pub struct BezierCurve {
+    start: DAffine3,
+    control1: DVec3,
+    control2: DVec3,
+    end: DAffine3,
+}
+
+impl BezierCurve {
+    /// Returns the point corresponding to the given value of `t`.
+    fn parametric_point(&self, t: f64) -> DVec3 {
+        let p1 = lerp(self.start.translation, self.control1, t);
+        let p2 = lerp(self.control1, self.control2, t);
+        let p3 = lerp(self.control2, self.end.translation, t);
+        let p4 = lerp(p1, p2, t);
+        let p5 = lerp(p2, p3, t);
+
+        lerp(p4, p5, t)
+    }
+
+    /// Returns the tangent corresponding to the given value of `t`.
+    fn parametric_tangent(&self, t: f64) -> DVec3 {
+        let t_squared = t * t;
+
+        self.start.translation * (-3.0 * t_squared + 6.0 * t - 3.0)
+            + self.control1 * (9.0 * t_squared - 12.0 * t + 3.0)
+            + self.control2 * (-9.0 * t_squared + 6.0 * t)
+            + self.end.translation * (3.0 * t_squared)
+    }
+}
+
+impl Segment for BezierCurve {
+    fn positions(&self) -> Vec<DAffine3> {
+        const SEGMENTS: usize = 50;
+
+        (0..=SEGMENTS)
+            .map(|index| {
+                #[allow(clippy::cast_precision_loss)]
+                let t = index as f64 / SEGMENTS as f64;
+
+                let tangent = self.parametric_tangent(t);
+                let up = lerp(self.start.z_axis, self.end.z_axis, t);
+
+                let y_axis = tangent.normalize();
+                let x_axis = up.cross(y_axis).normalize();
+                let z_axis = x_axis.cross(y_axis);
+
+                let translation = self.parametric_point(t);
+
+                DAffine3 {
+                    matrix3: DMat3 {
+                        x_axis,
+                        y_axis,
+                        z_axis,
+                    },
+                    translation,
+                }
+            })
+            .collect()
+    }
+
+    fn length(&self) -> f64 {
+        self.positions()
+            .windows(2)
+            .map(|window| window[0].translation.distance(window[1].translation))
+            .sum()
+    }
+}
+
+/// Computes the linear interpolation between `a` and `b` with
+/// `lerp(a, b, 0) = a` and `lerp(a, b, 1) = b`.
+fn lerp(a: DVec3, b: DVec3, t: f64) -> DVec3 {
+    (1.0 - t) * a + t * b
 }
