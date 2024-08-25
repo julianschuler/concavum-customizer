@@ -131,6 +131,7 @@ impl ToCpuMesh for ModelMesh {
     }
 }
 
+/// A trait for writing a mesh to a binary STL.
 pub trait WriteStl: Write {
     /// Writes the given mesh to a binary STL.
     fn write_stl(&mut self, mesh: CpuMesh) -> Result<(), Error>;
@@ -184,7 +185,7 @@ pub struct InstancedMesh {
     pub transformations: Vec<Mat4>,
 }
 
-/// Creates two key positions mirrored along the XY-plane given a single one.
+/// Creates two key positions mirrored along the YZ-plane given a single one.
 fn mirrored_positions(position: &DAffine3) -> [Mat4; 2] {
     let matrix: DMat4 = (*position).into();
     let position = matrix.as_mat4().to_cols_array_2d().into();

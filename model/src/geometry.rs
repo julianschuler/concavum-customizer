@@ -42,7 +42,7 @@ pub struct Plane {
 }
 
 impl Plane {
-    /// Creates a line from a point on the plane and a normal vector.
+    /// Creates a plane from a point on the plane and a normal vector.
     pub fn new(point: DVec3, normal: DVec3) -> Self {
         let normal = normal.normalize();
         Self { point, normal }
