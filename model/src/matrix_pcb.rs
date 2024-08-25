@@ -99,6 +99,40 @@ pub enum KeyConnector {
     Line(Line),
 }
 
+impl KeyConnector {
+    /// Creates a new key connector from the given column.
+    #[must_use]
+    fn from_column(column: &Column) -> Self {
+        if let Some(next_position) = column.get(1) {
+            let position = column.first();
+            let start_point = key_connector_point(*position, SideY::Top);
+            let end_point = key_connector_point(*next_position, SideY::Bottom);
+
+            let plane = Plane::new(start_point, position.y_axis);
+            let line = GeometricLine::new(end_point, next_position.z_axis);
+
+            let angle = position
+                .z_axis
+                .dot(next_position.z_axis)
+                .clamp(-1.0, 1.0)
+                .acos();
+
+            if angle == 0.0 {
+                let length = start_point.distance(end_point);
+
+                Self::Line(Line { length })
+            } else {
+                let intersection = plane.intersection(&line).unwrap_or_default();
+                let radius = (intersection - start_point).dot(position.z_axis);
+
+                Self::Arc(UpwardsArc { radius, angle })
+            }
+        } else {
+            Self::Line(Line { length: 1.0 })
+        }
+    }
+}
+
 impl Segment for KeyConnector {
     fn positions(&self) -> Vec<DAffine3> {
         match self {
@@ -126,7 +160,7 @@ pub struct KeyConnectors {
 impl KeyConnectors {
     /// Creates new key connectors for a given column.
     #[must_use]
-    pub fn from_column(column: &Column) -> Self {
+    fn from_column(column: &Column) -> Self {
         let positions = column
             .windows(2)
             .flat_map(|window| {
@@ -155,34 +189,7 @@ impl KeyConnectors {
                 [left_position, right_position]
             })
             .collect();
-
-        let connector = if let Some(next_position) = column.get(1) {
-            let position = column.first();
-            let start_point = key_connector_point(*position, SideY::Top);
-            let end_point = key_connector_point(*next_position, SideY::Bottom);
-
-            let plane = Plane::new(start_point, position.y_axis);
-            let line = GeometricLine::new(end_point, next_position.z_axis);
-
-            let angle = position
-                .z_axis
-                .dot(next_position.z_axis)
-                .clamp(-1.0, 1.0)
-                .acos();
-
-            if angle == 0.0 {
-                let length = start_point.distance(end_point);
-
-                KeyConnector::Line(Line { length })
-            } else {
-                let intersection = plane.intersection(&line).unwrap_or_default();
-                let radius = (intersection - start_point).dot(position.z_axis);
-
-                KeyConnector::Arc(UpwardsArc { radius, angle })
-            }
-        } else {
-            KeyConnector::Line(Line { length: 1.0 })
-        };
+        let connector = KeyConnector::from_column(column);
 
         Self {
             connector,
