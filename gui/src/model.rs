@@ -1,7 +1,10 @@
 use std::io::Write;
 
 use glam::{DAffine3, DMat4};
-use model::{Mesh as ModelMesh, MeshSettings, Model};
+use model::{
+    matrix_pcb::{KeyConnectors, Segment, CONNECTOR_WIDTH, THICKNESS},
+    Mesh as ModelMesh, MeshSettings, Model,
+};
 use three_d::{CpuMesh, Indices, Mat4, Positions};
 
 pub use model::DisplaySettings;
@@ -41,7 +44,13 @@ impl From<&Model> for Settings {
             .collect();
         let interface_pcb_positions =
             mirrored_positions(&model.keyboard.interface_pcb_position).to_vec();
-        let matrix_pcb_meshes = Vec::default();
+        let matrix_pcb_meshes = model
+            .keyboard
+            .matrix_pcb
+            .key_connectors
+            .iter()
+            .map(Into::into)
+            .collect();
 
         Self {
             finger_key_positions,
@@ -185,6 +194,22 @@ pub struct InstancedMesh {
     pub transformations: Vec<Mat4>,
 }
 
+impl From<&KeyConnectors> for InstancedMesh {
+    fn from(connectors: &KeyConnectors) -> Self {
+        let mesh = segment_to_mesh(&connectors.connector);
+        let transformations = connectors
+            .positions
+            .iter()
+            .flat_map(mirrored_positions)
+            .collect();
+
+        Self {
+            mesh,
+            transformations,
+        }
+    }
+}
+
 /// Creates two key positions mirrored along the YZ-plane given a single one.
 fn mirrored_positions(position: &DAffine3) -> [Mat4; 2] {
     let matrix: DMat4 = (*position).into();
@@ -192,4 +217,54 @@ fn mirrored_positions(position: &DAffine3) -> [Mat4; 2] {
     let mirror_transform = Mat4::from_nonuniform_scale(-1.0, 1.0, 1.0);
 
     [position, mirror_transform * position]
+}
+
+/// A macro returning the indices of the given quad faces.
+macro_rules! face_indices {
+    ($base_index:expr, $(($a:expr, $b:expr, $c:expr, $d:expr)),* $(,)?) => {
+        [
+            $(
+                $base_index + $a, $base_index + $b, $base_index + $c,
+                $base_index + $c, $base_index + $d, $base_index + $a,
+            )*
+        ]
+    };
+}
+
+/// Converts a segment to a `CpuMesh`.
+fn segment_to_mesh(segment: &impl Segment) -> CpuMesh {
+    let positions = segment.positions();
+    let indices = (0..(u32::try_from(positions.len()).expect("length should fit in u32") - 1))
+        .flat_map(|segment_index| {
+            face_indices!(
+                4 * segment_index,
+                (0, 1, 5, 4),
+                (2, 1, 5, 6),
+                (3, 2, 6, 7),
+                (0, 3, 7, 4),
+            )
+        })
+        .collect();
+    let vertices = positions
+        .into_iter()
+        .flat_map(|position| {
+            let center = position.translation;
+            let x = CONNECTOR_WIDTH / 2.0 * position.x_axis;
+            let z = THICKNESS / 2.0 * position.z_axis;
+
+            [
+                center - x - z,
+                center + x - z,
+                center + x + z,
+                center - x + z,
+            ]
+        })
+        .map(|vertex| vertex.as_vec3().to_array().into())
+        .collect();
+
+    CpuMesh {
+        positions: Positions::F32(vertices),
+        indices: Indices::U32(indices),
+        ..Default::default()
+    }
 }

@@ -16,6 +16,7 @@ pub use insert_holder::InsertHolder;
 use crate::{
     geometry::Plane,
     key_positions::KeyPositions,
+    matrix_pcb::MatrixPcb,
     primitives::{BoxShape, Csg, HalfSpace, IntoTree, RoundedCsg, Shape, Transforms},
 };
 
@@ -35,12 +36,15 @@ pub struct Keyboard {
     pub key_positions: KeyPositions,
     /// The position of the interface PCB.
     pub interface_pcb_position: DAffine3,
+    /// The matrix PCB.
+    pub matrix_pcb: MatrixPcb,
 }
 
 impl Keyboard {
     /// Creates a keyboard from the given configuration.
     pub fn from_config(config: &Config) -> Self {
         let key_positions = KeyPositions::from_config(config);
+        let matrix_pcb = MatrixPcb::from_positions(&key_positions);
 
         let finger_cluster = FingerCluster::new(&key_positions.columns, &config.keyboard);
         let thumb_cluster = ThumbCluster::new(&key_positions.thumb_keys, &config.keyboard);
@@ -105,6 +109,7 @@ impl Keyboard {
             bottom_plate,
             key_positions,
             interface_pcb_position: interface_pcb.position,
+            matrix_pcb,
         }
     }
 

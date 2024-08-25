@@ -7,6 +7,9 @@ mod keyboard;
 mod primitives;
 mod util;
 
+/// The matrix PCB module cointans everything related to creating a model of the matrix PCB.
+pub mod matrix_pcb;
+
 use config::{Colors, Config, Preview};
 
 use keyboard::Keyboard;
