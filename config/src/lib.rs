@@ -3,10 +3,7 @@
 mod columns;
 mod primitives;
 
-use std::{
-    hash::{Hash, Hasher},
-    num::NonZeroU8,
-};
+use std::hash::{Hash, Hasher};
 
 use serde::{Deserialize, Serialize};
 use show::{
@@ -50,9 +47,9 @@ pub struct Preview {
 /// A configuration of a finger cluster.
 #[derive(Clone, Serialize, Deserialize, Show, PartialEq, Eq, Hash)]
 pub struct FingerCluster {
-    /// The number of rows, automatic PCB generation is supported for 1 to 5 rows.
-    pub rows: NonZeroU8,
-    /// The settings per column, automatic PCB generation is supported for 2 to 6 columns.
+    /// The number of rows.
+    pub rows: Ranged<i8, 2, 5>,
+    /// The settings per column.
     pub columns: Columns,
     /// The distance between two neighboring keys in X and Y direction.
     pub key_distance: Vec2<PositiveFloat>,
@@ -63,8 +60,8 @@ pub struct FingerCluster {
 /// A configuration of a thumb cluster.
 #[derive(Clone, Serialize, Deserialize, Show, PartialEq, Eq, Hash)]
 pub struct ThumbCluster {
-    /// The number of thumb keys, automatic PCB generation is supported for 1 to 6 keys.
-    pub keys: NonZeroU8,
+    /// The number of thumb keys.
+    pub keys: Ranged<i8, 1, 6>,
     /// The thumb well curvature as an angle between two neighboring keys.
     pub curvature_angle: CurvatureAngle,
     /// The rotation of the thumb cluster in relation to the finger cluster.

@@ -249,6 +249,12 @@ impl<const LOWER: i8, const UPPER: i8> From<Ranged<FiniteFloat, LOWER, UPPER>> f
     }
 }
 
+impl<const LOWER: i8, const UPPER: i8> From<Ranged<i8, LOWER, UPPER>> for i8 {
+    fn from(ranged: Ranged<i8, LOWER, UPPER>) -> Self {
+        ranged.0
+    }
+}
+
 impl<const LOWER: i8, const UPPER: i8> TryFrom<FiniteFloat> for Ranged<FiniteFloat, LOWER, UPPER> {
     type Error = Error;
 
@@ -266,6 +272,18 @@ impl<const LOWER: i8, const UPPER: i8> TryFrom<f64> for Ranged<FiniteFloat, LOWE
 
     fn try_from(value: f64) -> Result<Self, Self::Error> {
         FiniteFloat::try_from(value)?.try_into()
+    }
+}
+
+impl<const LOWER: i8, const UPPER: i8> TryFrom<i8> for Ranged<i8, LOWER, UPPER> {
+    type Error = Error;
+
+    fn try_from(value: i8) -> Result<Self, Self::Error> {
+        if value >= LOWER && value <= UPPER {
+            Ok(Self(value))
+        } else {
+            Err(Error::OutOfRangeValue)
+        }
     }
 }
 
@@ -302,5 +320,12 @@ impl<const LOWER: i8, const UPPER: i8> Show for Ranged<FiniteFloat, LOWER, UPPER
         *self = value.try_into().expect("value should be within range");
 
         changed
+    }
+}
+
+impl<const LOWER: i8, const UPPER: i8> Show for Ranged<i8, LOWER, UPPER> {
+    fn show(&mut self, ui: &mut Ui) -> bool {
+        ui.add(DragValue::new(&mut self.0).clamp_range(LOWER..=UPPER))
+            .changed()
     }
 }
