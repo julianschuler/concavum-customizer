@@ -32,9 +32,8 @@ impl ThumbKeys {
 
         let inner = if curvature_angle == 0.0 {
             (0..config.keys.into())
-                .map(|j| {
-                    let x = key_distance
-                        * f64::from(i16::from(j) - i16::from(config.resting_key_index));
+                .map(|i| {
+                    let x = key_distance * f64::from(i - i8::from(config.resting_key_index));
 
                     key_transform * DAffine3::from_translation(dvec3(x, 0.0, 0.0))
                 })
@@ -45,8 +44,8 @@ impl ThumbKeys {
 
             (0..config.keys.into())
                 .map(|i| {
-                    let total_angle = curvature_angle
-                        * f64::from(i16::from(i) - i16::from(config.resting_key_index));
+                    let total_angle =
+                        curvature_angle * f64::from(i - i8::from(config.resting_key_index));
                     let (sin, rcos) = (total_angle.sin(), 1.0 - total_angle.cos());
                     let translation = dvec3(curvature_radius * sin, 0.0, curvature_radius * rcos);
 

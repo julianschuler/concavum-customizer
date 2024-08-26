@@ -127,8 +127,7 @@ impl Columns {
                 let keys = if curvature_angle == 0.0 {
                     (0..config.rows.into())
                         .map(|j| {
-                            let y = key_distance.y
-                                * f64::from(i16::from(j) - i16::from(config.home_row_index));
+                            let y = key_distance.y * f64::from(j - i8::from(config.home_row_index));
                             column_transform * DAffine3::from_translation(dvec3(0.0, y, 0.0))
                         })
                         .collect()
@@ -138,8 +137,8 @@ impl Columns {
 
                     (0..config.rows.into())
                         .map(|j| {
-                            let total_angle = curvature_angle
-                                * f64::from(i16::from(j) - i16::from(config.home_row_index));
+                            let total_angle =
+                                curvature_angle * f64::from(j - i8::from(config.home_row_index));
                             let (sin, rcos) = (total_angle.sin(), 1.0 - total_angle.cos());
 
                             let x = -side

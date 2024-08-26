@@ -54,7 +54,7 @@ pub struct FingerCluster {
     /// The distance between two neighboring keys in X and Y direction.
     pub key_distance: Vec2<PositiveFloat>,
     /// The row index of the home row (usually 1).
-    pub home_row_index: u8,
+    pub home_row_index: Ranged<i8, 1, 4>,
 }
 
 /// A configuration of a thumb cluster.
@@ -71,7 +71,7 @@ pub struct ThumbCluster {
     /// The distance between two neighboring thumb keys.
     pub key_distance: PositiveFloat,
     /// The index of the key the thumb is naturally resting on (usually the center key).
-    pub resting_key_index: u8,
+    pub resting_key_index: Ranged<i8, 0, 5>,
 }
 
 /// A configuration of other keyboard settings.
