@@ -8,6 +8,8 @@ use show_derive::Show;
 
 use crate::{CurvatureAngle, FiniteFloat, SideAngle, Vec2};
 
+const MAXIMUM_NORMAL_COLUMNS: usize = 4;
+
 /// A per column configuration for the finger cluster keys.
 #[allow(clippy::struct_field_names)]
 #[derive(Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
@@ -45,14 +47,16 @@ impl Show for Columns {
 
         ui.horizontal(|ui| {
             ui.label(label).on_hover_text(description);
-            ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-                if ui.button("Add column").clicked() {
-                    self.normal_columns
-                        .0
-                        .push(self.normal_columns.last().clone());
-                    changed = true;
-                }
-            });
+            if self.normal_columns.0.len() < MAXIMUM_NORMAL_COLUMNS {
+                ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                    if ui.button("Add column").clicked() {
+                        self.normal_columns
+                            .0
+                            .push(self.normal_columns.last().clone());
+                        changed = true;
+                    }
+                });
+            }
         });
         changed |= self.show(ui);
 
@@ -88,6 +92,11 @@ impl<'de> Deserialize<'de> for NormalColumns {
             return Err(D::Error::custom(
                 "invalid value: normal columns must not be empty",
             ));
+        }
+        if inner.len() > MAXIMUM_NORMAL_COLUMNS {
+            return Err(D::Error::custom(format!(
+                "invalid value: there can be at most {MAXIMUM_NORMAL_COLUMNS} normal columns"
+            )));
         }
 
         Ok(Self(inner))
