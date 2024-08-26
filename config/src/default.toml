@@ -23,7 +23,7 @@ right_side_column = { active = true, side_angle = 15 }
 keys = 3
 curvature_angle = 15
 rotation = [-17, -29, 18.5]
-offset = [-3.05, -48, 10]
+offset = [-22.1, -48, 10]
 key_distance = 19.05
 resting_key_index = 1
 

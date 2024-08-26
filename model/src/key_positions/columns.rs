@@ -84,11 +84,17 @@ impl Columns {
     pub fn from_config(config: &FingerCluster) -> Self {
         let key_distance: DVec2 = config.key_distance.into();
         let column_configs: Vec<ColumnConfig> = (&config.columns).into();
+        let first_side = column_configs
+            .first()
+            .map(|column_config| column_config.column_type.side())
+            .unwrap_or_default();
 
         let inner = column_configs
             .into_iter()
             .enumerate()
             .map(|(i, column_config)| {
+                #[allow(clippy::cast_precision_loss)]
+                let index = i as f64 - first_side;
                 let ColumnConfig {
                     column_type,
                     curvature_angle,
@@ -101,16 +107,14 @@ impl Columns {
                 let side_angle_tan = side_angle.tan();
 
                 let (x, z_offset) = if side_angle == 0.0 {
-                    #[allow(clippy::cast_precision_loss)]
-                    (key_distance.x * i as f64, 0.0)
+                    (key_distance.x * index, 0.0)
                 } else {
                     let (sin, cos) = (side_angle.sin(), side_angle.cos());
                     let side_radius =
                         key_distance.x / 2.0 / (side_angle / 2.0).tan() + CURVATURE_HEIGHT;
 
-                    #[allow(clippy::cast_precision_loss)]
                     (
-                        key_distance.x * (i as f64 + side) - side * side_radius * sin,
+                        key_distance.x * (index + side) - side * side_radius * sin,
                         side_radius * (1.0 - cos),
                     )
                 };
