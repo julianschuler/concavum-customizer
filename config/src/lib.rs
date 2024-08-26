@@ -171,7 +171,7 @@ pub enum Error {
     /// A float is not positive.
     #[error("float is not positive")]
     NonPositiveFloat,
-    /// A float is out of range.
-    #[error("float is out of range")]
-    OutOfRangeFloat,
+    /// A value is out of range.
+    #[error("value is out of range")]
+    OutOfRangeValue,
 }

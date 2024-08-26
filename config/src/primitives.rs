@@ -1,4 +1,7 @@
-use std::hash::{Hash, Hasher};
+use std::{
+    fmt::{Display, Formatter, Result as FormatResult},
+    hash::{Hash, Hasher},
+};
 
 use glam::{DVec2, DVec3};
 use serde::{de::Error as DeserializeError, Deserialize, Deserializer, Serialize};
@@ -12,10 +15,10 @@ use crate::Error;
 const DRAG_SPEED: f64 = 0.1;
 
 /// A curvature angle between two neighboring keys.
-pub type CurvatureAngle = Ranged<-20, 50>;
+pub type CurvatureAngle = Ranged<FiniteFloat, -20, 50>;
 
 /// A side angle between two columns.
-pub type SideAngle = Ranged<0, 30>;
+pub type SideAngle = Ranged<FiniteFloat, 0, 30>;
 
 /// A 2-dimensional vector.
 #[derive(Copy, Clone, Deserialize, PartialEq, Eq, Hash)]
@@ -150,6 +153,12 @@ impl<'de> Deserialize<'de> for FiniteFloat {
     }
 }
 
+impl Display for FiniteFloat {
+    fn fmt(&self, f: &mut Formatter<'_>) -> FormatResult {
+        self.0.fmt(f)
+    }
+}
+
 impl Show for FiniteFloat {
     fn show(&mut self, ui: &mut Ui) -> bool {
         let mut value = f64::from(*self);
@@ -230,49 +239,55 @@ impl Show for PositiveFloat {
     }
 }
 
-/// A range constrained 64-bit floating point type.
+/// A range constrained value.
 #[derive(Copy, Clone, Serialize, PartialEq, Eq, Hash)]
-pub struct Ranged<const LOWER: i8, const UPPER: i8>(FiniteFloat);
+pub struct Ranged<T, const LOWER: i8, const UPPER: i8>(T);
 
-impl<const LOWER: i8, const UPPER: i8> From<Ranged<LOWER, UPPER>> for f64 {
-    fn from(ranged: Ranged<LOWER, UPPER>) -> Self {
+impl<const LOWER: i8, const UPPER: i8> From<Ranged<FiniteFloat, LOWER, UPPER>> for f64 {
+    fn from(ranged: Ranged<FiniteFloat, LOWER, UPPER>) -> Self {
         ranged.0.into()
     }
 }
 
-impl<const LOWER: i8, const UPPER: i8> TryFrom<f64> for Ranged<LOWER, UPPER> {
+impl<const LOWER: i8, const UPPER: i8> TryFrom<FiniteFloat> for Ranged<FiniteFloat, LOWER, UPPER> {
     type Error = Error;
 
-    fn try_from(value: f64) -> Result<Self, Self::Error> {
-        let inner = FiniteFloat::try_from(value)?;
-
-        if inner.0 >= f64::from(LOWER) && inner.0 <= f64::from(UPPER) {
-            Ok(Self(inner))
+    fn try_from(value: FiniteFloat) -> Result<Self, Self::Error> {
+        if value.0 >= f64::from(LOWER) && value.0 <= f64::from(UPPER) {
+            Ok(Self(value))
         } else {
-            Err(Error::OutOfRangeFloat)
+            Err(Error::OutOfRangeValue)
         }
     }
 }
 
-impl<'de, const LOWER: i8, const UPPER: i8> Deserialize<'de> for Ranged<LOWER, UPPER> {
+impl<const LOWER: i8, const UPPER: i8> TryFrom<f64> for Ranged<FiniteFloat, LOWER, UPPER> {
+    type Error = Error;
+
+    fn try_from(value: f64) -> Result<Self, Self::Error> {
+        FiniteFloat::try_from(value)?.try_into()
+    }
+}
+
+impl<'de, T, const LOWER: i8, const UPPER: i8> Deserialize<'de> for Ranged<T, LOWER, UPPER>
+where
+    T: Clone + Display + Deserialize<'de> + TryInto<Ranged<T, LOWER, UPPER>>,
+{
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: Deserializer<'de>,
     {
-        let inner = FiniteFloat::deserialize(deserializer)?;
+        let value = T::deserialize(deserializer)?;
 
-        if inner.0 >= f64::from(LOWER) && inner.0 <= f64::from(UPPER) {
-            Ok(Self(inner))
-        } else {
-            Err(D::Error::custom(format!(
-                "invalid value: `{}` is not between {LOWER} and {UPPER}",
-                inner.0
-            )))
-        }
+        value.clone().try_into().map_err(|_| {
+            D::Error::custom(format!(
+                "invalid value: `{value}` is not between {LOWER} and {UPPER}",
+            ))
+        })
     }
 }
 
-impl<const LOWER: i8, const UPPER: i8> Show for Ranged<LOWER, UPPER> {
+impl<const LOWER: i8, const UPPER: i8> Show for Ranged<FiniteFloat, LOWER, UPPER> {
     fn show(&mut self, ui: &mut Ui) -> bool {
         let mut value = f64::from(*self);
 
