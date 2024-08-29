@@ -1,5 +1,5 @@
 use glam::DVec2;
-use serde::{de::Error as DeserializeError, Deserialize, Deserializer, Serialize};
+use serde::{de::Error as _, Deserialize, Deserializer, Serialize};
 use show::{
     egui::{Align, CollapsingHeader, Layout, Ui},
     Show,

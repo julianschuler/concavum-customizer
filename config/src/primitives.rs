@@ -4,7 +4,7 @@ use std::{
 };
 
 use glam::{DVec2, DVec3};
-use serde::{de::Error as DeserializeError, Deserialize, Deserializer, Serialize};
+use serde::{de::Error as _, Deserialize, Deserializer, Serialize};
 use show::{
     egui::{DragValue, Ui},
     Show,
@@ -107,7 +107,8 @@ impl<T: Show> Show for Vec3<T> {
 }
 
 /// A finite 64-bit floating point type.
-#[derive(Copy, Clone, Serialize, Default, PartialEq)]
+#[derive(Copy, Clone, Serialize, Deserialize, Default, PartialEq)]
+#[serde(try_from = "f64")]
 pub struct FiniteFloat(f64);
 
 impl Eq for FiniteFloat {}
@@ -132,23 +133,6 @@ impl TryFrom<f64> for FiniteFloat {
             Ok(Self(value))
         } else {
             Err(Error::NonFiniteFloat)
-        }
-    }
-}
-
-impl<'de> Deserialize<'de> for FiniteFloat {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        let inner = f64::deserialize(deserializer)?;
-
-        if inner.is_finite() {
-            Ok(Self(inner))
-        } else {
-            Err(D::Error::custom(format!(
-                "invalid value: `{inner}` is not finite"
-            )))
         }
     }
 }
@@ -178,7 +162,8 @@ impl Show for FiniteFloat {
 }
 
 /// A strictly positive finite 64-bit floating point type.
-#[derive(Copy, Clone, Serialize, Default, PartialEq, Eq, Hash)]
+#[derive(Copy, Clone, Serialize, Deserialize, Default, PartialEq, Eq, Hash)]
+#[serde(try_from = "f64")]
 pub struct PositiveFloat(FiniteFloat);
 
 impl From<PositiveFloat> for f64 {
@@ -197,24 +182,6 @@ impl TryFrom<f64> for PositiveFloat {
             Ok(Self(inner))
         } else {
             Err(Error::NonPositiveFloat)
-        }
-    }
-}
-
-impl<'de> Deserialize<'de> for PositiveFloat {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        let inner = FiniteFloat::deserialize(deserializer)?;
-
-        if inner.0 > 0.0 {
-            Ok(Self(inner))
-        } else {
-            Err(D::Error::custom(format!(
-                "invalid value: `{}` is not greater than 0.0",
-                inner.0
-            )))
         }
     }
 }
