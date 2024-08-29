@@ -3,11 +3,14 @@
 mod columns;
 mod primitives;
 
-use std::hash::{Hash, Hasher};
+use std::{
+    hash::{Hash, Hasher},
+    ops::Deref,
+};
 
-use serde::{Deserialize, Serialize};
+use serde::{de::Error as _, Deserialize, Deserializer, Serialize};
 use show::{
-    egui::{Frame, Margin, ScrollArea, Ui},
+    egui::{DragValue, Frame, Margin, ScrollArea, Ui},
     Show,
 };
 use show_derive::Show;
@@ -22,7 +25,7 @@ pub struct Config {
     /// The preview configuration.
     pub preview: Preview,
     /// The finger cluster configuration.
-    pub finger_cluster: FingerCluster,
+    pub finger_cluster: FingerClusterWrapper,
     /// The thumb cluster configuration.
     pub thumb_cluster: ThumbCluster,
     /// The keyboard configuration.
@@ -93,6 +96,54 @@ pub struct Preview {
     pub light_positions: Vec<Vec3<FiniteFloat>>,
 }
 
+#[derive(Clone, Serialize, PartialEq, Eq, Hash)]
+/// A wrapper struct for the actual finger cluster configuration.
+pub struct FingerClusterWrapper(FingerCluster);
+
+impl Deref for FingerClusterWrapper {
+    type Target = FingerCluster;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl<'de> Deserialize<'de> for FingerClusterWrapper {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let mut finger_cluster = FingerCluster::deserialize(deserializer)?;
+
+        let home_row_index = i8::from(finger_cluster.home_row_index);
+        let maximum_index = i8::from(finger_cluster.rows) - 1;
+
+        if home_row_index >= 1 && home_row_index <= maximum_index {
+            finger_cluster.home_row_index.set_maximum(maximum_index);
+
+            Ok(Self(finger_cluster))
+        } else {
+            Err(D::Error::custom(format!(
+                "invalid value: home row index `{home_row_index}` is not between 1 and {maximum_index}",
+            )))
+        }
+    }
+}
+
+impl Show for FingerClusterWrapper {
+    const TITLE: &'static str = FingerCluster::TITLE;
+
+    fn show(&mut self, ui: &mut Ui) -> bool {
+        let changed = self.0.show(ui);
+
+        if changed {
+            self.0.home_row_index.set_maximum(i8::from(self.0.rows) - 1);
+        }
+
+        changed
+    }
+}
+
 /// A configuration of a finger cluster.
 #[derive(Clone, Serialize, Deserialize, Show, PartialEq, Eq, Hash)]
 pub struct FingerCluster {
@@ -103,7 +154,36 @@ pub struct FingerCluster {
     /// The distance between two neighboring keys in X and Y direction.
     pub key_distance: Vec2<PositiveFloat>,
     /// The row index of the home row (usually 1).
-    pub home_row_index: Ranged<i8, 1, 4>,
+    pub home_row_index: HomeRowIndex,
+}
+
+/// An index of the home row.
+#[derive(Clone, Copy, Default, Serialize, Deserialize, PartialEq, Eq, Hash)]
+#[serde(transparent)]
+pub struct HomeRowIndex {
+    inner: i8,
+    #[serde(skip)]
+    maximum: i8,
+}
+
+impl HomeRowIndex {
+    fn set_maximum(&mut self, maximum: i8) {
+        self.maximum = maximum;
+        self.inner = self.inner.min(maximum);
+    }
+}
+
+impl From<HomeRowIndex> for i8 {
+    fn from(value: HomeRowIndex) -> Self {
+        value.inner
+    }
+}
+
+impl Show for HomeRowIndex {
+    fn show(&mut self, ui: &mut Ui) -> bool {
+        ui.add(DragValue::new(&mut self.inner).clamp_range(1..=self.maximum))
+            .changed()
+    }
 }
 
 /// A configuration of a thumb cluster.
