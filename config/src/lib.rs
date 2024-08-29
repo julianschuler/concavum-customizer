@@ -31,6 +31,55 @@ pub struct Config {
     pub colors: Colors,
 }
 
+impl Default for Config {
+    fn default() -> Self {
+        let toml_string = include_str!("default.toml");
+        toml::from_str(toml_string).expect("default configuration should always be deserializable")
+    }
+}
+
+// Exclude fields independent from the calculated mesh from Hash and PartialEq
+impl PartialEq for Config {
+    fn eq(&self, other: &Self) -> bool {
+        self.finger_cluster == other.finger_cluster
+            && self.thumb_cluster == other.thumb_cluster
+            && self.keyboard == other.keyboard
+    }
+}
+
+impl Hash for Config {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.finger_cluster.hash(state);
+        self.thumb_cluster.hash(state);
+        self.keyboard.hash(state);
+    }
+}
+
+impl Show for Config {
+    fn show(&mut self, ui: &mut Ui) -> bool {
+        const MARGIN: Margin = Margin {
+            left: 0.0,
+            right: 8.0,
+            top: 4.0,
+            bottom: 8.0,
+        };
+
+        let mut changed = false;
+
+        ScrollArea::vertical().show(ui, |ui| {
+            Frame::default().inner_margin(MARGIN).show(ui, |ui| {
+                changed |= self.preview.show_section(ui);
+                changed |= self.finger_cluster.show_section(ui);
+                changed |= self.thumb_cluster.show_section(ui);
+                changed |= self.keyboard.show_section(ui);
+                changed |= self.colors.show_section(ui);
+            })
+        });
+
+        changed
+    }
+}
+
 /// A configuration for previewing a keyboard.
 #[derive(Clone, Default, Serialize, Deserialize, Show, PartialEq, Eq, Hash)]
 pub struct Preview {
@@ -108,55 +157,6 @@ pub struct Colors {
     pub fpc_connector: Color,
     /// The color of the background.
     pub background: Color,
-}
-
-impl Default for Config {
-    fn default() -> Self {
-        let toml_string = include_str!("default.toml");
-        toml::from_str(toml_string).expect("default configuration should always be deserializable")
-    }
-}
-
-// Exclude fields independent from the calculated mesh from Hash and PartialEq
-impl PartialEq for Config {
-    fn eq(&self, other: &Self) -> bool {
-        self.finger_cluster == other.finger_cluster
-            && self.thumb_cluster == other.thumb_cluster
-            && self.keyboard == other.keyboard
-    }
-}
-
-impl Hash for Config {
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        self.finger_cluster.hash(state);
-        self.thumb_cluster.hash(state);
-        self.keyboard.hash(state);
-    }
-}
-
-impl Show for Config {
-    fn show(&mut self, ui: &mut Ui) -> bool {
-        const MARGIN: Margin = Margin {
-            left: 0.0,
-            right: 8.0,
-            top: 4.0,
-            bottom: 8.0,
-        };
-
-        let mut changed = false;
-
-        ScrollArea::vertical().show(ui, |ui| {
-            Frame::default().inner_margin(MARGIN).show(ui, |ui| {
-                changed |= self.preview.show_section(ui);
-                changed |= self.finger_cluster.show_section(ui);
-                changed |= self.thumb_cluster.show_section(ui);
-                changed |= self.keyboard.show_section(ui);
-                changed |= self.colors.show_section(ui);
-            })
-        });
-
-        changed
-    }
 }
 
 /// An error type for configuration parsing errors.
