@@ -21,7 +21,7 @@ pub type CurvatureAngle = Ranged<FiniteFloat, -20, 50>;
 pub type SideAngle = Ranged<FiniteFloat, 0, 30>;
 
 /// A 2-dimensional vector.
-#[derive(Copy, Clone, Deserialize, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Deserialize, PartialEq, Eq, Hash)]
 pub struct Vec2<T> {
     /// The X component of the vector.
     pub x: T,
@@ -62,7 +62,7 @@ impl<T: Show> Show for Vec2<T> {
 }
 
 /// A 3-dimensional vector.
-#[derive(Copy, Clone, Deserialize, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Deserialize, PartialEq, Eq, Hash)]
 pub struct Vec3<T> {
     /// The X component of the vector.
     pub x: T,
@@ -107,7 +107,7 @@ impl<T: Show> Show for Vec3<T> {
 }
 
 /// A finite 64-bit floating point type.
-#[derive(Copy, Clone, Serialize, Deserialize, Default, PartialEq)]
+#[derive(Clone, Copy, Serialize, Deserialize, Default, PartialEq)]
 #[serde(try_from = "f64")]
 pub struct FiniteFloat(f64);
 
@@ -162,7 +162,7 @@ impl Show for FiniteFloat {
 }
 
 /// A strictly positive finite 64-bit floating point type.
-#[derive(Copy, Clone, Serialize, Deserialize, Default, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Serialize, Deserialize, Default, PartialEq, Eq, Hash)]
 #[serde(try_from = "f64")]
 pub struct PositiveFloat(FiniteFloat);
 
@@ -207,7 +207,7 @@ impl Show for PositiveFloat {
 }
 
 /// A range constrained value.
-#[derive(Copy, Clone, Serialize, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Serialize, PartialEq, Eq, Hash)]
 pub struct Ranged<T, const LOWER: i8, const UPPER: i8>(T);
 
 impl<const LOWER: i8, const UPPER: i8> From<Ranged<FiniteFloat, LOWER, UPPER>> for f64 {
