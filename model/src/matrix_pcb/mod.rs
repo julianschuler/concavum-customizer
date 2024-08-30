@@ -1,10 +1,9 @@
 mod segments;
 
-use glam::{dvec2, DAffine3, DVec2, DVec3};
+use glam::{dvec2, DAffine3, DVec2, DVec3, Vec3Swizzles};
 use segments::{Line, UpwardsArc};
 
 use crate::{
-    geometry::{Line as GeometricLine, Plane},
     key_positions::{Column, KeyPositions},
     util::SideY,
 };
@@ -48,6 +47,20 @@ pub enum KeyConnector {
 }
 
 impl KeyConnector {
+    /// Creates a new key connector from a the given offset in Y and Z.
+    #[must_use]
+    pub fn new(offset: DVec2) -> Self {
+        let angle = 2.0 * offset.to_angle();
+
+        if angle == 0.0 {
+            Self::Line(Line::new(offset.x))
+        } else {
+            let radius = offset.length_squared() / (2.0 * offset.y);
+
+            Self::Arc(UpwardsArc::new(radius, angle))
+        }
+    }
+
     /// Creates a new key connector from the given column.
     #[must_use]
     fn from_column(column: &Column) -> Self {
@@ -56,25 +69,11 @@ impl KeyConnector {
             let start_point = key_connector_point(*position, SideY::Top);
             let end_point = key_connector_point(*next_position, SideY::Bottom);
 
-            let plane = Plane::new(start_point, position.y_axis);
-            let line = GeometricLine::new(end_point, next_position.z_axis);
+            let direction = position
+                .inverse()
+                .transform_vector3(end_point - start_point);
 
-            let angle = position
-                .z_axis
-                .dot(next_position.z_axis)
-                .clamp(-1.0, 1.0)
-                .acos();
-
-            if angle == 0.0 {
-                let length = start_point.distance(end_point);
-
-                Self::Line(Line::new(length))
-            } else {
-                let intersection = plane.intersection(&line).unwrap_or_default();
-                let radius = (intersection - start_point).dot(position.z_axis);
-
-                Self::Arc(UpwardsArc::new(radius, angle))
-            }
+            Self::new(direction.yz())
         } else {
             Self::Line(Line::new(1.0))
         }
