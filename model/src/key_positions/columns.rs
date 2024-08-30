@@ -17,7 +17,7 @@ pub struct Column {
 }
 
 /// The type of a finger key column.
-#[derive(Clone)]
+#[derive(Clone, Copy)]
 pub enum ColumnType {
     /// A normal column.
     Normal,
@@ -67,7 +67,7 @@ impl Mul<&Column> for DAffine3 {
 
         Column {
             keys,
-            column_type: column.column_type.clone(),
+            column_type: column.column_type,
         }
     }
 }
@@ -77,6 +77,8 @@ pub struct Columns {
     inner: Vec<Column>,
     /// The clearances between neighboring finger keys.
     pub key_clearance: DVec2,
+    /// The index of the home row.
+    pub home_row_index: i8,
 }
 
 impl Columns {
@@ -88,6 +90,7 @@ impl Columns {
             .first()
             .map(|column_config| column_config.column_type.side())
             .unwrap_or_default();
+        let home_row_index = config.home_row_index.into();
 
         let inner = column_configs
             .into_iter()
@@ -127,7 +130,7 @@ impl Columns {
                 let keys = if curvature_angle == 0.0 {
                     (0..config.rows.into())
                         .map(|j| {
-                            let y = key_distance.y * f64::from(j - i8::from(config.home_row_index));
+                            let y = key_distance.y * f64::from(j - home_row_index);
                             column_transform * DAffine3::from_translation(dvec3(0.0, y, 0.0))
                         })
                         .collect()
@@ -137,8 +140,7 @@ impl Columns {
 
                     (0..config.rows.into())
                         .map(|j| {
-                            let total_angle =
-                                curvature_angle * f64::from(j - i8::from(config.home_row_index));
+                            let total_angle = curvature_angle * f64::from(j - home_row_index);
                             let (sin, rcos) = (total_angle.sin(), 1.0 - total_angle.cos());
 
                             let x = -side
@@ -167,6 +169,7 @@ impl Columns {
         Self {
             inner,
             key_clearance,
+            home_row_index,
         }
     }
 
@@ -309,6 +312,7 @@ impl Mul<Columns> for DAffine3 {
         Columns {
             inner,
             key_clearance: columns.key_clearance,
+            home_row_index: columns.home_row_index,
         }
     }
 }

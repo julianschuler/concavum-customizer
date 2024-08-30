@@ -274,7 +274,7 @@ impl<'a> ClearanceBuilder<'a> {
         let mut lower_support_points = self.support_planes.calculate_support_points(
             first,
             Side::Bottom,
-            &column.column_type,
+            column.column_type,
             &self.columns.key_clearance,
             &bounds,
         );
@@ -282,7 +282,7 @@ impl<'a> ClearanceBuilder<'a> {
         let upper_support_points = self.support_planes.calculate_support_points(
             last,
             Side::Top,
-            &column.column_type,
+            column.column_type,
             &self.columns.key_clearance,
             &bounds,
         );
@@ -346,7 +346,7 @@ impl SupportPlanes {
         &self,
         position: &DAffine3,
         side: Side,
-        column_type: &ColumnType,
+        column_type: ColumnType,
         key_clearance: &DVec2,
         bounds: &DMat3,
     ) -> Vec<DVec3> {
