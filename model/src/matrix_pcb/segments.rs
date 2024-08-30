@@ -80,12 +80,14 @@ pub struct BezierCurve {
 }
 
 impl BezierCurve {
-    /// Creates a new cubic Bézier curve with the given start and end positions and control points.
-    pub fn new(start: DAffine3, control1: DVec3, control2: DVec3, end: DAffine3) -> Self {
+    /// Creates a cubic Bézier with a low maximum curvature from the given positions.
+    pub fn from_positions(start: DAffine3, end: DAffine3) -> BezierCurve {
+        let distance = start.inverse().transform_point3(end.translation).y / 2.0;
+
         Self {
             start,
-            control1,
-            control2,
+            control1: start.translation + distance * start.y_axis,
+            control2: end.translation - distance * end.y_axis,
             end,
         }
     }
