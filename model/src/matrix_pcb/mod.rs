@@ -69,9 +69,7 @@ impl KeyConnector {
             let start_point = key_connector_point(*position, SideY::Top);
             let end_point = key_connector_point(*next_position, SideY::Bottom);
 
-            let direction = position
-                .inverse()
-                .transform_vector3(end_point - start_point);
+            let direction = position.matrix3.inverse() * (end_point - start_point);
 
             Self::new(direction.yz())
         } else {
@@ -111,26 +109,26 @@ impl KeyConnectors {
         let positions = column
             .windows(2)
             .flat_map(|window| {
-                let position = window[0];
-                let next_position = window[1];
+                let botttom_position = window[0];
+                let top_position = window[1];
 
-                let transformed_next_key = position
+                let transformed_next_key = botttom_position
                     .inverse()
-                    .transform_point3(next_position.translation);
+                    .transform_point3(top_position.translation);
 
                 let left_x_offset =
                     transformed_next_key.x.max(0.0) - (PAD_SIZE.x - CONNECTOR_WIDTH) / 2.0;
                 let right_x_offset =
                     transformed_next_key.x.min(0.0) + (PAD_SIZE.x - CONNECTOR_WIDTH) / 2.0;
 
-                let start_point = key_connector_point(position, SideY::Top);
+                let start_point = key_connector_point(botttom_position, SideY::Top);
                 let left_position = DAffine3 {
-                    matrix3: position.matrix3,
-                    translation: start_point + left_x_offset * position.x_axis,
+                    matrix3: botttom_position.matrix3,
+                    translation: start_point + left_x_offset * botttom_position.x_axis,
                 };
                 let right_position = DAffine3 {
-                    matrix3: position.matrix3,
-                    translation: start_point + right_x_offset * position.x_axis,
+                    matrix3: botttom_position.matrix3,
+                    translation: start_point + right_x_offset * botttom_position.x_axis,
                 };
 
                 [left_position, right_position]
