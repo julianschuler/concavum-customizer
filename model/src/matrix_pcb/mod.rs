@@ -3,7 +3,7 @@ mod segments;
 use std::f64::consts::FRAC_PI_2;
 
 use glam::{dvec2, DAffine3, DMat3, DVec2, DVec3, Vec3Swizzles};
-use segments::{Line, UpwardsArc};
+use segments::{Arc, Line};
 
 use crate::{
     key_positions::{Column, KeyPositions},
@@ -43,7 +43,7 @@ impl MatrixPcb {
 /// A connector between keys.
 pub enum KeyConnector {
     /// An arc.
-    Arc(UpwardsArc),
+    Arc(Arc),
     /// A line.
     Line(Line),
 }
@@ -59,7 +59,7 @@ impl KeyConnector {
         } else {
             let radius = offset.length_squared() / (2.0 * offset.y);
 
-            Self::Arc(UpwardsArc::new(radius, angle))
+            Self::Arc(Arc::new(radius, angle, DVec3::X))
         }
     }
 

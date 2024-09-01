@@ -1,4 +1,4 @@
-use glam::{dvec3, DAffine3, DMat3, DVec3};
+use glam::{dvec3, DAffine3, DMat3, DQuat, DVec3};
 
 /// A trait defining a segment.
 pub trait Segment {
@@ -9,33 +9,40 @@ pub trait Segment {
     fn length(&self) -> f64;
 }
 
-/// An arc along the Y-axis curving upwards.
-pub struct UpwardsArc {
+/// An arc starting along the Y-axis.
+pub struct Arc {
     radius: f64,
     angle: f64,
+    rotation_axis: DVec3,
 }
 
-impl UpwardsArc {
-    /// Creates a new upwards arc.
-    pub fn new(radius: f64, angle: f64) -> Self {
-        Self { radius, angle }
+impl Arc {
+    /// Creates a new arc. The rotation axis has to be normalized.
+    pub fn new(radius: f64, angle: f64, rotation_axis: DVec3) -> Self {
+        Self {
+            radius,
+            angle,
+            rotation_axis,
+        }
     }
 }
 
-impl Segment for UpwardsArc {
+impl Segment for Arc {
     fn positions(&self) -> Vec<DAffine3> {
         let maximum_angle = 3.0_f64.to_radians();
         #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
         let segments = ((self.angle / maximum_angle) as u32).max(1);
 
-        let translation = DAffine3::from_translation(dvec3(0.0, 0.0, self.radius));
+        let translation = self.radius * self.rotation_axis.cross(DVec3::Y);
 
         (0..=segments)
             .map(|segment| {
                 #[allow(clippy::cast_lossless)]
                 let angle = segment as f64 / segments as f64 * self.angle;
+                let rotation = DQuat::from_axis_angle(self.rotation_axis, angle);
 
-                translation * DAffine3::from_rotation_x(angle) * translation.inverse()
+                DAffine3::from_rotation_translation(rotation, translation)
+                    * DAffine3::from_translation(-translation)
             })
             .collect()
     }
