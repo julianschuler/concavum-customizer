@@ -1,11 +1,13 @@
 mod segments;
 
-use glam::{dvec2, DAffine3, DVec2, DVec3, Vec3Swizzles};
+use std::f64::consts::FRAC_PI_2;
+
+use glam::{dvec2, DAffine3, DMat3, DVec2, DVec3, Vec3Swizzles};
 use segments::{Line, UpwardsArc};
 
 use crate::{
     key_positions::{Column, KeyPositions},
-    util::SideY,
+    util::{SideX, SideY},
 };
 
 pub use segments::Segment;
@@ -145,5 +147,49 @@ impl KeyConnectors {
 
 fn key_connector_point(position: DAffine3, side: SideY) -> DVec3 {
     position.translation + side.direction() * PAD_SIZE.y / 2.0 * position.y_axis
+        - (SWITCH_HEIGHT + THICKNESS / 2.0) * position.z_axis
+}
+
+/// A connector between a normal and a side column.
+pub struct SideColumnConnector {
+    /// The connector itself.
+    pub connector: KeyConnector,
+    /// The position of the connector.
+    pub position: DAffine3,
+}
+
+impl SideColumnConnector {
+    /// Creates a new side column connector from the given key positions.
+    fn from_positions(left_position: DAffine3, right_position: DAffine3) -> Self {
+        let start_point = side_connector_point(left_position, SideX::Right);
+        let end_point = side_connector_point(right_position, SideX::Left);
+
+        let direction = left_position.matrix3.inverse() * (end_point - start_point);
+        let connector = KeyConnector::new(direction.xz());
+
+        let position = DAffine3 {
+            matrix3: left_position.matrix3 * DMat3::from_rotation_z(-FRAC_PI_2),
+            translation: start_point,
+        };
+
+        Self {
+            connector,
+            position,
+        }
+    }
+}
+
+impl Segment for SideColumnConnector {
+    fn positions(&self) -> Vec<DAffine3> {
+        self.connector.positions()
+    }
+
+    fn length(&self) -> f64 {
+        self.connector.length()
+    }
+}
+
+fn side_connector_point(position: DAffine3, side: SideX) -> DVec3 {
+    position.translation + side.direction() * PAD_SIZE.x / 2.0 * position.x_axis
         - (SWITCH_HEIGHT + THICKNESS / 2.0) * position.z_axis
 }
