@@ -1,9 +1,9 @@
 mod segments;
 
-use std::f64::consts::FRAC_PI_2;
+use std::f64::consts::{FRAC_PI_2, PI};
 
 use glam::{dvec2, DAffine3, DMat3, DVec2, DVec3, Vec3Swizzles};
-use segments::{Arc, Line};
+use segments::{Arc, BezierCurve, Line};
 
 use crate::{
     key_positions::{Column, KeyPositions},
@@ -148,6 +148,107 @@ impl KeyConnectors {
 fn key_connector_point(position: DAffine3, side: SideY) -> DVec3 {
     position.translation + side.direction() * PAD_SIZE.y / 2.0 * position.y_axis
         - (SWITCH_HEIGHT + THICKNESS / 2.0) * position.z_axis
+}
+
+/// A connector between two normal columns.
+pub struct NormalColumnConnector {
+    /// The Bézier curve segment in the center of the connector.
+    bezier_curve: BezierCurve,
+    /// The radius of the top and bottom arcs.
+    arc_radius: f64,
+    /// The side of the left arc.
+    left_arc_side: SideY,
+}
+
+impl NormalColumnConnector {
+    /// Creates a new normal column connector from the given key positions.
+    #[must_use]
+    fn from_positions(left_position: DAffine3, right_position: DAffine3) -> Self {
+        let transformed_right_translation = left_position
+            .inverse()
+            .transform_point3(right_position.translation);
+
+        let arc_radius = (transformed_right_translation.x - PAD_SIZE.x) / 2.0;
+        let left_arc_side = if transformed_right_translation.z >= 0.0 {
+            SideY::Top
+        } else {
+            SideY::Bottom
+        };
+
+        let start_position =
+            normal_connector_position(left_position, arc_radius, SideX::Right, left_arc_side);
+        let end_position = normal_connector_position(
+            right_position,
+            arc_radius,
+            SideX::Left,
+            left_arc_side.opposite(),
+        );
+
+        let bezier_curve = BezierCurve::from_positions(start_position, end_position);
+
+        Self {
+            bezier_curve,
+            arc_radius,
+            left_arc_side,
+        }
+    }
+}
+
+impl Segment for NormalColumnConnector {
+    fn positions(&self) -> Vec<DAffine3> {
+        let arc_positions = Arc::new(
+            self.arc_radius,
+            FRAC_PI_2,
+            -self.left_arc_side.direction() * DVec3::Z,
+        )
+        .positions();
+
+        let bezier_positions = self.bezier_curve.positions();
+        let first_arc_position = bezier_positions
+            .first()
+            .copied()
+            .expect("there should always be a position")
+            * DAffine3::from_rotation_z(PI);
+        let second_arc_position = bezier_positions
+            .last()
+            .copied()
+            .expect("there should always be a position");
+
+        arc_positions
+            .iter()
+            .rev()
+            .map(|&position| first_arc_position * position)
+            .chain(bezier_positions)
+            .chain(
+                arc_positions
+                    .iter()
+                    .map(|&position| second_arc_position * position),
+            )
+            .collect()
+    }
+
+    fn length(&self) -> f64 {
+        self.bezier_curve.length()
+    }
+}
+
+fn normal_connector_position(
+    position: DAffine3,
+    arc_radius: f64,
+    side_x: SideX,
+    side_y: SideY,
+) -> DAffine3 {
+    let translation = position.translation
+        + side_x.direction() * (PAD_SIZE.x / 2.0 + arc_radius) * position.x_axis
+        + side_y.direction()
+            * ((PAD_SIZE.y - CONNECTOR_WIDTH) / 2.0 - arc_radius)
+            * position.y_axis
+        - (SWITCH_HEIGHT + THICKNESS / 2.0) * position.z_axis;
+
+    DAffine3 {
+        matrix3: position.matrix3,
+        translation,
+    }
 }
 
 /// A connector between a normal and a side column.

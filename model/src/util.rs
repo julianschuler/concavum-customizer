@@ -38,6 +38,14 @@ impl SideY {
             SideY::Top => 1.0,
         }
     }
+
+    /// Returns the opposite side.
+    pub fn opposite(self) -> Self {
+        match self {
+            SideY::Bottom => SideY::Top,
+            SideY::Top => SideY::Bottom,
+        }
+    }
 }
 
 /// A side along the X- or Y-axis.
