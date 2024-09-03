@@ -2,7 +2,7 @@ use std::io::Write;
 
 use glam::{DAffine3, DMat4};
 use model::{
-    matrix_pcb::{KeyConnectors, Segment, CONNECTOR_WIDTH, THICKNESS},
+    matrix_pcb::{ColumnConnector, KeyConnectors, Segment, CONNECTOR_WIDTH, THICKNESS},
     Mesh as ModelMesh, MeshSettings, Model,
 };
 use three_d::{CpuMesh, Indices, Mat4, Positions};
@@ -44,12 +44,13 @@ impl From<&Model> for Settings {
             .collect();
         let interface_pcb_positions =
             mirrored_positions(&model.keyboard.interface_pcb_position).to_vec();
-        let matrix_pcb_meshes = model
-            .keyboard
-            .matrix_pcb
+        let matrix_pcb = &model.keyboard.matrix_pcb;
+
+        let matrix_pcb_meshes = matrix_pcb
             .key_connectors
             .iter()
             .map(Into::into)
+            .chain(matrix_pcb.column_connectors.iter().map(Into::into))
             .collect();
 
         Self {
@@ -202,6 +203,22 @@ impl From<&KeyConnectors> for InstancedMesh {
             .iter()
             .flat_map(mirrored_positions)
             .collect();
+
+        Self {
+            mesh,
+            transformations,
+        }
+    }
+}
+
+impl From<&ColumnConnector> for InstancedMesh {
+    fn from(connector: &ColumnConnector) -> Self {
+        let (mesh, position) = match connector {
+            ColumnConnector::Normal(connector) => (segment_to_mesh(connector), DAffine3::IDENTITY),
+            ColumnConnector::Side(connector) => (segment_to_mesh(connector), connector.position),
+        };
+
+        let transformations = mirrored_positions(&position).to_vec();
 
         Self {
             mesh,

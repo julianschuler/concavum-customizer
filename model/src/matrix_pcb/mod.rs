@@ -6,7 +6,7 @@ use glam::{dvec2, DAffine3, DMat3, DVec2, DVec3, Vec3Swizzles};
 use segments::{Arc, BezierCurve, Line};
 
 use crate::{
-    key_positions::{Column, KeyPositions},
+    key_positions::{Column, ColumnType, KeyPositions},
     util::{SideX, SideY},
 };
 
@@ -25,18 +25,27 @@ const SWITCH_HEIGHT: f64 = 5.0;
 pub struct MatrixPcb {
     /// The key connectors between keys in the columns.
     pub key_connectors: Vec<KeyConnectors>,
+    /// The normal column connectors.
+    pub column_connectors: Vec<ColumnConnector>,
 }
 
 impl MatrixPcb {
     /// Creates a new matrix PCB from the given key positions.
     pub fn from_positions(positions: &KeyPositions) -> Self {
-        let key_connectors = positions
-            .columns
-            .iter()
-            .map(KeyConnectors::from_column)
+        let columns = &positions.columns;
+        #[allow(clippy::cast_sign_loss)]
+        let home_row_index = columns.home_row_index as usize;
+
+        let key_connectors = columns.iter().map(KeyConnectors::from_column).collect();
+        let column_connectors = columns
+            .windows(2)
+            .map(|window| ColumnConnector::from_columns(&window[0], &window[1], home_row_index))
             .collect();
 
-        Self { key_connectors }
+        Self {
+            key_connectors,
+            column_connectors,
+        }
     }
 }
 
@@ -148,6 +157,37 @@ impl KeyConnectors {
 fn key_connector_point(position: DAffine3, side: SideY) -> DVec3 {
     position.translation + side.direction() * PAD_SIZE.y / 2.0 * position.y_axis
         - (SWITCH_HEIGHT + THICKNESS / 2.0) * position.z_axis
+}
+
+/// A connector between two neighboring columns.
+pub enum ColumnConnector {
+    /// A connector between two normal columns.
+    Normal(NormalColumnConnector),
+    /// A connector between a normal and a side column.
+    Side(SideColumnConnector),
+}
+
+impl ColumnConnector {
+    /// Creates a new connector between two neighboring columns.
+    #[must_use]
+    pub fn from_columns(
+        left_column: &Column,
+        right_column: &Column,
+        home_row_index: usize,
+    ) -> Self {
+        let left_position = left_column[home_row_index];
+        let right_position = right_column[home_row_index];
+
+        match (left_column.column_type, right_column.column_type) {
+            (ColumnType::Normal, ColumnType::Normal) => Self::Normal(
+                NormalColumnConnector::from_positions(left_position, right_position),
+            ),
+            _ => Self::Side(SideColumnConnector::from_positions(
+                left_position,
+                right_position,
+            )),
+        }
+    }
 }
 
 /// A connector between two normal columns.
