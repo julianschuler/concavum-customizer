@@ -1,12 +1,15 @@
 mod segments;
 
-use std::f64::consts::{FRAC_PI_2, PI};
+use std::{
+    f64::consts::{FRAC_PI_2, PI},
+    iter::once,
+};
 
 use glam::{dvec2, DAffine3, DMat3, DVec2, DVec3, Vec3Swizzles};
 use segments::{Arc, BezierCurve, Line};
 
 use crate::{
-    key_positions::{Column, ColumnType, KeyPositions},
+    key_positions::{Column, ColumnType, KeyPositions, ThumbKeys},
     util::{SideX, SideY},
 };
 
@@ -36,7 +39,11 @@ impl MatrixPcb {
         #[allow(clippy::cast_sign_loss)]
         let home_row_index = columns.home_row_index as usize;
 
-        let key_connectors = columns.iter().map(KeyConnectors::from_column).collect();
+        let key_connectors = columns
+            .iter()
+            .map(KeyConnectors::from_column)
+            .chain(once(KeyConnectors::from_thumb_keys(&positions.thumb_keys)))
+            .collect();
         let column_connectors = columns
             .windows(2)
             .map(|window| ColumnConnector::from_columns(&window[0], &window[1], home_row_index))
@@ -83,6 +90,22 @@ impl KeyConnector {
             let direction = position.matrix3.inverse() * (end_point - start_point);
 
             Self::new(direction.yz())
+        } else {
+            Self::Line(Line::new(1.0))
+        }
+    }
+
+    /// Creates new key connectors for the given thumb keys.
+    #[must_use]
+    fn from_thumb_keys(thumb_keys: &ThumbKeys) -> Self {
+        if let Some(next_position) = thumb_keys.get(1) {
+            let position = thumb_keys.first();
+            let start_point = side_connector_point(*position, SideX::Right);
+            let end_point = side_connector_point(*next_position, SideX::Left);
+
+            let direction = position.matrix3.inverse() * (end_point - start_point);
+
+            Self::new(direction.xz())
         } else {
             Self::Line(Line::new(1.0))
         }
@@ -146,6 +169,38 @@ impl KeyConnectors {
             })
             .collect();
         let connector = KeyConnector::from_column(column);
+
+        Self {
+            connector,
+            positions,
+        }
+    }
+
+    /// Creates new key connectors for the given thumb keys.
+    #[must_use]
+    fn from_thumb_keys(thumb_keys: &ThumbKeys) -> Self {
+        let positions = thumb_keys
+            .windows(2)
+            .flat_map(|window| {
+                let left_position = window[0];
+                let matrix3 = left_position.matrix3 * DMat3::from_rotation_z(-FRAC_PI_2);
+
+                let start_point = side_connector_point(left_position, SideX::Right);
+                let bottom_position = DAffine3 {
+                    matrix3,
+                    translation: start_point
+                        - (PAD_SIZE.y - CONNECTOR_WIDTH) / 2.0 * left_position.y_axis,
+                };
+                let top_position = DAffine3 {
+                    matrix3,
+                    translation: start_point
+                        + (PAD_SIZE.y - CONNECTOR_WIDTH) / 2.0 * left_position.y_axis,
+                };
+
+                [bottom_position, top_position]
+            })
+            .collect();
+        let connector = KeyConnector::from_thumb_keys(thumb_keys);
 
         Self {
             connector,
