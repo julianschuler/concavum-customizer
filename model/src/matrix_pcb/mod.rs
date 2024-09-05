@@ -84,8 +84,8 @@ impl KeyConnector {
     fn from_column(column: &Column) -> Self {
         if let Some(next_position) = column.get(1) {
             let position = column.first();
-            let start_point = key_connector_point(*position, SideY::Top);
-            let end_point = key_connector_point(*next_position, SideY::Bottom);
+            let start_point = vertical_connector_point(*position, SideY::Top);
+            let end_point = vertical_connector_point(*next_position, SideY::Bottom);
 
             let direction = position.matrix3.inverse() * (end_point - start_point);
 
@@ -100,8 +100,8 @@ impl KeyConnector {
     fn from_thumb_keys(thumb_keys: &ThumbKeys) -> Self {
         if let Some(next_position) = thumb_keys.get(1) {
             let position = thumb_keys.first();
-            let start_point = side_connector_point(*position, SideX::Right);
-            let end_point = side_connector_point(*next_position, SideX::Left);
+            let start_point = horizontal_connector_point(*position, SideX::Right);
+            let end_point = horizontal_connector_point(*next_position, SideX::Left);
 
             let direction = position.matrix3.inverse() * (end_point - start_point);
 
@@ -155,7 +155,7 @@ impl KeyConnectors {
                 let right_x_offset =
                     transformed_next_key.x.min(0.0) + (PAD_SIZE.x - CONNECTOR_WIDTH) / 2.0;
 
-                let start_point = key_connector_point(bottom_position, SideY::Top);
+                let start_point = vertical_connector_point(bottom_position, SideY::Top);
                 let left_position = DAffine3 {
                     matrix3: bottom_position.matrix3,
                     translation: start_point + left_x_offset * bottom_position.x_axis,
@@ -185,7 +185,7 @@ impl KeyConnectors {
                 let left_position = window[0];
                 let matrix3 = left_position.matrix3 * DMat3::from_rotation_z(-FRAC_PI_2);
 
-                let start_point = side_connector_point(left_position, SideX::Right);
+                let start_point = horizontal_connector_point(left_position, SideX::Right);
                 let bottom_position = DAffine3 {
                     matrix3,
                     translation: start_point
@@ -207,11 +207,6 @@ impl KeyConnectors {
             positions,
         }
     }
-}
-
-fn key_connector_point(position: DAffine3, side: SideY) -> DVec3 {
-    position.translation + side.direction() * PAD_SIZE.y / 2.0 * position.y_axis
-        - (SWITCH_HEIGHT + THICKNESS / 2.0) * position.z_axis
 }
 
 /// A connector between two neighboring columns.
@@ -248,11 +243,11 @@ impl ColumnConnector {
 /// A connector between two normal columns.
 pub struct NormalColumnConnector {
     /// The Bézier curve segment in the center of the connector.
-    bezier_curve: BezierCurve,
+    pub bezier_curve: BezierCurve,
     /// The radius of the top and bottom arcs.
-    arc_radius: f64,
+    pub arc_radius: f64,
     /// The side of the left arc.
-    left_arc_side: SideY,
+    pub left_arc_side: SideY,
 }
 
 impl NormalColumnConnector {
@@ -327,25 +322,6 @@ impl Segment for NormalColumnConnector {
     }
 }
 
-fn normal_connector_position(
-    position: DAffine3,
-    arc_radius: f64,
-    side_x: SideX,
-    side_y: SideY,
-) -> DAffine3 {
-    let translation = position.translation
-        + side_x.direction() * (PAD_SIZE.x / 2.0 + arc_radius) * position.x_axis
-        + side_y.direction()
-            * ((PAD_SIZE.y - CONNECTOR_WIDTH) / 2.0 - arc_radius)
-            * position.y_axis
-        - (SWITCH_HEIGHT + THICKNESS / 2.0) * position.z_axis;
-
-    DAffine3 {
-        matrix3: position.matrix3,
-        translation,
-    }
-}
-
 /// A connector between a normal and a side column.
 pub struct SideColumnConnector {
     /// The connector itself.
@@ -357,8 +333,8 @@ pub struct SideColumnConnector {
 impl SideColumnConnector {
     /// Creates a new side column connector from the given key positions.
     fn from_positions(left_position: DAffine3, right_position: DAffine3) -> Self {
-        let start_point = side_connector_point(left_position, SideX::Right);
-        let end_point = side_connector_point(right_position, SideX::Left);
+        let start_point = horizontal_connector_point(left_position, SideX::Right);
+        let end_point = horizontal_connector_point(right_position, SideX::Left);
 
         let direction = left_position.matrix3.inverse() * (end_point - start_point);
         let connector = KeyConnector::new(direction.xz());
@@ -385,7 +361,31 @@ impl Segment for SideColumnConnector {
     }
 }
 
-fn side_connector_point(position: DAffine3, side: SideX) -> DVec3 {
+fn vertical_connector_point(position: DAffine3, side: SideY) -> DVec3 {
+    position.translation + side.direction() * PAD_SIZE.y / 2.0 * position.y_axis
+        - (SWITCH_HEIGHT + THICKNESS / 2.0) * position.z_axis
+}
+
+fn horizontal_connector_point(position: DAffine3, side: SideX) -> DVec3 {
     position.translation + side.direction() * PAD_SIZE.x / 2.0 * position.x_axis
         - (SWITCH_HEIGHT + THICKNESS / 2.0) * position.z_axis
+}
+
+fn normal_connector_position(
+    position: DAffine3,
+    arc_radius: f64,
+    side_x: SideX,
+    side_y: SideY,
+) -> DAffine3 {
+    let translation = position.translation
+        + side_x.direction() * (PAD_SIZE.x / 2.0 + arc_radius) * position.x_axis
+        + side_y.direction()
+            * ((PAD_SIZE.y - CONNECTOR_WIDTH) / 2.0 - arc_radius)
+            * position.y_axis
+        - (SWITCH_HEIGHT + THICKNESS / 2.0) * position.z_axis;
+
+    DAffine3 {
+        matrix3: position.matrix3,
+        translation,
+    }
 }
