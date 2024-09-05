@@ -120,10 +120,10 @@ impl KeyConnectors {
         let positions = column
             .windows(2)
             .flat_map(|window| {
-                let botttom_position = window[0];
+                let bottom_position = window[0];
                 let top_position = window[1];
 
-                let transformed_next_key = botttom_position
+                let transformed_next_key = bottom_position
                     .inverse()
                     .transform_point3(top_position.translation);
 
@@ -132,14 +132,14 @@ impl KeyConnectors {
                 let right_x_offset =
                     transformed_next_key.x.min(0.0) + (PAD_SIZE.x - CONNECTOR_WIDTH) / 2.0;
 
-                let start_point = key_connector_point(botttom_position, SideY::Top);
+                let start_point = key_connector_point(bottom_position, SideY::Top);
                 let left_position = DAffine3 {
-                    matrix3: botttom_position.matrix3,
-                    translation: start_point + left_x_offset * botttom_position.x_axis,
+                    matrix3: bottom_position.matrix3,
+                    translation: start_point + left_x_offset * bottom_position.x_axis,
                 };
                 let right_position = DAffine3 {
-                    matrix3: botttom_position.matrix3,
-                    translation: start_point + right_x_offset * botttom_position.x_axis,
+                    matrix3: bottom_position.matrix3,
+                    translation: start_point + right_x_offset * bottom_position.x_axis,
                 };
 
                 [left_position, right_position]
