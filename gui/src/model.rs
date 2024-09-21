@@ -1,8 +1,10 @@
-use std::io::Write;
+use std::{io::Write, iter::once};
 
 use glam::{DAffine3, DMat4};
 use model::{
-    matrix_pcb::{ColumnConnector, KeyConnectors, Segment, CONNECTOR_WIDTH, THICKNESS},
+    matrix_pcb::{
+        ClusterConnector, ColumnConnector, KeyConnectors, Segment, CONNECTOR_WIDTH, THICKNESS,
+    },
     Mesh as ModelMesh, MeshSettings, Model,
 };
 use three_d::{CpuMesh, Indices, Mat4, Positions};
@@ -51,6 +53,7 @@ impl From<&Model> for Settings {
             .iter()
             .map(Into::into)
             .chain(matrix_pcb.column_connectors.iter().map(Into::into))
+            .chain(once((&matrix_pcb.cluster_connector).into()))
             .collect();
 
         Self {
@@ -219,6 +222,18 @@ impl From<&ColumnConnector> for InstancedMesh {
         };
 
         let transformations = mirrored_positions(&position).to_vec();
+
+        Self {
+            mesh,
+            transformations,
+        }
+    }
+}
+
+impl From<&ClusterConnector> for InstancedMesh {
+    fn from(cluster_connector: &ClusterConnector) -> Self {
+        let mesh = segment_to_mesh(cluster_connector);
+        let transformations = mirrored_positions(&DAffine3::IDENTITY).to_vec();
 
         Self {
             mesh,

@@ -245,7 +245,7 @@ impl Segment for NormalColumnConnector {
         let arc_positions = Arc::new(
             self.arc_radius,
             FRAC_PI_2,
-            -self.left_arc_side.direction() * DVec3::Z,
+            self.left_arc_side.direction() * DVec3::NEG_Z,
         )
         .positions();
 
