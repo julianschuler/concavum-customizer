@@ -130,8 +130,9 @@ impl Segment for BezierCurve {
                 #[allow(clippy::cast_precision_loss)]
                 let t = index as f64 / SEGMENTS as f64;
 
+                // A slerp would probably be more accurate here, but a lerp should suffice in this approximation
+                let up = lerp(self.start.z_axis, self.end.z_axis, t).normalize();
                 let tangent = self.parametric_tangent(t);
-                let up = lerp(self.start.z_axis, self.end.z_axis, t);
 
                 let y_axis = tangent.normalize();
                 let x_axis = up.cross(y_axis).normalize();
