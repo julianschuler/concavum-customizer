@@ -122,7 +122,10 @@ impl ToCpuMesh for ModelMesh {
             .vertices
             .iter()
             .map(|vertex| {
-                let slice: [_; 3] = vertex.as_slice().try_into().unwrap();
+                let slice: [_; 3] = vertex
+                    .as_slice()
+                    .try_into()
+                    .expect("the slice has three elements");
                 slice.into()
             })
             .collect();

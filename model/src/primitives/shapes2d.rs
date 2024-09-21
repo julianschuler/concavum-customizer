@@ -89,11 +89,11 @@ impl ConvexPolygon {
                 let &[a, b, c] = triangle;
                 let [e1, e2, e3] = [Edge::new(a, b), Edge::new(b, c), Edge::new(c, a)];
 
-                let first = polygon.first().unwrap();
-                let last = polygon.last().unwrap();
+                let first = *polygon.first().expect("there are at least three vertices");
+                let last = *polygon.last().expect("there are at least three vertices");
                 polygon
                     .windows(2)
-                    .chain(once([*last, *first].as_slice()))
+                    .chain(once([last, first].as_slice()))
                     .enumerate()
                     .find_map(|(i, window)| {
                         // Try to find a shared edge between polygon and triangle
@@ -129,8 +129,14 @@ impl ConvexPolygon {
 
     fn distances(self) -> Distances {
         let point = Vec2::point();
-        let first = *self.vertices.first().unwrap();
-        let last = *self.vertices.last().unwrap();
+        let first = *self
+            .vertices
+            .first()
+            .expect("there are at least three vertices");
+        let last = *self
+            .vertices
+            .last()
+            .expect("there are at least three vertices");
 
         self.vertices
             .windows(2)
@@ -196,7 +202,7 @@ impl SimplePolygon {
 
         let mut triangles: Vec<[usize; 3]> = triangles
             .chunks_exact(3)
-            .map(|slice| slice.try_into().unwrap())
+            .map(|slice| slice.try_into().expect("the slice has a three elements"))
             .collect();
         let mut merged_polygons = Vec::new();
 
@@ -215,8 +221,14 @@ impl SimplePolygon {
 impl From<SimplePolygon> for Tree {
     fn from(polygon: SimplePolygon) -> Self {
         let point = Vec2::point();
-        let first = *polygon.vertices.first().unwrap();
-        let last = *polygon.vertices.last().unwrap();
+        let first = *polygon
+            .vertices
+            .first()
+            .expect("there are at least three vertices");
+        let last = *polygon
+            .vertices
+            .last()
+            .expect("there are at least three vertices");
 
         let squared = polygon
             .vertices

@@ -66,7 +66,7 @@ impl ModelReloader {
 
         let model = Model::from_config(config);
 
-        if let Some(meshes) = self.cache.lock().unwrap().get(config).cloned() {
+        if let Some(meshes) = self.cached_meshes(config) {
             self.updater
                 .send_update(Update::New((&model).into(), meshes));
         } else {
@@ -108,7 +108,10 @@ impl ModelReloader {
                 if !cancelled {
                     let meshes = model.meshes();
 
-                    cache.lock().unwrap().insert(config, meshes.clone());
+                    cache
+                        .lock()
+                        .expect("the lock should not be poisened")
+                        .insert(config, meshes.clone());
 
                     if !cancellation_token.cancelled() {
                         updater.send_update(Update::Meshes(meshes));
@@ -122,7 +125,11 @@ impl ModelReloader {
 
     /// Returns the cached meshes corresponding to the given configuration.
     pub fn cached_meshes(&self, config: &Config) -> Option<Meshes> {
-        self.cache.lock().unwrap().get(config).cloned()
+        self.cache
+            .lock()
+            .expect("the lock should not be poisened")
+            .get(config)
+            .cloned()
     }
 }
 

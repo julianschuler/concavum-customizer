@@ -368,7 +368,9 @@ impl SupportPlanes {
                 let default = if point_is_above == point_direction_is_upwards {
                     let line = Line::new(point, position.z_axis);
 
-                    plane.intersection(&line).unwrap()
+                    plane
+                        .intersection(&line)
+                        .expect("there should always be an intersection")
                 } else {
                     point.project_to(plane)
                 };
