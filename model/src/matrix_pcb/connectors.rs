@@ -5,8 +5,9 @@ use glam::{DAffine3, DMat3, DVec2, DVec3, Vec3Swizzles};
 use crate::{
     key_positions::{Column, ColumnType, ThumbKeys},
     matrix_pcb::{
+        pad_center,
         segments::{Arc, BezierCurve, Line, Segment},
-        CONNECTOR_WIDTH, PAD_SIZE, SWITCH_HEIGHT, THICKNESS,
+        CONNECTOR_WIDTH, PAD_SIZE,
     },
     util::{SideX, SideY},
 };
@@ -316,13 +317,11 @@ impl Segment for SideColumnConnector {
 }
 
 fn vertical_connector_point(position: DAffine3, side: SideY) -> DVec3 {
-    position.translation + side.direction() * PAD_SIZE.y / 2.0 * position.y_axis
-        - (SWITCH_HEIGHT + THICKNESS / 2.0) * position.z_axis
+    pad_center(position) + side.direction() * PAD_SIZE.y / 2.0 * position.y_axis
 }
 
 fn horizontal_connector_point(position: DAffine3, side: SideX) -> DVec3 {
-    position.translation + side.direction() * PAD_SIZE.x / 2.0 * position.x_axis
-        - (SWITCH_HEIGHT + THICKNESS / 2.0) * position.z_axis
+    pad_center(position) + side.direction() * PAD_SIZE.x / 2.0 * position.x_axis
 }
 
 fn normal_connector_position(
@@ -331,12 +330,11 @@ fn normal_connector_position(
     side_x: SideX,
     side_y: SideY,
 ) -> DAffine3 {
-    let translation = position.translation
+    let translation = pad_center(position)
         + side_x.direction() * (PAD_SIZE.x / 2.0 + arc_radius) * position.x_axis
         + side_y.direction()
             * ((PAD_SIZE.y - CONNECTOR_WIDTH) / 2.0 - arc_radius)
-            * position.y_axis
-        - (SWITCH_HEIGHT + THICKNESS / 2.0) * position.z_axis;
+            * position.y_axis;
 
     DAffine3 {
         matrix3: position.matrix3,

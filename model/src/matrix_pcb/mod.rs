@@ -4,7 +4,7 @@ mod segments;
 
 use std::iter::once;
 
-use glam::{dvec2, DVec2};
+use glam::{dvec2, DAffine3, DVec2, DVec3};
 
 use crate::key_positions::{ColumnType, KeyPositions};
 
@@ -70,4 +70,9 @@ impl MatrixPcb {
             cluster_connector,
         }
     }
+}
+
+/// Returns the center point of a PCB pad for the given key position.
+fn pad_center(position: DAffine3) -> DVec3 {
+    position.translation - (SWITCH_HEIGHT + THICKNESS / 2.0) * position.z_axis
 }
