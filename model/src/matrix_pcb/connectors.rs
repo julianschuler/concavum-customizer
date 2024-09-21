@@ -250,14 +250,12 @@ impl Segment for NormalColumnConnector {
         .positions();
 
         let bezier_positions = self.bezier_curve.positions();
-        let first_arc_position = bezier_positions
+        let first_arc_position = *bezier_positions
             .first()
-            .copied()
             .expect("there should always be a position")
             * DAffine3::from_rotation_z(PI);
-        let second_arc_position = bezier_positions
+        let second_arc_position = *bezier_positions
             .last()
-            .copied()
             .expect("there should always be a position");
 
         arc_positions

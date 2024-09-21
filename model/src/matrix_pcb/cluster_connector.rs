@@ -29,14 +29,12 @@ impl Segment for ClusterConnector {
     fn positions(&self) -> Vec<DAffine3> {
         let bezier_positions = self.bezier_curve.positions();
 
-        let finger_cluster_arc_position = bezier_positions
+        let finger_cluster_arc_position = *bezier_positions
             .first()
-            .copied()
             .expect("there should always be a position")
             * DAffine3::from_rotation_z(PI);
-        let thumb_cluster_arc_position = bezier_positions
+        let thumb_cluster_arc_position = *bezier_positions
             .last()
-            .copied()
             .expect("there should always be a position");
 
         let finger_cluster_arc = Arc::new(
