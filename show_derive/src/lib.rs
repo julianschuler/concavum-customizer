@@ -83,6 +83,7 @@ pub fn derive_show(input: TokenStream) -> TokenStream {
     .into()
 }
 
+/// Creates the title of a section from a struct name.
 fn title_from_struct_name(string: &str) -> String {
     string
         .chars()
@@ -102,6 +103,7 @@ fn title_from_struct_name(string: &str) -> String {
         .collect()
 }
 
+/// Creates the name of a parameter from a struct field name.
 fn name_from_struct_field(string: &str) -> String {
     string
         .replace("pcb", "PCB")

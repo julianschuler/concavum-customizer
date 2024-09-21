@@ -92,7 +92,7 @@ impl Keyboard {
         );
         let cluster = cluster
             .union(holders)
-            .difference(Self::key_cutouts(&key_positions));
+            .difference(Self::switch_cutouts(&key_positions));
 
         // Mirror the cluster along the yz-plane to create both halves of the keyboard
         let keyboard = cluster.remap_xyz(Tree::x().abs(), Tree::y(), Tree::z());
@@ -113,19 +113,24 @@ impl Keyboard {
         }
     }
 
-    fn key_cutouts(key_positions: &KeyPositions) -> Tree {
-        let key_cutout = BoxShape::new(dvec3(14.0, 14.0, 10.0)).into_tree();
+    /// Calculates the switch cutouts from the given key positions.
+    fn switch_cutouts(key_positions: &KeyPositions) -> Tree {
+        const CUTOUT_SIZE: DVec3 = dvec3(14.0, 14.0, 10.0);
+
+        let switch_cutout = BoxShape::new(CUTOUT_SIZE).into_tree();
 
         key_positions
             .columns
             .iter()
             .flat_map(|column| column.iter())
             .chain(key_positions.thumb_keys.iter())
-            .map(|&position| key_cutout.affine(position))
+            .map(|&position| switch_cutout.affine(position))
             .reduce(|a, b| a.union(b))
             .expect("there is more than one key")
     }
 
+    /// Calculates the holders from the insert and interface PCB holders
+    /// an the cluster outline.
     fn holders(
         insert_holders: impl IntoIterator<Item = InsertHolder>,
         interface_pcb_holder: Tree,

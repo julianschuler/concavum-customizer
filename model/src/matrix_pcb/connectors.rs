@@ -222,9 +222,13 @@ impl NormalColumnConnector {
             SideY::Bottom
         };
 
-        let start_position =
-            normal_connector_position(left_position, arc_radius, SideX::Right, left_arc_side);
-        let end_position = normal_connector_position(
+        let start_position = normal_column_connector_position(
+            left_position,
+            arc_radius,
+            SideX::Right,
+            left_arc_side,
+        );
+        let end_position = normal_column_connector_position(
             right_position,
             arc_radius,
             SideX::Left,
@@ -316,15 +320,18 @@ impl Segment for SideColumnConnector {
     }
 }
 
+/// The attachment point of a vertical connector at the given side.
 fn vertical_connector_point(position: DAffine3, side: SideY) -> DVec3 {
     pad_center(position) + side.direction() * PAD_SIZE.y / 2.0 * position.y_axis
 }
 
+/// The attachment point of a horizontal connector at the given side.
 fn horizontal_connector_point(position: DAffine3, side: SideX) -> DVec3 {
     pad_center(position) + side.direction() * PAD_SIZE.x / 2.0 * position.x_axis
 }
 
-fn normal_connector_position(
+/// The attachment point of a normal column connector with the given radius in the given corner.
+fn normal_column_connector_position(
     position: DAffine3,
     arc_radius: f64,
     side_x: SideX,

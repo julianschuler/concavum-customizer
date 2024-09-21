@@ -76,6 +76,8 @@ impl ConvexPolygon {
         Self { vertices }
     }
 
+    /// Grows a convex polygon from a triangulation of a start triangle by iteratively
+    /// merging it with adjacent triangles that result in covex polygons after merging.
     fn grow_from_triangles(
         start_polygon: [usize; 3],
         triangles: &mut Vec<[usize; 3]>,
@@ -106,7 +108,7 @@ impl ConvexPolygon {
                         }
                     })
                     .map_or(true, |(index, point)| {
-                        // If resulting polygon is convex, insert point and remove triangle
+                        // If the resulting polygon is convex, insert point and remove triangle
                         let convex = is_convex_after_insert(&polygon, index, point, vertices);
                         if convex {
                             polygon.insert(index + 1, point);
@@ -127,6 +129,7 @@ impl ConvexPolygon {
         }
     }
 
+    /// Returns the distances of the polygon.
     fn distances(self) -> Distances {
         let point = Vec2::point();
         let first = *self
@@ -162,7 +165,7 @@ impl ConvexPolygon {
 
                 Distances { squared, inner }
             })
-            .reduce(Distances::combine)
+            .reduce(Distances::combine_convex)
             .expect("there is always a vertex")
     }
 }
@@ -195,6 +198,7 @@ impl SimplePolygon {
         Self { vertices }
     }
 
+    /// Splits the simple polygon into a list of convex polygons.
     fn split_into_convex_polygons(&self) -> Vec<ConvexPolygon> {
         let vertices: Vec<_> = self.vertices.iter().flat_map(DVec2::to_array).collect();
         let triangles =
@@ -202,7 +206,7 @@ impl SimplePolygon {
 
         let mut triangles: Vec<[usize; 3]> = triangles
             .chunks_exact(3)
-            .map(|slice| slice.try_into().expect("the slice has a three elements"))
+            .map(|slice| slice.try_into().expect("the slice has three elements"))
             .collect();
         let mut merged_polygons = Vec::new();
 
@@ -312,20 +316,22 @@ impl From<Corner> for Tree {
 
                 Distances { squared, inner }
             })
-            .reduce(Distances::combine)
+            .reduce(Distances::combine_convex)
             .expect("there are 2 edge normal pairs");
 
         squared.max(EPSILON).sqrt() + 2.0 * inner
     }
 }
 
+/// A helper struct containing a squared and signed inner distance.
 struct Distances {
     squared: Tree,
     inner: Tree,
 }
 
 impl Distances {
-    fn combine(self, other: Self) -> Self {
+    /// Performs a convex combination of two distances.
+    fn combine_convex(self, other: Self) -> Self {
         Distances {
             squared: self.squared.min(other.squared),
             inner: self.inner.max(other.inner),
@@ -333,6 +339,7 @@ impl Distances {
     }
 }
 
+/// An edge given by two vertex indices.
 #[derive(PartialEq, Eq, Clone)]
 struct Edge {
     start: usize,
@@ -340,11 +347,13 @@ struct Edge {
 }
 
 impl Edge {
+    /// Creates a new edge from the given start and end indices.
     fn new(start: usize, end: usize) -> Self {
         Self { start, end }
     }
 }
 
+/// Returns true if the given polygon is convex after inserting a new point.
 #[allow(clippy::many_single_char_names)]
 fn is_convex_after_insert(
     polygon: &[usize],

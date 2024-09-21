@@ -67,6 +67,7 @@ pub struct Assets {{{struct_definition}
 }}
 
 impl Assets {{
+    /// Creates the assets from the compile-time constants.
     pub fn new() -> Self {{
         Self {{{struct_implementation}
         }}
@@ -112,7 +113,7 @@ struct Constant {
 
 impl Constant {
     fn positions() -> Self {
-        // OBJ files are 1-indexed, we add an unused entry here to avoid parsing values
+        // OBJ files are 1-indexed, add an unused entry here to avoid parsing values
         let entries = "    Vec3::new(0f32, 0f32, 0f32),\n".to_owned();
 
         Self { entries, length: 1 }

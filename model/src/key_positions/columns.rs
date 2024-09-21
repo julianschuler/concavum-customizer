@@ -229,6 +229,7 @@ impl Columns {
             .unwrap_or_default()
     }
 
+    /// Returns a point along the top or bottom circumference between two keys.
     fn circumference_point(
         left: DAffine3,
         right: DAffine3,
@@ -247,6 +248,7 @@ impl Columns {
         }
     }
 
+    /// Returns the points along the left or right side.
     fn side_circumference_points(&self, side_x: SideX, key_clearance: DVec2) -> Vec<DVec3> {
         let column = match side_x {
             SideX::Left => self.first(),
@@ -269,6 +271,7 @@ impl Columns {
         points
     }
 
+    /// Returns a point along the left or right side between two keys.
     fn side_circumference_point(
         bottom: DAffine3,
         top: DAffine3,
