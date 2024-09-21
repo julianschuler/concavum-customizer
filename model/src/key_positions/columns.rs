@@ -41,13 +41,13 @@ impl Column {
     }
 
     /// Returns the first finger key of the column.
-    pub fn first(&self) -> &DAffine3 {
-        self.keys.first().expect("there has to be at least one row")
+    pub fn first(&self) -> DAffine3 {
+        *self.keys.first().expect("there has to be at least one row")
     }
 
     /// Returns the last finger key of the column.
-    pub fn last(&self) -> &DAffine3 {
-        self.keys.last().expect("there has to be at least one row")
+    pub fn last(&self) -> DAffine3 {
+        *self.keys.last().expect("there has to be at least one row")
     }
 }
 
@@ -189,7 +189,7 @@ impl Columns {
 
     /// Returns the points for an outline containing all thumb keys.
     pub fn outline_points(&self) -> Vec<DVec2> {
-        let key_clearance = &self.key_clearance;
+        let key_clearance = self.key_clearance;
         let bottom_points = self.windows(2).map(|window| {
             let first_left = window[0].first();
             let first_right = window[1].first();
@@ -230,10 +230,10 @@ impl Columns {
     }
 
     fn circumference_point(
-        left: &DAffine3,
-        right: &DAffine3,
+        left: DAffine3,
+        right: DAffine3,
         side_y: SideY,
-        key_clearance: &DVec2,
+        key_clearance: DVec2,
     ) -> DVec3 {
         let left_point = corner_point(left, SideX::Right, side_y, key_clearance);
         let right_point = corner_point(right, SideX::Left, side_y, key_clearance);
@@ -247,7 +247,7 @@ impl Columns {
         }
     }
 
-    fn side_circumference_points(&self, side_x: SideX, key_clearance: &DVec2) -> Vec<DVec3> {
+    fn side_circumference_points(&self, side_x: SideX, key_clearance: DVec2) -> Vec<DVec3> {
         let column = match side_x {
             SideX::Left => self.first(),
             SideX::Right => self.last(),
@@ -261,7 +261,7 @@ impl Columns {
         let mut points = vec![lower_corner];
 
         points.extend(column.windows(2).filter_map(|window| {
-            Self::side_circumference_point(&window[0], &window[1], side_x, key_clearance)
+            Self::side_circumference_point(window[0], window[1], side_x, key_clearance)
         }));
 
         points.push(upper_corner);
@@ -270,10 +270,10 @@ impl Columns {
     }
 
     fn side_circumference_point(
-        bottom: &DAffine3,
-        top: &DAffine3,
+        bottom: DAffine3,
+        top: DAffine3,
         side_x: SideX,
-        key_clearance: &DVec2,
+        key_clearance: DVec2,
     ) -> Option<DVec3> {
         let outwards_direction = bottom.x_axis;
 

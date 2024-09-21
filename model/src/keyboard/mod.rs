@@ -75,14 +75,14 @@ impl Keyboard {
 
         // Calculate preview shape
         let cluster_preview = combined_cluster.intersection(half_space);
-        let preview = Shape::new(&cluster_preview, bounds.clone().into());
+        let preview = Shape::new(&cluster_preview, bounds.into());
 
         let bottom_plate = BottomPlate::from_outline_and_insert_holders(
             cluster_outline.clone(),
             insert_holders.iter(),
             config.keyboard.bottom_plate_thickness.into(),
         );
-        let bottom_plate = Shape::new(&bottom_plate.into_tree(), bounds.clone().into());
+        let bottom_plate = Shape::new(&bottom_plate.into_tree(), bounds.into());
 
         // Add the insert and interface PCB holders and cutouts
         let holders = Self::holders(

@@ -46,7 +46,7 @@ impl ThumbCluster {
         let clearance = Self::clearance(thumb_keys, &bounds);
         let cluster = cluster.rounded_difference(clearance, config.rounding_radius.into());
 
-        let key_clearance = Self::key_clearance(thumb_keys, &bounds);
+        let key_clearance = Self::key_clearance(thumb_keys, bounds);
 
         Self {
             cluster,
@@ -58,7 +58,7 @@ impl ThumbCluster {
     }
 
     fn clearance(thumb_keys: &ThumbKeys, bounds: &Bounds) -> Tree {
-        let key_clearance = &thumb_keys.key_clearance;
+        let key_clearance = thumb_keys.key_clearance;
 
         let first = thumb_keys.first();
         let last = thumb_keys.last();
@@ -115,8 +115,8 @@ impl ThumbCluster {
         union.union(upper)
     }
 
-    fn key_clearance(thumb_keys: &ThumbKeys, bounds: &Bounds) -> Tree {
-        let key_clearance = &thumb_keys.key_clearance;
+    fn key_clearance(thumb_keys: &ThumbKeys, bounds: Bounds) -> Tree {
+        let key_clearance = thumb_keys.key_clearance;
         let first = thumb_keys.first();
         let last = thumb_keys.last();
 

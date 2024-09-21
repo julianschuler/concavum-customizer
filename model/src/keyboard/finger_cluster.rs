@@ -135,7 +135,7 @@ impl<'a> ClearanceBuilder<'a> {
         let points = self.clearance_points(column);
         let first = column.first();
         let plane = Plane::new(
-            side_point(first, Side::Left, &self.columns.key_clearance),
+            side_point(first, Side::Left, self.columns.key_clearance),
             first.x_axis,
         );
 
@@ -209,8 +209,8 @@ impl<'a> ClearanceBuilder<'a> {
         let first = column.first();
         let last = column.last();
 
-        let lower_corner = corner_point(first, side_x, SideY::Bottom, &self.columns.key_clearance);
-        let upper_corner = corner_point(last, side_x, SideY::Top, &self.columns.key_clearance);
+        let lower_corner = corner_point(first, side_x, SideY::Bottom, self.columns.key_clearance);
+        let upper_corner = corner_point(last, side_x, SideY::Top, self.columns.key_clearance);
         let outwards_bottom_point = lower_corner - bounds.y_axis;
         let outwards_top_point = upper_corner + bounds.y_axis;
         let upwards_bottom_point = outwards_bottom_point + bounds.z_axis;
@@ -218,7 +218,7 @@ impl<'a> ClearanceBuilder<'a> {
 
         let points: Vec<_> = column
             .windows(2)
-            .filter_map(|window| self.side_point(&window[0], &window[1], side_x))
+            .filter_map(|window| self.side_point(window[0], window[1], side_x))
             .chain([
                 upper_corner,
                 outwards_top_point,
@@ -232,7 +232,7 @@ impl<'a> ClearanceBuilder<'a> {
         prism_from_projected_points(points, &plane, self.bounds.size().x)
     }
 
-    fn side_point(&self, bottom: &DAffine3, top: &DAffine3, side_x: SideX) -> Option<DVec3> {
+    fn side_point(&self, bottom: DAffine3, top: DAffine3, side_x: SideX) -> Option<DVec3> {
         let outwards_direction = bottom.x_axis;
 
         // Get point which is more outward
@@ -243,7 +243,7 @@ impl<'a> ClearanceBuilder<'a> {
         } else {
             0.0
         };
-        let point = side_point(bottom, side_x.into(), &self.columns.key_clearance)
+        let point = side_point(bottom, side_x.into(), self.columns.key_clearance)
             + offset * outwards_direction;
 
         let line = Line::new(point, bottom.y_axis);
@@ -275,16 +275,16 @@ impl<'a> ClearanceBuilder<'a> {
             first,
             Side::Bottom,
             column.column_type,
-            &self.columns.key_clearance,
-            &bounds,
+            self.columns.key_clearance,
+            bounds,
         );
         lower_support_points.reverse();
         let upper_support_points = self.support_planes.calculate_support_points(
             last,
             Side::Top,
             column.column_type,
-            &self.columns.key_clearance,
-            &bounds,
+            self.columns.key_clearance,
+            bounds,
         );
 
         // Combine points with upper and lower support points
@@ -302,7 +302,7 @@ struct SupportPlanes {
 
 impl SupportPlanes {
     fn from_columns(columns: &Columns) -> Self {
-        let key_clearance = &columns.key_clearance;
+        let key_clearance = columns.key_clearance;
         let reference_column = columns.get(1).unwrap_or_else(|| columns.first());
         let x_axis = reference_column.first().x_axis;
         let normal = x_axis.cross(DVec3::Y);
@@ -344,11 +344,11 @@ impl SupportPlanes {
 
     fn calculate_support_points(
         &self,
-        position: &DAffine3,
+        position: DAffine3,
         side: Side,
         column_type: ColumnType,
-        key_clearance: &DVec2,
-        bounds: &DMat3,
+        key_clearance: DVec2,
+        bounds: DMat3,
     ) -> Vec<DVec3> {
         const ALLOWED_DEVIATION: f64 = 1.0;
 

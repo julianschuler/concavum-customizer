@@ -60,8 +60,8 @@ impl MatrixPcb {
             .expect("there is always at least one normal column")
             .first();
         let cluster_connector = ClusterConnector::from_anchor_key_positions(
-            *finger_anchor_key,
-            *positions.thumb_keys.first(),
+            finger_anchor_key,
+            positions.thumb_keys.first(),
         );
 
         Self {

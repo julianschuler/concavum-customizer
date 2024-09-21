@@ -77,10 +77,10 @@ impl From<SideY> for Side {
 
 /// Creates a point in a corner given by two sides (e.g. Bottom and Left) and a clearance.
 pub fn corner_point(
-    position: &DAffine3,
+    position: DAffine3,
     side_x: SideX,
     side_y: SideY,
-    key_clearance: &DVec2,
+    key_clearance: DVec2,
 ) -> DVec3 {
     position.translation
         + side_x.direction() * key_clearance.x * position.x_axis
@@ -88,7 +88,7 @@ pub fn corner_point(
 }
 
 /// Creates a point at the given side (e.g. Left) for the given clearance.
-pub fn side_point(position: &DAffine3, side: Side, key_clearance: &DVec2) -> DVec3 {
+pub fn side_point(position: DAffine3, side: Side, key_clearance: DVec2) -> DVec3 {
     match side {
         Side::Left => position.translation - key_clearance.x * position.x_axis,
         Side::Right => position.translation + key_clearance.x * position.x_axis,

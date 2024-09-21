@@ -68,22 +68,24 @@ impl ThumbKeys {
     }
 
     /// The position of the first thumb key.
-    pub fn first(&self) -> &DAffine3 {
-        self.inner
+    pub fn first(&self) -> DAffine3 {
+        *self
+            .inner
             .first()
             .expect("there has to be at least one thumb key")
     }
 
     /// The position of the last thumb key.
-    pub fn last(&self) -> &DAffine3 {
-        self.inner
+    pub fn last(&self) -> DAffine3 {
+        *self
+            .inner
             .last()
             .expect("there has to be at least one thumb key")
     }
 
     /// Returns the points for an outline containing all thumb keys.
     pub fn outline_points(&self) -> Vec<DVec2> {
-        let key_clearance = &self.key_clearance;
+        let key_clearance = self.key_clearance;
         let first_thumb_key = self.first();
         let last_thumb_key = self.last();
 

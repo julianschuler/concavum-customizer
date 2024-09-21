@@ -37,10 +37,10 @@ impl KeyConnector {
     /// Creates a new key connector from the given column.
     #[must_use]
     fn from_column(column: &Column) -> Self {
-        if let Some(next_position) = column.get(1) {
+        if let Some(&next_position) = column.get(1) {
             let position = column.first();
-            let start_point = vertical_connector_point(*position, SideY::Top);
-            let end_point = vertical_connector_point(*next_position, SideY::Bottom);
+            let start_point = vertical_connector_point(position, SideY::Top);
+            let end_point = vertical_connector_point(next_position, SideY::Bottom);
 
             let direction = position.matrix3.inverse() * (end_point - start_point);
 
@@ -53,10 +53,10 @@ impl KeyConnector {
     /// Creates new key connectors for the given thumb keys.
     #[must_use]
     fn from_thumb_keys(thumb_keys: &ThumbKeys) -> Self {
-        if let Some(next_position) = thumb_keys.get(1) {
+        if let Some(&next_position) = thumb_keys.get(1) {
             let position = thumb_keys.first();
-            let start_point = horizontal_connector_point(*position, SideX::Right);
-            let end_point = horizontal_connector_point(*next_position, SideX::Left);
+            let start_point = horizontal_connector_point(position, SideX::Right);
+            let end_point = horizontal_connector_point(next_position, SideX::Left);
 
             let direction = position.matrix3.inverse() * (end_point - start_point);
 

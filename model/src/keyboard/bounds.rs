@@ -6,7 +6,7 @@ use crate::{
 };
 
 /// Bounded region containing a cluster given by two points.
-#[derive(Clone)]
+#[derive(Copy, Clone)]
 pub struct Bounds {
     /// Corner point with minimal coordinates.
     pub min: DVec3,
