@@ -5,12 +5,12 @@ edition.workspace = true
 license.workspace = true
 
 [dependencies]
-glam = { workspace = true }
-serde = { workspace = true }
-show = { workspace = true }
-show_derive = { workspace = true }
-thiserror = { workspace = true }
-toml = { workspace = true }
+glam.workspace = true
+serde.workspace = true
+show.workspace = true
+show_derive.workspace = true
+thiserror.workspace = true
+toml.workspace = true
 
 [lints]
 workspace = true

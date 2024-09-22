@@ -5,8 +5,8 @@ edition.workspace = true
 license.workspace = true
 
 [dependencies]
-hex_color = { workspace = true }
-three-d = { workspace = true }
+hex_color.workspace = true
+three-d.workspace = true
 
 [lints]
 workspace = true
