@@ -273,7 +273,7 @@ impl<'a> ClearanceBuilder<'a> {
         // Upper and lower support points derived from the first and last entries
         let mut lower_support_points = self.support_planes.calculate_support_points(
             first,
-            Side::Bottom,
+            SideY::Bottom,
             column.column_type,
             self.columns.key_clearance,
             bounds,
@@ -281,7 +281,7 @@ impl<'a> ClearanceBuilder<'a> {
         lower_support_points.reverse();
         let upper_support_points = self.support_planes.calculate_support_points(
             last,
-            Side::Top,
+            SideY::Top,
             column.column_type,
             self.columns.key_clearance,
             bounds,
@@ -345,20 +345,19 @@ impl SupportPlanes {
     fn calculate_support_points(
         &self,
         position: DAffine3,
-        side: Side,
+        side: SideY,
         column_type: ColumnType,
         key_clearance: DVec2,
         bounds: DMat3,
     ) -> Vec<DVec3> {
         const ALLOWED_DEVIATION: f64 = 1.0;
 
-        let (sign, plane) = if matches!(side, Side::Top) {
-            (1.0, &self.upper_plane)
-        } else {
-            (-1.0, &self.lower_plane)
+        let plane = match side {
+            SideY::Bottom => &self.lower_plane,
+            SideY::Top => &self.upper_plane,
         };
-        let point_direction = sign * position.y_axis;
-        let point = side_point(position, side, key_clearance);
+        let point_direction = side.direction() * position.y_axis;
+        let point = side_point(position, side.into(), key_clearance);
 
         let point_is_above = plane.signed_distance_to(point) > 0.0;
         let point_direction_is_upwards = point_direction.dot(plane.normal()) > 0.0;
@@ -392,7 +391,7 @@ impl SupportPlanes {
             points.push(projected_point);
         }
 
-        let outwards_point = projected_point + sign * bounds.y_axis;
+        let outwards_point = projected_point + side.direction() * bounds.y_axis;
         let upwards_point = outwards_point + bounds.z_axis;
         points.extend([outwards_point, upwards_point]);
 
