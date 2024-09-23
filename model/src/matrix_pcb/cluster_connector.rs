@@ -3,7 +3,7 @@ use std::f64::consts::PI;
 use glam::{dvec3, DAffine3, DMat3, DVec2, DVec3, Vec3Swizzles};
 
 use crate::{
-    geometry::{rotate_90_degrees, Ellipse, Plane},
+    geometry::{rotate_90_degrees, Ellipse, Line, Plane},
     matrix_pcb::{
         pad_center,
         segments::{Arc, BezierCurve},
@@ -26,60 +26,39 @@ impl ClusterConnector {
     /// Creates a new cluster connector from the finger and thumb cluster anchor key positions.
     #[must_use]
     pub fn from_anchor_key_positions(finger_key: DAffine3, thumb_key: DAffine3) -> Self {
-        // Create tranformations between world and projection plane in X and Y
-        let z_axis = (finger_key.z_axis + thumb_key.z_axis).normalize();
-        let x_axis = DVec3::Y.cross(z_axis);
-        let y_axis = z_axis.cross(x_axis);
+        // The plane normal is given as the average normal vector of the arc planes
+        let plane_normal = (finger_key.z_axis + thumb_key.z_axis).normalize();
+        let x_axis = DVec3::Y.cross(plane_normal);
+        let y_axis = plane_normal.cross(x_axis);
 
+        // Express arc center points in plane coordinate system (XY-plane)
         let plane_to_world = DMat3 {
             x_axis,
             y_axis,
-            z_axis,
+            z_axis: plane_normal,
         };
         let world_to_plane = plane_to_world.inverse();
 
-        // Project arc axis and center to plane coordinates
-        let finger_arc_axis = world_to_plane * finger_key.z_axis;
-        let thumb_arc_axis = world_to_plane * thumb_key.z_axis;
-        let finger_arc_center = (world_to_plane * arc_center(finger_key, SideY::Bottom)).xy();
         let thumb_arc_center = (world_to_plane * arc_center(thumb_key, SideY::Top)).xy();
+        let finger_arc_center = (world_to_plane * arc_center(finger_key, SideY::Bottom)).xy();
 
-        // Extend arcs to circles and project them to the XY-plane, creating ellipses
-        // with the minor axes along the projected circle normal vectors
-        let finger_ellipse_minor_axis = finger_arc_axis.xy().try_normalize().unwrap_or(DVec2::X);
-        let thumb_ellipse_minor_axis = thumb_arc_axis.xy().try_normalize().unwrap_or(DVec2::X);
-        let finger_ellipse = Ellipse::new(
-            finger_ellipse_minor_axis,
-            finger_arc_center,
-            finger_arc_axis.z * CLUSTER_CONNECTOR_ARC_RADIUS,
-            CLUSTER_CONNECTOR_ARC_RADIUS,
-        );
-        let thumb_ellipse = Ellipse::new(
-            thumb_ellipse_minor_axis,
-            thumb_arc_center,
-            thumb_arc_axis.z * CLUSTER_CONNECTOR_ARC_RADIUS,
-            CLUSTER_CONNECTOR_ARC_RADIUS,
-        );
+        // Extend arcs to circles and project them to the XY-plane
+        let finger_ellipse =
+            calculate_circle_projection(world_to_plane * finger_key.z_axis, finger_arc_center);
+        let thumb_ellipse =
+            calculate_circle_projection(world_to_plane * thumb_key.z_axis, thumb_arc_center);
 
-        // Calculate the tangents between the ellipses, select the correct and get its direction
+        // Calculate the tangets between the ellipses and calculate the direction from it
         let tangents = finger_ellipse.tangents_to(&thumb_ellipse);
         let tangent = select_tangent(tangents, finger_arc_center, thumb_arc_center);
         let direction = plane_to_world * dvec3(tangent.y, -tangent.x, 0.0);
 
-        // Project the direction of the tangent to the arc planes and calculate the arc angles from it
-        let finger_arc_plane = Plane::new(pad_center(finger_key), finger_key.z_axis);
-        let thumb_arc_plane = Plane::new(pad_center(thumb_key), thumb_key.z_axis);
+        // Calculate the arc angles and Bézier curve from the segment direction
+        let finger_cluster_arc_angle = calculate_arc_angle(finger_key, direction, plane_normal);
+        let thumb_cluster_arc_angle = calculate_arc_angle(thumb_key, direction, plane_normal);
 
-        let direction_finger_plane = finger_arc_plane.project_vector(direction);
-        let direction_thumb_plane = thumb_arc_plane.project_vector(direction);
-
-        let finger_cluster_arc_angle = finger_key.y_axis.angle_between(direction_finger_plane);
-        let thumb_cluster_arc_angle = thumb_key.y_axis.angle_between(direction_thumb_plane);
-
-        // Calculate the start and end positions of the Bézier curve using the arc angles
         let start = arc_end(finger_key, finger_cluster_arc_angle, SideY::Bottom);
         let end = arc_end(thumb_key, thumb_cluster_arc_angle, SideY::Top);
-
         let bezier_curve = BezierCurve::from_positions(start, end);
 
         Self {
@@ -164,6 +143,32 @@ fn arc_center(position: DAffine3, side: SideY) -> DVec3 {
     pad_center(position)
         + direction * CLUSTER_CONNECTOR_ARC_RADIUS * position.x_axis
         + direction * PAD_SIZE.y / 2.0 * position.y_axis
+}
+
+/// Calculates the projection of a circle on a plane with the given normal axis
+/// to the XY-plane, placing its projected center to the given position.
+fn calculate_circle_projection(normal: DVec3, center: DVec2) -> Ellipse {
+    let minor_axis = normal.xy().try_normalize().unwrap_or(DVec2::X);
+
+    Ellipse::new(
+        minor_axis,
+        center,
+        normal.z * CLUSTER_CONNECTOR_ARC_RADIUS,
+        CLUSTER_CONNECTOR_ARC_RADIUS,
+    )
+}
+
+/// Calculates the angle of the arc corresponding to the given position using the given direction
+/// and projection plane normal vector.
+fn calculate_arc_angle(position: DAffine3, direction: DVec3, plane_normal: DVec3) -> f64 {
+    let plane = Plane::new(DVec3::ZERO, position.z_axis);
+    let line = Line::new(direction, plane_normal);
+
+    let projected_direction = plane
+        .intersection(&line)
+        .expect("there should always be an intersection");
+
+    position.y_axis.angle_between(projected_direction)
 }
 
 /// Returns the end position of the arc with the given angle.
