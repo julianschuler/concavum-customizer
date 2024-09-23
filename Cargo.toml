@@ -24,6 +24,7 @@ glam = { version = "0.27", features = ["serde"] }
 gui = { path = "gui" }
 hex_color = { version = "3.0", features = ["serde"] }
 model = { path = "model" }
+nalgebra = { version = "0.33.0", default-features = false, features = ["std"] }
 pollster = "0.3.0"
 quote = "1.0.36"
 rfd = { version = "0.14.1", default-features = false, features = ["gtk3"] }

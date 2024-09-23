@@ -1189,6 +1189,7 @@ dependencies = [
  "earcutr",
  "fidget",
  "glam",
+ "nalgebra",
 ]
 
 [[package]]

@@ -9,6 +9,7 @@ config.workspace = true
 earcutr.workspace = true
 glam.workspace = true
 fidget.workspace = true
+nalgebra.workspace = true
 
 [lints]
 workspace = true
