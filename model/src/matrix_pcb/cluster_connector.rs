@@ -57,8 +57,8 @@ impl ClusterConnector {
         let finger_cluster_arc_angle = calculate_arc_angle(finger_key, direction, plane_normal);
         let thumb_cluster_arc_angle = calculate_arc_angle(thumb_key, direction, plane_normal);
 
-        let start = arc_end(finger_key, finger_cluster_arc_angle, SideY::Bottom);
-        let end = arc_end(thumb_key, thumb_cluster_arc_angle, SideY::Top);
+        let start = arc_end(finger_cluster_arc_angle, finger_key, SideY::Bottom);
+        let end = arc_end(thumb_cluster_arc_angle, thumb_key, SideY::Top);
         let bezier_curve = BezierCurve::from_positions(start, end);
 
         Self {
@@ -111,6 +111,41 @@ impl Segment for ClusterConnector {
         self.bezier_curve.length()
     }
 }
+/// Returns the start point of the arc for the given key position and side.
+fn arc_start(position: DAffine3, side: SideY) -> DVec3 {
+    pad_center(position) + side.direction() * PAD_SIZE.y / 2.0 * position.y_axis
+}
+
+/// Returns the center point of the arc starting at the given key position and side.
+fn arc_center(position: DAffine3, side: SideY) -> DVec3 {
+    arc_start(position, side) + side.direction() * CLUSTER_CONNECTOR_ARC_RADIUS * position.x_axis
+}
+
+/// Returns the end position of the arc with the given angle starting at the given key position and side.
+fn arc_end(angle: f64, position: DAffine3, side: SideY) -> DAffine3 {
+    let translation = side.direction() * CLUSTER_CONNECTOR_ARC_RADIUS * DVec3::X;
+
+    DAffine3 {
+        matrix3: position.matrix3,
+        translation: arc_start(position, side),
+    } * DAffine3 {
+        matrix3: DMat3::from_rotation_z(-angle),
+        translation,
+    } * DAffine3::from_translation(-translation)
+}
+
+/// Calculates the projection of a circle on a plane with the given normal axis
+/// to the XY-plane, placing its projected center to the given position.
+fn calculate_circle_projection(normal: DVec3, center: DVec2) -> Ellipse {
+    let minor_axis = normal.xy().try_normalize().unwrap_or(DVec2::X);
+
+    Ellipse::new(
+        minor_axis,
+        center,
+        normal.z * CLUSTER_CONNECTOR_ARC_RADIUS,
+        CLUSTER_CONNECTOR_ARC_RADIUS,
+    )
+}
 
 /// Selects the tangent along the line segment connecting the finger and thumb cluster arcs.
 fn select_tangent(
@@ -136,28 +171,6 @@ fn select_tangent(
         .expect("one of the tangents should match the predicate")
 }
 
-/// Returns the center point of the arc starting at the given key position and side.
-fn arc_center(position: DAffine3, side: SideY) -> DVec3 {
-    let direction = side.direction();
-
-    pad_center(position)
-        + direction * CLUSTER_CONNECTOR_ARC_RADIUS * position.x_axis
-        + direction * PAD_SIZE.y / 2.0 * position.y_axis
-}
-
-/// Calculates the projection of a circle on a plane with the given normal axis
-/// to the XY-plane, placing its projected center to the given position.
-fn calculate_circle_projection(normal: DVec3, center: DVec2) -> Ellipse {
-    let minor_axis = normal.xy().try_normalize().unwrap_or(DVec2::X);
-
-    Ellipse::new(
-        minor_axis,
-        center,
-        normal.z * CLUSTER_CONNECTOR_ARC_RADIUS,
-        CLUSTER_CONNECTOR_ARC_RADIUS,
-    )
-}
-
 /// Calculates the angle of the arc corresponding to the given position using the given direction
 /// and projection plane normal vector.
 fn calculate_arc_angle(position: DAffine3, direction: DVec3, plane_normal: DVec3) -> f64 {
@@ -169,21 +182,4 @@ fn calculate_arc_angle(position: DAffine3, direction: DVec3, plane_normal: DVec3
         .expect("there should always be an intersection");
 
     position.y_axis.angle_between(projected_direction)
-}
-
-/// Returns the end position of the arc with the given angle.
-fn arc_end(position: DAffine3, angle: f64, side: SideY) -> DAffine3 {
-    let direction = side.direction();
-    let translation = direction * CLUSTER_CONNECTOR_ARC_RADIUS * DVec3::X;
-
-    let arc_start_translation =
-        pad_center(position) + direction * PAD_SIZE.y / 2.0 * position.y_axis;
-
-    DAffine3 {
-        matrix3: position.matrix3,
-        translation: arc_start_translation,
-    } * DAffine3 {
-        matrix3: DMat3::from_rotation_z(-angle),
-        translation,
-    } * DAffine3::from_translation(-translation)
 }
