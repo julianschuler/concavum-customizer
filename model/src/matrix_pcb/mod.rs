@@ -12,11 +12,15 @@ pub use cluster_connector::ClusterConnector;
 pub use connectors::{ColumnConnector, KeyConnectors};
 pub use segments::Segment;
 
-/// The size of the PCB pads underneath each key.
-pub const PAD_SIZE: DVec2 = dvec2(13.0, 14.0);
 /// The thickness of the matrix PCB.
 pub const THICKNESS: f64 = 0.6;
-/// The width of the connectors between keys and columns.
+/// The size of the PCB pads underneath each key.
+pub const PAD_SIZE: DVec2 = dvec2(13.0, 14.0);
+/// The size of the PCB pad below the FPC connector.
+pub const FPC_PAD_SIZE: DVec2 = dvec2(19.0, 4.0);
+/// The offset of the FPC pad to the center of the key.
+pub const FPC_PAD_OFFSET: f64 = 7.9;
+/// The width of the connectors between keys.
 pub const CONNECTOR_WIDTH: f64 = 2.0;
 /// The diameter of the routing bit.
 pub const ROUTER_BIT_DIAMETER: f64 = 2.0;
@@ -33,6 +37,8 @@ pub struct MatrixPcb {
     pub column_connectors: Vec<ColumnConnector>,
     /// The connector between finger and thumb cluster,
     pub cluster_connector: ClusterConnector,
+    /// The position of the FPC connector pad,
+    pub fpc_pad_position: DAffine3,
 }
 
 impl MatrixPcb {
@@ -64,10 +70,17 @@ impl MatrixPcb {
             positions.thumb_keys.first(),
         );
 
+        let fpc_pad_position = DAffine3 {
+            matrix3: finger_anchor_key.matrix3,
+            translation: pad_center(finger_anchor_key)
+                - FPC_PAD_OFFSET * finger_anchor_key.matrix3.y_axis,
+        };
+
         Self {
             key_connectors,
             column_connectors,
             cluster_connector,
+            fpc_pad_position,
         }
     }
 }

@@ -7,7 +7,7 @@ use crate::{
     matrix_pcb::{
         pad_center,
         segments::{Arc, BezierCurve},
-        Segment, CLUSTER_CONNECTOR_ARC_RADIUS, PAD_SIZE,
+        Segment, CLUSTER_CONNECTOR_ARC_RADIUS, FPC_PAD_OFFSET, FPC_PAD_SIZE, PAD_SIZE,
     },
     util::SideY,
 };
@@ -113,7 +113,12 @@ impl Segment for ClusterConnector {
 }
 /// Returns the start point of the arc for the given key position and side.
 fn arc_start(position: DAffine3, side: SideY) -> DVec3 {
-    pad_center(position) + side.direction() * PAD_SIZE.y / 2.0 * position.y_axis
+    let offset = match side {
+        SideY::Bottom => -FPC_PAD_OFFSET - FPC_PAD_SIZE.y / 2.0,
+        SideY::Top => PAD_SIZE.y / 2.0,
+    };
+
+    pad_center(position) + offset * position.y_axis
 }
 
 /// Returns the center point of the arc starting at the given key position and side.

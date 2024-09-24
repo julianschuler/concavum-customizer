@@ -24,6 +24,8 @@ pub struct Settings {
     pub interface_pcb_positions: Vec<Mat4>,
     /// The meshes of the matrix PCBs.
     pub matrix_pcb_meshes: Vec<InstancedMesh>,
+    /// The positions of the FPC pad.
+    pub fpc_pad_positions: Vec<Mat4>,
     /// The display settings of the model.
     pub display_settings: DisplaySettings,
 }
@@ -55,12 +57,14 @@ impl From<&Model> for Settings {
             .chain(matrix_pcb.column_connectors.iter().map(Into::into))
             .chain(once((&matrix_pcb.cluster_connector).into()))
             .collect();
+        let fpc_pad_positions = mirrored_positions(&matrix_pcb.fpc_pad_position).to_vec();
 
         Self {
             finger_key_positions,
             thumb_key_positions,
             interface_pcb_positions,
             matrix_pcb_meshes,
+            fpc_pad_positions,
             display_settings: model.display_settings.clone(),
         }
     }

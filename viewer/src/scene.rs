@@ -54,6 +54,7 @@ impl Scene {
             assets,
             display_settings.colors.matrix_pcb,
             switch_positions,
+            settings.fpc_pad_positions,
         );
 
         let ambient = AmbientLight::new(context, 0.05, Srgba::WHITE);
@@ -336,6 +337,7 @@ impl MatrixPcbs {
         assets: &Assets,
         color: Color,
         switch_postitions: Vec<Mat4>,
+        fpc_pad_positions: Vec<Mat4>,
     ) -> Self {
         let objects = meshes
             .into_iter()
@@ -345,6 +347,12 @@ impl MatrixPcbs {
                 &assets.matrix_pcb_pad,
                 color,
                 switch_postitions,
+            )))
+            .chain(once(InstancedObject::new(
+                context,
+                &assets.fpc_pad,
+                color,
+                fpc_pad_positions,
             )))
             .collect();
 
