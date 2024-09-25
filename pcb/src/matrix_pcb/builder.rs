@@ -6,32 +6,15 @@ use model::{
 
 use crate::{kicad_pcb::KicadPcb, unit::IntoUnit};
 
-/// A PCB connecting the keys to each other in a matrix.
-pub struct MatrixPcb(KicadPcb);
-
-impl MatrixPcb {
-    /// Creates a new matrix PCB from the given configuration.
-    #[must_use]
-    pub fn from_config(config: &Config) -> Self {
-        MatrixPcbBuilder::from_config(config).build()
-    }
-
-    /// Serializes the matrix PCB to the KiCAD board file format.
-    #[must_use]
-    pub fn to_kicad_board(&self) -> String {
-        self.0.to_board_file()
-    }
-}
-
 /// A builder for the matrix PCB.
-struct MatrixPcbBuilder {
+pub struct Builder {
     pcb: KicadPcb,
     cluster_connector_index: usize,
     home_row_index: usize,
 }
 
-impl MatrixPcbBuilder {
-    fn from_config(config: &Config) -> Self {
+impl Builder {
+    pub fn from_config(config: &Config) -> Self {
         let key_positions = KeyPositions::from_config(config);
         let _model = Model::from_positions(&key_positions);
 
@@ -49,7 +32,7 @@ impl MatrixPcbBuilder {
         }
     }
 
-    fn build(self) -> MatrixPcb {
-        MatrixPcb(self.pcb)
+    pub fn build(self) -> KicadPcb {
+        self.pcb
     }
 }
