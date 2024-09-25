@@ -1924,6 +1924,7 @@ version = "1.2.0"
 dependencies = [
  "config",
  "itoa",
+ "model",
  "serde",
  "thiserror",
  "uuid",

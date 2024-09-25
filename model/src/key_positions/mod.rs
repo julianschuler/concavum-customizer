@@ -24,6 +24,7 @@ pub struct KeyPositions {
 
 impl KeyPositions {
     /// Creates the key positions from the given config.
+    #[must_use]
     pub fn from_config(config: &Config) -> Self {
         const CENTER_OFFSET: f64 = 10.0;
         const Z_OFFSET: f64 = 12.0;

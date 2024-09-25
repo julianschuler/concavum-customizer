@@ -12,11 +12,11 @@ pub mod matrix_pcb;
 
 use config::{Colors, Config, Preview};
 
-use key_positions::KeyPositions;
 use keyboard::Keyboard;
 use matrix_pcb::MatrixPcb;
 
 pub use fidget::mesh::{Mesh, Settings as MeshSettings};
+pub use key_positions::KeyPositions;
 pub use primitives::Bounds;
 
 /// A set of settings used for displaying a model.
