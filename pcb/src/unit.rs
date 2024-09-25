@@ -60,3 +60,15 @@ impl IntoUnit for f32 {
         Angle((self * VALUE_TO_UNIT as f32) as i32)
     }
 }
+
+impl IntoUnit for f64 {
+    fn mm(self) -> Length {
+        #[allow(clippy::cast_possible_truncation, clippy::cast_precision_loss)]
+        Length((self * f64::from(VALUE_TO_UNIT)) as i32)
+    }
+
+    fn deg(self) -> Angle {
+        #[allow(clippy::cast_possible_truncation, clippy::cast_precision_loss)]
+        Angle((self * f64::from(VALUE_TO_UNIT)) as i32)
+    }
+}
