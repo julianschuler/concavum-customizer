@@ -1,11 +1,14 @@
+mod serializer;
+
 use serde::Serialize;
 
 use crate::{
     footprints::Footprint,
     primitives::{Point, Uuid},
-    serializer::Serializer,
     unit::{IntoUnit, Length},
 };
+
+use serializer::Serializer;
 
 /// A KiCAD PCB.
 #[derive(Serialize)]
