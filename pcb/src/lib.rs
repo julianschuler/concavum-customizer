@@ -4,7 +4,6 @@ mod footprints;
 mod kicad_pcb;
 mod matrix_pcb;
 mod primitives;
-mod serializer;
 mod unit;
 
 pub use matrix_pcb::MatrixPcb;
