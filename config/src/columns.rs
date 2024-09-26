@@ -223,7 +223,7 @@ impl From<&Columns> for Vec<ColumnConfig> {
                 column_type: ColumnType::RightSide,
                 curvature_angle: curvature_angle.into(),
                 offset: offset.into(),
-                side_angle: columns.left_side_column.side_angle.into(),
+                side_angle: columns.right_side_column.side_angle.into(),
             });
         }
 
