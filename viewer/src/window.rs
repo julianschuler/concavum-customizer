@@ -53,7 +53,7 @@ struct Application {
 impl Application {
     /// Creates a new Application given a window and event loop proxy.
     fn new(window: &window::Window) -> Self {
-        const DEFAULT_DISTANCE: f32 = 600.0;
+        const DEFAULT_DISTANCE: f32 = 800.0;
         const DEFAULT_FOV: Degrees = degrees(22.5);
         const DEFAULT_TARGET: Vec3 = vec3(0.0, 0.0, 0.0);
 
@@ -64,10 +64,10 @@ impl Application {
             DEFAULT_TARGET,
             Vec3::unit_z(),
             DEFAULT_FOV,
-            0.1,
-            10000.0,
+            1.0,
+            4000.0,
         );
-        let control = OrbitControl::new(DEFAULT_TARGET, 50.0, 5000.0);
+        let control = OrbitControl::new(DEFAULT_TARGET, 50.0, 2000.0);
         let assets = Assets::new();
         let scene = Scene::from_settings(&context, Settings::default(), &assets);
 
