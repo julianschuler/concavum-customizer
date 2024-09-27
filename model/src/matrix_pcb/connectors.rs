@@ -216,10 +216,16 @@ impl NormalColumnConnector {
             .transform_point3(right_position.translation);
 
         let arc_radius = (transformed_right_translation.x - PAD_SIZE.x) / 2.0;
-        let left_arc_side = if transformed_right_translation.z >= 0.0 {
-            SideY::Top
-        } else {
-            SideY::Bottom
+        let left_arc_side = match transformed_right_translation.y {
+            y if y > 0.1 => SideY::Bottom,
+            y if y < -0.1 => SideY::Top,
+            _ => {
+                if transformed_right_translation.z >= 0.0 {
+                    SideY::Top
+                } else {
+                    SideY::Bottom
+                }
+            }
         };
 
         let start_position = normal_column_connector_position(
