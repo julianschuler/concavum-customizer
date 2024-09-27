@@ -73,8 +73,10 @@ impl From<&Model> for Settings {
 /// The meshes of the keyboard and bottom plate.
 #[derive(Clone)]
 pub struct Meshes {
-    /// The mesh of the keyboard.
-    pub keyboard: CpuMesh,
+    /// The mesh of the left half.
+    pub left_half: CpuMesh,
+    /// The mesh of the right half.
+    pub right_half: CpuMesh,
     /// The mesh of the bottom plate.
     pub bottom_plate: CpuMesh,
 }
@@ -101,14 +103,18 @@ impl Mesh for Model {
     }
 
     fn meshes(&self) -> Meshes {
-        let settings = self.keyboard.shape.mesh_settings(self.resolution);
-        let keyboard = self.keyboard.shape.mesh(settings).to_cpu_mesh();
+        let settings = self.keyboard.left_half.mesh_settings(self.resolution);
+        let left_half = self.keyboard.left_half.mesh(settings).to_cpu_mesh();
+
+        let settings = self.keyboard.right_half.mesh_settings(self.resolution);
+        let right_half = self.keyboard.right_half.mesh(settings).to_cpu_mesh();
 
         let settings = self.keyboard.bottom_plate.mesh_settings(self.resolution);
         let bottom_plate = self.keyboard.bottom_plate.mesh(settings).to_cpu_mesh();
 
         Meshes {
-            keyboard,
+            left_half,
+            right_half,
             bottom_plate,
         }
     }

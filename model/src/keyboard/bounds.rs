@@ -30,8 +30,8 @@ impl Bounds {
 
     /// Mirrors the bound along the YZ-plane.
     pub fn mirror_yz(&self) -> Self {
-        let min = dvec3(-self.max.x, self.min.y, self.min.z);
-        let max = self.max;
+        let min = self.min.with_x(-self.max.x);
+        let max = self.max.with_x(-self.min.x);
 
         Self { min, max }
     }

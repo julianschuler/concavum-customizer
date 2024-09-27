@@ -7,6 +7,7 @@ use crate::{
     geometry::{rotate_90_degrees, zvec},
     keyboard::InsertHolder,
     primitives::{BoxShape, Circle, Csg, IntoTree, Rectangle, Transforms},
+    util::SideX,
 };
 
 /// A PCB containing the interfaces to the outside (USB and TRRS) and inside (FPC).
@@ -60,8 +61,8 @@ impl InterfacePcb {
             .affine(self.position * DAffine3::from_translation(translation))
     }
 
-    /// Returns the cutouts required for the USB and TRRS ports.
-    pub fn cutouts(&self, bounds_diameter: f64) -> Tree {
+    /// Returns the cutouts required for the USB and TRRS ports for the given side.
+    pub fn cutouts(&self, side: SideX, bounds_diameter: f64) -> Tree {
         const USB_SIZE: DVec2 = dvec2(9.2, 3.4);
         const USB_RADIUS: f64 = 1.1;
         const USB_OFFSET: DVec3 = dvec3(24.9, 0.0, 3.2);
@@ -72,22 +73,26 @@ impl InterfacePcb {
         let jack_cutout = Circle::new(JACK_RADIUS)
             .into_tree()
             .extrude(-Self::SIZE.y, bounds_diameter);
-        let usb_cutout = Rectangle::new(USB_SIZE - dvec2(USB_RADIUS, USB_RADIUS))
-            .into_tree()
-            .offset(USB_RADIUS)
-            .extrude(-Self::SIZE.y, bounds_diameter);
 
         let rotation_x = DAffine3::from_rotation_x(-PI / 2.0);
         let height_offset = zvec(Self::SIZE.z);
 
-        let jack_translation_left = DAffine3::from_translation(JACK_OFFSET_LEFT + height_offset);
-        let jack_translation_right = DAffine3::from_translation(JACK_OFFSET_RIGHT + height_offset);
-        let usb_translation = DAffine3::from_translation(USB_OFFSET + height_offset);
+        if matches!(side, SideX::Left) {
+            let usb_cutout = Rectangle::new(USB_SIZE - dvec2(USB_RADIUS, USB_RADIUS))
+                .into_tree()
+                .offset(USB_RADIUS)
+                .extrude(-Self::SIZE.y, bounds_diameter);
 
-        usb_cutout
-            .affine(self.position * usb_translation * rotation_x)
-            .union(jack_cutout.affine(self.position * jack_translation_left * rotation_x))
-            .remap_xyz(Tree::x().neg(), Tree::y(), Tree::z())
-            .union(jack_cutout.affine(self.position * jack_translation_right * rotation_x))
+            let usb_translation = DAffine3::from_translation(USB_OFFSET + height_offset);
+            let jack_translation = DAffine3::from_translation(JACK_OFFSET_LEFT + height_offset);
+
+            usb_cutout
+                .affine(self.position * usb_translation * rotation_x)
+                .union(jack_cutout.affine(self.position * jack_translation * rotation_x))
+        } else {
+            let jack_translation = DAffine3::from_translation(JACK_OFFSET_RIGHT + height_offset);
+
+            jack_cutout.affine(self.position * jack_translation * rotation_x)
+        }
     }
 }

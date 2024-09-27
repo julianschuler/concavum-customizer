@@ -12,8 +12,7 @@ use crate::{assets::Assets, material::Physical};
 
 /// A scene rendering a keyboard model.
 pub struct Scene {
-    keyboard: Option<Object>,
-    bottom_plate: Option<InstancedObject>,
+    keyboard: Option<Keyboard>,
     preview: Option<InstancedObject>,
     keys: Keys,
     interface_pcb: InstancedObject,
@@ -75,7 +74,6 @@ impl Scene {
 
         Scene {
             keyboard: None,
-            bottom_plate: None,
             preview: None,
             keys,
             interface_pcb,
@@ -100,21 +98,11 @@ impl Scene {
     }
 
     /// Updates the objects using the given meshes.
-    pub fn update_objects(&mut self, context: &Context, meshes: &Meshes) {
-        self.keyboard = Some(Object::new(
+    pub fn update_keyboard(&mut self, context: &Context, meshes: &Meshes) {
+        self.keyboard = Some(Keyboard::new(
             context,
-            &meshes.keyboard,
+            meshes,
             self.display_settings.colors.keyboard,
-        ));
-
-        self.bottom_plate = Some(InstancedObject::new(
-            context,
-            &meshes.bottom_plate,
-            self.display_settings.colors.keyboard,
-            vec![
-                Mat4::identity(),
-                Mat4::from_nonuniform_scale(-1.0, 1.0, 1.0),
-            ],
         ));
     }
 
@@ -122,9 +110,6 @@ impl Scene {
     pub fn update_display_settings(&mut self, display_settings: DisplaySettings) {
         if let Some(keyboard) = &mut self.keyboard {
             keyboard.update_color(display_settings.colors.keyboard);
-        }
-        if let Some(bottom_plate) = &mut self.bottom_plate {
-            bottom_plate.update_color(display_settings.colors.keyboard);
         }
         if let Some(preview) = &mut self.preview {
             preview.update_color(display_settings.colors.keyboard);
@@ -158,7 +143,12 @@ impl Scene {
         ));
 
         if let Some(keyboard) = &self.keyboard {
-            render_target.render(camera, &keyboard.inner, &lights);
+            keyboard.render(
+                render_target,
+                camera,
+                &lights,
+                self.display_settings.preview.show_bottom_plate,
+            );
         } else if let Some(preview) = &self.preview {
             render_target.render(camera, &preview.inner, &lights);
         }
@@ -173,12 +163,6 @@ impl Scene {
 
         if self.display_settings.preview.show_matrix_pcb {
             self.matrix_pcb.render(render_target, camera, &lights);
-        }
-
-        if self.display_settings.preview.show_bottom_plate {
-            if let Some(bottom_plate) = &self.bottom_plate {
-                render_target.render(camera, &bottom_plate.inner, &lights);
-            }
         }
     }
 }
@@ -257,6 +241,58 @@ impl InstancedObject {
     /// Updates the color of the instanced object.
     fn update_color(&mut self, color: Color) {
         self.inner.material.update(color);
+    }
+}
+
+struct Keyboard {
+    left_half: Object,
+    right_half: Object,
+    bottom_plate: InstancedObject,
+}
+impl Keyboard {
+    /// Creates a new keyboard from the given meshes and color.
+    fn new(context: &Context, meshes: &Meshes, color: Color) -> Self {
+        let left_half = Object::new(context, &meshes.left_half, color);
+        let right_half = Object::new(context, &meshes.right_half, color);
+
+        let bottom_plate = InstancedObject::new(
+            context,
+            &meshes.bottom_plate,
+            color,
+            vec![
+                Mat4::identity(),
+                Mat4::from_nonuniform_scale(-1.0, 1.0, 1.0),
+            ],
+        );
+
+        Self {
+            left_half,
+            right_half,
+            bottom_plate,
+        }
+    }
+
+    /// Updates the color of the keyboard.
+    fn update_color(&mut self, color: Color) {
+        self.left_half.update_color(color);
+        self.right_half.update_color(color);
+        self.bottom_plate.update_color(color);
+    }
+
+    /// Renders the keyboard to the given render target.
+    fn render(
+        &self,
+        render_target: &RenderTarget,
+        camera: &Camera,
+        lights: &[&dyn Light],
+        show_bottom_plate: bool,
+    ) {
+        render_target.render(camera, &self.left_half.inner, lights);
+        render_target.render(camera, &self.right_half.inner, lights);
+
+        if show_bottom_plate {
+            render_target.render(camera, &self.bottom_plate.inner, lights);
+        }
     }
 }
 

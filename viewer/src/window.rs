@@ -135,7 +135,7 @@ impl Application {
         match scene_update {
             Update::New(model, meshes) => {
                 self.scene = Scene::from_settings(context, model, &self.assets);
-                self.scene.update_objects(context, &meshes);
+                self.scene.update_keyboard(context, &meshes);
             }
             Update::Settings(settings) => {
                 self.scene = Scene::from_settings(context, settings, &self.assets);
@@ -146,7 +146,7 @@ impl Application {
             Update::Preview(mesh) => {
                 self.scene.update_preview(context, &mesh);
             }
-            Update::Meshes(meshes) => self.scene.update_objects(context, &meshes),
+            Update::Meshes(meshes) => self.scene.update_keyboard(context, &meshes),
         }
     }
 }

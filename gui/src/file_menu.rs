@@ -158,8 +158,11 @@ async fn export_model(config: Config, meshes: Meshes) -> Update {
     zip.start_file("config.toml", SimpleFileOptions::default())?;
     zip.write_all(toml.as_bytes())?;
 
-    zip.start_file("keyboard.stl", SimpleFileOptions::default())?;
-    zip.write_stl(meshes.keyboard)?;
+    zip.start_file("left_half.stl", SimpleFileOptions::default())?;
+    zip.write_stl(meshes.left_half)?;
+
+    zip.start_file("right_half.stl", SimpleFileOptions::default())?;
+    zip.write_stl(meshes.right_half)?;
 
     zip.start_file("bottom_plate.stl", SimpleFileOptions::default())?;
     zip.write_stl(meshes.bottom_plate)?;

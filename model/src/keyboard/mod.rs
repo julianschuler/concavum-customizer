@@ -18,6 +18,7 @@ use crate::{
     key_positions::KeyPositions,
     matrix_pcb::MatrixPcb,
     primitives::{BoxShape, Csg, HalfSpace, IntoTree, RoundedCsg, Shape, Transforms},
+    util::SideX,
 };
 
 use bottom_plate::BottomPlate;
@@ -26,12 +27,14 @@ use thumb_cluster::ThumbCluster;
 
 /// A keyboard.
 pub struct Keyboard {
-    /// The shape of the keyboard.
-    pub shape: Shape,
-    /// A simplified preview shape of the keyboard.
-    pub preview: Shape,
+    /// The left half of the keyboard.
+    pub left_half: Shape,
+    /// The right half of the keyboard.
+    pub right_half: Shape,
     /// The bottom plate of the keyboard.
     pub bottom_plate: Shape,
+    /// A simplified preview shape of the keyboard.
+    pub preview: Shape,
     /// The position of the keys.
     pub key_positions: KeyPositions,
     /// The position of the interface PCB.
@@ -68,15 +71,12 @@ impl Keyboard {
             .rounded_difference(finger_key_clearance, rounding_radius);
         let combined_cluster = finger_cluster.union(thumb_cluster);
 
-        // Hollow out the combined cluster and cut off everthing below a z value of 0
+        // Hollow out the combined cluster and cut off everthing below a Z value of 0
         let half_space = HalfSpace::new(Plane::new(DVec3::ZERO, DVec3::NEG_Z)).into_tree();
         let hollowed_cluster = combined_cluster.shell(config.keyboard.shell_thickness.into());
         let cluster = hollowed_cluster.intersection(half_space.clone());
 
-        // Calculate preview shape
-        let cluster_preview = combined_cluster.intersection(half_space);
-        let preview = Shape::new(&cluster_preview, bounds.into());
-
+        // Calculate the bottom plate and preview shape
         let bottom_plate = BottomPlate::from_outline_and_insert_holders(
             cluster_outline.clone(),
             insert_holders.iter(),
@@ -84,7 +84,10 @@ impl Keyboard {
         );
         let bottom_plate = Shape::new(&bottom_plate.into_tree(), bounds.into());
 
-        // Add the insert and interface PCB holders and cutouts
+        let cluster_preview = combined_cluster.intersection(half_space);
+        let preview = Shape::new(&cluster_preview, bounds.into());
+
+        // Add the insert and interface PCB holders and switch cutouts
         let holders = Self::holders(
             insert_holders,
             interface_pcb.holder(bounds.diameter()),
@@ -94,19 +97,21 @@ impl Keyboard {
             .union(holders)
             .difference(Self::switch_cutouts(&key_positions));
 
-        // Mirror the cluster along the yz-plane to create both halves of the keyboard
-        let keyboard = cluster.remap_xyz(Tree::x().abs(), Tree::y(), Tree::z());
-        let bounds = bounds.mirror_yz();
+        // Create the left and right halves by subtracting the interface PCB cutouts
+        // and mirroring the left half along the YZ-plane
+        let left_half = cluster
+            .difference(interface_pcb.cutouts(SideX::Left, bounds.diameter()))
+            .remap_xyz(Tree::x().neg(), Tree::y(), Tree::z());
+        let right_half = cluster.difference(interface_pcb.cutouts(SideX::Right, bounds.diameter()));
 
-        // Add interface PCB cutouts
-        let keyboard = keyboard.difference(interface_pcb.cutouts(bounds.diameter()));
-
-        let shape = Shape::new(&keyboard, bounds.into());
+        let left_half = Shape::new(&left_half, bounds.mirror_yz().into());
+        let right_half = Shape::new(&right_half, bounds.into());
 
         Self {
-            shape,
-            preview,
+            left_half,
+            right_half,
             bottom_plate,
+            preview,
             key_positions,
             interface_pcb_position: interface_pcb.position,
             matrix_pcb,
