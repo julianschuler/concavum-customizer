@@ -147,10 +147,13 @@ impl Scene {
                 render_target,
                 camera,
                 &lights,
+                self.display_settings.preview.show_keyboard,
                 self.display_settings.preview.show_bottom_plate,
             );
         } else if let Some(preview) = &self.preview {
-            render_target.render(camera, &preview.inner, &lights);
+            if self.display_settings.preview.show_keyboard {
+                render_target.render(camera, &preview.inner, &lights);
+            }
         }
 
         if self.display_settings.preview.show_keys {
@@ -285,10 +288,13 @@ impl Keyboard {
         render_target: &RenderTarget,
         camera: &Camera,
         lights: &[&dyn Light],
+        show_keyboard: bool,
         show_bottom_plate: bool,
     ) {
-        render_target.render(camera, &self.left_half.inner, lights);
-        render_target.render(camera, &self.right_half.inner, lights);
+        if show_keyboard {
+            render_target.render(camera, &self.left_half.inner, lights);
+            render_target.render(camera, &self.right_half.inner, lights);
+        }
 
         if show_bottom_plate {
             render_target.render(camera, &self.bottom_plate.inner, lights);

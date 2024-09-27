@@ -87,13 +87,15 @@ impl Show for Config {
 #[allow(clippy::struct_excessive_bools)]
 #[derive(Clone, Default, Serialize, Deserialize, Show, PartialEq, Eq, Hash)]
 pub struct Preview {
-    /// Whether to show the keys during preview.
+    /// Whether to show the keys.
     pub show_keys: bool,
-    /// Whether to show the interface PCB during preview.
+    /// Whether to show the interface PCB.
     pub show_matrix_pcb: bool,
-    /// Whether to show the interface PCB during preview.
+    /// Whether to show the interface PCB.
     pub show_interface_pcb: bool,
-    /// Whether to show the bottom plate during preview.
+    /// Whether to show the keyboard.
+    pub show_keyboard: bool,
+    /// Whether to show the bottom plate.
     pub show_bottom_plate: bool,
     /// The light positions, will be hardcoded at a later stage.
     pub light_positions: Vec<Vec3<FiniteFloat>>,
