@@ -62,7 +62,7 @@ impl InsertHolder {
         LineSegment { start, end }
     }
 
-    /// Returns the center point of the insert
+    /// Returns the center point of the insert.
     pub fn center(&self) -> DVec2 {
         self.center
     }

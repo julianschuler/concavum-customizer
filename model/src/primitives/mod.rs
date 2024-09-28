@@ -21,7 +21,7 @@ pub use shapes3d::*;
 
 pub const EPSILON: f64 = 0.001;
 
-/// A generic shape
+/// A generic shape.
 pub struct Shape {
     inner: FidgetShape,
     bounds: Bounds,

@@ -219,7 +219,7 @@ pub struct Keyboard {
     pub rounding_radius: FiniteFloat,
     /// The wall thickness of the keyboard shell.
     pub shell_thickness: PositiveFloat,
-    /// The thickness of the bottom plate
+    /// The thickness of the bottom plate.
     pub bottom_plate_thickness: PositiveFloat,
     /// The resolution used for meshing, size of the smallest feature.
     pub resolution: PositiveFloat,

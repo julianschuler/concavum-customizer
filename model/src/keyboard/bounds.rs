@@ -15,7 +15,7 @@ pub struct Bounds {
 }
 
 impl Bounds {
-    /// Returns the size of the bounds
+    /// Returns the size of the bounds.
     pub fn size(&self) -> DVec3 {
         self.max - self.min
     }

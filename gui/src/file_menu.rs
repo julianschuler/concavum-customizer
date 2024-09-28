@@ -119,7 +119,7 @@ impl FileMenu {
     }
 }
 
-/// Loads the config from a TOML file
+/// Loads the config from a TOML file.
 async fn load_config() -> Update {
     let file = AsyncFileDialog::new()
         .add_filter("toml", &["toml"])
