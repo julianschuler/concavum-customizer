@@ -33,14 +33,12 @@ pub struct Settings {
 impl From<&Model> for Settings {
     fn from(model: &Model) -> Self {
         let finger_key_positions = model
-            .keyboard
             .key_positions
             .columns
             .iter()
             .flat_map(|column| column.iter().flat_map(mirrored_positions))
             .collect();
         let thumb_key_positions = model
-            .keyboard
             .key_positions
             .thumb_keys
             .iter()
@@ -48,16 +46,16 @@ impl From<&Model> for Settings {
             .collect();
         let interface_pcb_positions =
             mirrored_positions(&model.keyboard.interface_pcb_position).to_vec();
-        let matrix_pcb = &model.keyboard.matrix_pcb;
 
-        let matrix_pcb_meshes = matrix_pcb
+        let matrix_pcb_meshes = model
+            .matrix_pcb
             .key_connectors
             .iter()
             .map(Into::into)
-            .chain(matrix_pcb.column_connectors.iter().map(Into::into))
-            .chain(once((&matrix_pcb.cluster_connector).into()))
+            .chain(model.matrix_pcb.column_connectors.iter().map(Into::into))
+            .chain(once((&model.matrix_pcb.cluster_connector).into()))
             .collect();
-        let fpc_pad_positions = mirrored_positions(&matrix_pcb.fpc_pad_position).to_vec();
+        let fpc_pad_positions = mirrored_positions(&model.matrix_pcb.fpc_pad_position).to_vec();
 
         Self {
             finger_key_positions,

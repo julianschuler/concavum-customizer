@@ -12,7 +12,9 @@ pub mod matrix_pcb;
 
 use config::{Colors, Config, Preview};
 
+use key_positions::KeyPositions;
 use keyboard::Keyboard;
+use matrix_pcb::MatrixPcb;
 
 pub use fidget::mesh::{Mesh, Settings as MeshSettings};
 
@@ -38,6 +40,10 @@ impl From<&Config> for DisplaySettings {
 pub struct Model {
     /// The keyboard model.
     pub keyboard: Keyboard,
+    /// The matrix PCB.
+    pub matrix_pcb: MatrixPcb,
+    /// The position of the keys.
+    pub key_positions: KeyPositions,
     /// The resolution used for meshing.
     pub resolution: f64,
     /// The settings used for displaying the model.
@@ -48,10 +54,14 @@ impl Model {
     /// Creates a new model from a given configuration.
     #[must_use]
     pub fn from_config(config: &Config) -> Self {
-        let keyboard = Keyboard::from_config(config);
+        let key_positions = KeyPositions::from_config(config);
+        let keyboard = Keyboard::new(&key_positions, &config.keyboard);
+        let matrix_pcb = MatrixPcb::from_positions(&key_positions);
 
         Self {
             keyboard,
+            matrix_pcb,
+            key_positions,
             resolution: config.keyboard.resolution.into(),
             display_settings: config.into(),
         }

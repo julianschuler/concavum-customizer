@@ -6,7 +6,7 @@ mod thumb_cluster;
 
 use std::iter::once;
 
-use config::Config;
+use config::Keyboard as Config;
 use fidget::context::Tree;
 use glam::{dvec3, DAffine3, DVec3};
 
@@ -16,7 +16,6 @@ pub use insert_holder::InsertHolder;
 use crate::{
     geometry::Plane,
     key_positions::KeyPositions,
-    matrix_pcb::MatrixPcb,
     primitives::{BoxShape, Csg, HalfSpace, IntoTree, RoundedCsg, Shape, Transforms},
     util::SideX,
 };
@@ -35,22 +34,15 @@ pub struct Keyboard {
     pub bottom_plate: Shape,
     /// A simplified preview shape of the keyboard.
     pub preview: Shape,
-    /// The position of the keys.
-    pub key_positions: KeyPositions,
     /// The position of the interface PCB.
     pub interface_pcb_position: DAffine3,
-    /// The matrix PCB.
-    pub matrix_pcb: MatrixPcb,
 }
 
 impl Keyboard {
-    /// Creates a keyboard from the given configuration.
-    pub fn from_config(config: &Config) -> Self {
-        let key_positions = KeyPositions::from_config(config);
-        let matrix_pcb = MatrixPcb::from_positions(&key_positions);
-
-        let finger_cluster = FingerCluster::new(&key_positions.columns, &config.keyboard);
-        let thumb_cluster = ThumbCluster::new(&key_positions.thumb_keys, &config.keyboard);
+    /// Creates a keyboard from the given key positions and configuration.
+    pub fn new(key_positions: &KeyPositions, config: &Config) -> Self {
+        let finger_cluster = FingerCluster::new(&key_positions.columns, config);
+        let thumb_cluster = ThumbCluster::new(&key_positions.thumb_keys, config);
         let bounds = finger_cluster.bounds.union(&thumb_cluster.bounds);
         let interface_pcb = finger_cluster.interface_pcb;
         let insert_holders: Vec<_> = finger_cluster
@@ -61,7 +53,7 @@ impl Keyboard {
         let cluster_outline = finger_cluster.outline.union(thumb_cluster.outline);
 
         // Subtract key clearances from each other and combine the clusters
-        let rounding_radius = config.keyboard.rounding_radius.into();
+        let rounding_radius = config.rounding_radius.into();
         let finger_key_clearance = finger_cluster.key_clearance;
         let finger_cluster = finger_cluster
             .cluster
@@ -73,14 +65,14 @@ impl Keyboard {
 
         // Hollow out the combined cluster and cut off everthing below a Z value of 0
         let half_space = HalfSpace::new(Plane::new(DVec3::ZERO, DVec3::NEG_Z)).into_tree();
-        let hollowed_cluster = combined_cluster.shell(config.keyboard.shell_thickness.into());
+        let hollowed_cluster = combined_cluster.shell(config.shell_thickness.into());
         let cluster = hollowed_cluster.intersection(half_space.clone());
 
         // Calculate the bottom plate and preview shape
         let bottom_plate = BottomPlate::from_outline_and_insert_holders(
             cluster_outline.clone(),
             insert_holders.iter(),
-            config.keyboard.bottom_plate_thickness.into(),
+            config.bottom_plate_thickness.into(),
         );
         let bottom_plate = Shape::new(&bottom_plate.into_tree(), bounds.into());
 
@@ -95,7 +87,7 @@ impl Keyboard {
         );
         let cluster = cluster
             .union(holders)
-            .difference(Self::switch_cutouts(&key_positions));
+            .difference(Self::switch_cutouts(key_positions));
 
         // Create the left and right halves by subtracting the interface PCB cutouts
         // and mirroring the left half along the YZ-plane
@@ -112,9 +104,7 @@ impl Keyboard {
             right_half,
             bottom_plate,
             preview,
-            key_positions,
             interface_pcb_position: interface_pcb.position,
-            matrix_pcb,
         }
     }
 
