@@ -7,9 +7,10 @@ use std::{
 use config::Config;
 use rfd::AsyncFileDialog;
 use show::egui::{Align, Button, Layout, RichText, Ui};
+use three_d::{CpuMesh, Indices, Positions};
 use zip::{write::SimpleFileOptions, ZipWriter};
 
-use crate::{model::WriteStl, reload::ModelReloader, Error, Meshes};
+use crate::{reload::ModelReloader, Error, Meshes};
 
 type Update = Result<Option<Config>, Error>;
 
@@ -179,4 +180,49 @@ async fn export_model(config: Config, meshes: Meshes) -> Update {
     file.write(&data.into_inner()).await?;
 
     Ok(None)
+}
+
+/// A trait for writing a mesh to a binary STL.
+trait WriteStl: Write {
+    /// Writes the given mesh to a binary STL.
+    fn write_stl(&mut self, mesh: CpuMesh) -> Result<(), Error>;
+}
+
+impl<W: Write> WriteStl for W {
+    fn write_stl(&mut self, mesh: CpuMesh) -> Result<(), Error> {
+        const HEADER: &[u8] = b"This is a binary STL file exported by the concavum customizer";
+
+        if let CpuMesh {
+            positions: Positions::F32(vertices),
+            indices: Indices::U32(indices),
+            ..
+        } = mesh
+        {
+            let triangle_count = indices.len() / 3;
+
+            self.write_all(HEADER)?;
+            self.write_all(&[0; 80 - HEADER.len()])?;
+            #[allow(clippy::cast_possible_truncation)]
+            self.write_all(&(triangle_count as u32).to_le_bytes())?;
+
+            for triangle in indices.chunks_exact(3) {
+                let a = vertices[triangle[0] as usize];
+                let b = vertices[triangle[1] as usize];
+                let c = vertices[triangle[2] as usize];
+
+                let normal = (b - a).cross(c - a);
+
+                for vector in [normal, a, b, c] {
+                    self.write_all(&vector.x.to_le_bytes())?;
+                    self.write_all(&vector.y.to_le_bytes())?;
+                    self.write_all(&vector.z.to_le_bytes())?;
+                }
+                self.write_all(&[0; size_of::<u16>()])?;
+            }
+
+            Ok(())
+        } else {
+            Err(Error::InvalidMesh("The mesh representation is invalid"))
+        }
+    }
 }
