@@ -2,6 +2,7 @@
 
 mod assets;
 mod material;
+mod objects;
 mod scene;
 mod window;
 
