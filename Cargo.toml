@@ -17,30 +17,30 @@ license = "GPL-3.0-only"
 
 [workspace.dependencies]
 config = { path = "config" }
-console_error_panic_hook = "0.1.7"
-earcutr = "0.4.3"
+console_error_panic_hook = "0.1"
+earcutr = "0.4"
 fidget = { git = "https://github.com/julianschuler/fidget.git", branch = "static-singular-value-truncation", default-features = false, features = ["jit", "mesh"] }
-glam = { version = "0.27", features = ["serde"] }
+glam = { version = "0.29", features = ["serde"] }
 gui = { path = "gui" }
 hex_color = { version = "3.0", features = ["serde"] }
 model = { path = "model" }
-nalgebra = { version = "0.33.0", default-features = false, features = ["std"] }
-pollster = "0.3.0"
-quote = "1.0.36"
-rfd = { version = "0.14.1", default-features = false, features = ["gtk3"] }
+nalgebra = { version = "0.33", default-features = false, features = ["std"] }
+pollster = "0.3"
+quote = "1.0"
+rfd = { version = "0.15", default-features = false, features = ["gtk3"] }
 serde = { version = "1.0", features = ["derive"] }
 show = { path = "show" }
 show_derive = { path = "show_derive" }
-syn = "2.0.72"
+syn = "2.0"
 thiserror = "1.0"
 three-d = { version = "0.17", features = ["egui-gui"] }
 toml = "0.8"
 viewer = { path = "viewer" }
-wasm-bindgen = "0.2.92"
-wasm-bindgen-futures = "0.4.42"
-web-sys = { version = "0.3.69", features = ["Worker"] }
-web-time = "1.1.0"
-zip = { version = "2.1.6", default-features = false }
+wasm-bindgen = "0.2"
+wasm-bindgen-futures = "0.4"
+web-sys = { version = "0.3", features = ["Worker"] }
+web-time = "1.1"
+zip = { version = "2.2", default-features = false }
 
 [workspace.lints.clippy]
 pedantic = "warn"
