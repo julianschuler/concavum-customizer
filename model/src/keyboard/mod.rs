@@ -1,5 +1,4 @@
 mod bottom_plate;
-mod bounds;
 mod finger_cluster;
 mod insert_holder;
 mod thumb_cluster;
@@ -10,7 +9,6 @@ use config::Keyboard as Config;
 use fidget::context::Tree;
 use glam::{dvec3, DAffine3, DVec3};
 
-pub use bounds::Bounds;
 pub use insert_holder::InsertHolder;
 
 use crate::{
@@ -43,7 +41,8 @@ impl Keyboard {
     pub fn new(key_positions: &KeyPositions, config: &Config) -> Self {
         let finger_cluster = FingerCluster::new(&key_positions.columns, config);
         let thumb_cluster = ThumbCluster::new(&key_positions.thumb_keys, config);
-        let bounds = finger_cluster.bounds.union(&thumb_cluster.bounds);
+
+        let bounds = finger_cluster.bounds.union(thumb_cluster.bounds);
         let interface_pcb = finger_cluster.interface_pcb;
         let insert_holders: Vec<_> = finger_cluster
             .insert_holders
@@ -74,10 +73,10 @@ impl Keyboard {
             insert_holders.iter(),
             config.bottom_plate_thickness.into(),
         );
-        let bottom_plate = Shape::new(&bottom_plate.into_tree(), bounds.into());
+        let bottom_plate = Shape::new(&bottom_plate.into_tree(), bounds);
 
         let cluster_preview = combined_cluster.intersection(half_space);
-        let preview = Shape::new(&cluster_preview, bounds.into());
+        let preview = Shape::new(&cluster_preview, bounds);
 
         // Add the insert and interface PCB holders and switch cutouts
         let holders = Self::holders(
@@ -96,8 +95,8 @@ impl Keyboard {
             .remap_xyz(Tree::x().neg(), Tree::y(), Tree::z());
         let right_half = cluster.difference(interface_pcb.cutouts(SideX::Right, bounds.diameter()));
 
-        let left_half = Shape::new(&left_half, bounds.mirror_yz().into());
-        let right_half = Shape::new(&right_half, bounds.into());
+        let left_half = Shape::new(&left_half, bounds.mirror_yz());
+        let right_half = Shape::new(&right_half, bounds);
 
         Self {
             left_half,

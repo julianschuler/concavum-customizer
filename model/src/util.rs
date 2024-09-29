@@ -1,9 +1,9 @@
 use fidget::context::Tree;
-use glam::{DAffine3, DQuat, DVec2, DVec3, Vec3Swizzles};
+use glam::{dvec2, dvec3, DAffine3, DMat3, DQuat, DVec2, DVec3, Vec3Swizzles};
 
 use crate::{
     geometry::{zvec, Plane},
-    primitives::{Csg, IntoTree, SimplePolygon, Transforms},
+    primitives::{Bounds, Csg, IntoTree, SimplePolygon, Transforms},
 };
 
 /// A side along the X-axis.
@@ -147,4 +147,43 @@ pub fn sheared_prism_from_projected_points(
         .extrude(0.0, height)
         .shear(shearing_direction.xy(), shearing_direction.z)
         .affine(affine)
+}
+
+/// Creates bounds from outline points and height.
+pub fn bounds_from_outline_points_and_height(
+    outline_points: &[DVec2],
+    height: f64,
+    circumference_distance: f64,
+) -> Bounds {
+    let (min, max) = outline_points.iter().fold(
+        (
+            dvec2(f64::INFINITY, f64::INFINITY),
+            dvec2(f64::NEG_INFINITY, f64::NEG_INFINITY),
+        ),
+        |(min, max), point| (point.min(min), point.max(max)),
+    );
+
+    let padding = dvec3(circumference_distance, circumference_distance, 0.0);
+    let min = dvec3(min.x, min.y, 0.0) - padding;
+    let max = dvec3(max.x, max.y, height) + padding;
+
+    Bounds { min, max }
+}
+
+/// Returns the unit vectors projected to a plane given by the normal.
+/// The vectors are scaled such that it translates every point inside
+/// the bound to the outside.
+pub fn projected_unit_vectors(normal: DVec3, bounds: Bounds) -> DMat3 {
+    let plane = Plane::new(DVec3::ZERO, normal);
+
+    let x_axis = plane.project_vector(DVec3::X).normalize_or_zero();
+    let y_axis = plane.project_vector(DVec3::Y).normalize_or_zero();
+    let z_axis = plane.project_vector(DVec3::Z).normalize_or_zero();
+
+    bounds.diameter()
+        * DMat3 {
+            x_axis,
+            y_axis,
+            z_axis,
+        }
 }

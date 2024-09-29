@@ -6,9 +6,12 @@ use crate::{
     geometry::{Line, Plane, Project},
     interface_pcb::InterfacePcb,
     key_positions::{Column, ColumnType, Columns},
-    keyboard::{Bounds, InsertHolder},
-    primitives::{Csg, IntoTree, RoundedCsg, SimplePolygon, EPSILON},
-    util::{corner_point, prism_from_projected_points, side_point, Side, SideX, SideY},
+    keyboard::InsertHolder,
+    primitives::{Bounds, Csg, IntoTree, RoundedCsg, SimplePolygon, EPSILON},
+    util::{
+        bounds_from_outline_points_and_height, corner_point, prism_from_projected_points,
+        projected_unit_vectors, side_point, Side, SideX, SideY,
+    },
 };
 
 /// A finger cluster containing the finger keys.
@@ -34,7 +37,7 @@ impl FingerCluster {
         let cluster_height = columns.max_z() + columns.key_clearance.length();
         let circumference_distance = config.circumference_distance.into();
 
-        let bounds = Bounds::from_outline_points_and_height(
+        let bounds = bounds_from_outline_points_and_height(
             &outline_points,
             cluster_height,
             circumference_distance,
@@ -52,7 +55,7 @@ impl FingerCluster {
         let cluster_outline = outline.offset(circumference_distance);
         let cluster = cluster_outline.extrude(-cluster_height, cluster_height);
 
-        let clearance = ClearanceBuilder::new(columns, &bounds).build();
+        let clearance = ClearanceBuilder::new(columns, bounds).build();
         let cluster = cluster.rounded_difference(clearance, config.rounding_radius.into());
 
         let key_clearance = outline.extrude(-cluster_height, cluster_height);
@@ -87,12 +90,12 @@ impl FingerCluster {
 
 struct ClearanceBuilder<'a> {
     columns: &'a Columns,
-    bounds: &'a Bounds,
+    bounds: Bounds,
     support_planes: SupportPlanes,
 }
 
 impl<'a> ClearanceBuilder<'a> {
-    fn new(columns: &'a Columns, bounds: &'a Bounds) -> Self {
+    fn new(columns: &'a Columns, bounds: Bounds) -> Self {
         let support_planes = SupportPlanes::from_columns(columns);
 
         Self {
@@ -182,7 +185,7 @@ impl<'a> ClearanceBuilder<'a> {
             combined_clearance.intersection(side_clearance)
         } else {
             // Bound side clearance since it is combined by union and can interfere with other columns
-            let bounds = self.bounds.projected_unit_vectors(normal);
+            let bounds = projected_unit_vectors(normal, self.bounds);
             let points = [
                 -bounds.y_axis,
                 bounds.y_axis,
@@ -204,7 +207,7 @@ impl<'a> ClearanceBuilder<'a> {
         };
 
         let plane = Plane::new(self.bounds.min, DVec3::X);
-        let bounds = self.bounds.projected_unit_vectors(plane.normal());
+        let bounds = projected_unit_vectors(plane.normal(), self.bounds);
 
         let first = column.first();
         let last = column.last();
@@ -255,7 +258,7 @@ impl<'a> ClearanceBuilder<'a> {
     fn clearance_points(&self, column: &Column) -> Vec<DVec3> {
         let first = column.first();
         let last = column.last();
-        let bounds = self.bounds.projected_unit_vectors(first.x_axis);
+        let bounds = projected_unit_vectors(first.x_axis, self.bounds);
 
         // All points in the center, if any
         let mut points: Vec<_> = column

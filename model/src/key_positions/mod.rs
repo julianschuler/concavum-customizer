@@ -6,7 +6,7 @@ use std::ops::Mul;
 use config::Config;
 use glam::{dvec3, DAffine3, DVec2};
 
-use crate::keyboard::Bounds;
+use crate::util::bounds_from_outline_points_and_height;
 
 pub use columns::{Column, ColumnType, Columns};
 pub use thumb_keys::ThumbKeys;
@@ -46,17 +46,17 @@ impl KeyPositions {
                 .min(tilted_positions.thumb_keys.min_z());
         let circumference_distance = config.keyboard.circumference_distance.into();
 
-        let column_bounds = Bounds::from_outline_points_and_height(
+        let column_bounds = bounds_from_outline_points_and_height(
             &tilted_positions.columns.outline_points(),
             0.0,
             circumference_distance,
         );
-        let thumb_key_bounds = Bounds::from_outline_points_and_height(
+        let thumb_key_bounds = bounds_from_outline_points_and_height(
             &tilted_positions.thumb_keys.outline_points(),
             0.0,
             circumference_distance,
         );
-        let bounds = column_bounds.union(&thumb_key_bounds);
+        let bounds = column_bounds.union(thumb_key_bounds);
 
         DAffine3::from_translation(dvec3(CENTER_OFFSET - bounds.min.x, 0.0, z_offset))
             * tilted_positions

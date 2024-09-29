@@ -5,9 +5,12 @@ use glam::DVec3;
 use crate::{
     geometry::{Line, Plane},
     key_positions::ThumbKeys,
-    keyboard::{Bounds, InsertHolder},
-    primitives::{ConvexPolygon, Csg, IntoTree, RoundedCsg, EPSILON},
-    util::{prism_from_projected_points, sheared_prism_from_projected_points, side_point, Side},
+    keyboard::InsertHolder,
+    primitives::{Bounds, ConvexPolygon, Csg, IntoTree, RoundedCsg, EPSILON},
+    util::{
+        bounds_from_outline_points_and_height, prism_from_projected_points, projected_unit_vectors,
+        sheared_prism_from_projected_points, side_point, Side,
+    },
 };
 
 /// A thumb cluster containing the thumb keys.
@@ -31,7 +34,7 @@ impl ThumbCluster {
         let cluster_height = thumb_keys.max_z() + thumb_keys.key_clearance.length();
         let circumference_distance = config.circumference_distance.into();
 
-        let bounds = Bounds::from_outline_points_and_height(
+        let bounds = bounds_from_outline_points_and_height(
             &outline_points,
             cluster_height,
             circumference_distance,
@@ -43,7 +46,7 @@ impl ThumbCluster {
             .offset(circumference_distance);
         let cluster = cluster_outline.extrude(-cluster_height, cluster_height);
 
-        let clearance = Self::clearance(thumb_keys, &bounds);
+        let clearance = Self::clearance(thumb_keys, bounds);
         let cluster = cluster.rounded_difference(clearance, config.rounding_radius.into());
 
         let key_clearance = Self::key_clearance(thumb_keys, bounds);
@@ -57,13 +60,13 @@ impl ThumbCluster {
         }
     }
 
-    fn clearance(thumb_keys: &ThumbKeys, bounds: &Bounds) -> Tree {
+    fn clearance(thumb_keys: &ThumbKeys, bounds: Bounds) -> Tree {
         let key_clearance = thumb_keys.key_clearance;
 
         let first = thumb_keys.first();
         let last = thumb_keys.last();
         let length = bounds.size().y;
-        let bounds = bounds.projected_unit_vectors(first.y_axis);
+        let bounds = projected_unit_vectors(first.y_axis, bounds);
 
         let first_point = side_point(first, Side::Left, key_clearance);
         let last_point = side_point(last, Side::Right, key_clearance);
@@ -122,7 +125,7 @@ impl ThumbCluster {
 
         let first_point = side_point(first, Side::Left, key_clearance);
         let last_point = side_point(last, Side::Right, key_clearance);
-        let bounds = bounds.projected_unit_vectors(first.y_axis);
+        let bounds = projected_unit_vectors(first.y_axis, bounds);
 
         let points = thumb_keys
             .windows(2)
