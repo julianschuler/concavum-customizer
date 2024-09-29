@@ -1,8 +1,18 @@
 use glam::{dvec2, dvec3, DMat2, DMat3, DVec2, DVec3};
 use nalgebra::Matrix3;
 
-/// Returns a vector along the Z-axis with the given Z-value.
-pub fn zvec(z: f64) -> DVec3 {
+/// Returns a vector along the X-axis with the given value of `x`.
+pub fn vec_x(x: f64) -> DVec3 {
+    dvec3(x, 0.0, 0.0)
+}
+
+/// Returns a vector along the Y-axis with the given value of `y`.
+pub fn vec_y(y: f64) -> DVec3 {
+    dvec3(0.0, y, 0.0)
+}
+
+/// Returns a vector along the Z-axis with the given value of `z`.
+pub fn vec_z(z: f64) -> DVec3 {
     dvec3(0.0, 0.0, z)
 }
 

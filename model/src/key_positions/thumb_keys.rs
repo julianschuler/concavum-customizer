@@ -4,6 +4,7 @@ use config::ThumbCluster;
 use glam::{dvec2, dvec3, DAffine3, DQuat, DVec2, DVec3, EulerRot, Vec3Swizzles};
 
 use crate::{
+    geometry::vec_x,
     key_positions::{CURVATURE_HEIGHT, KEY_CLEARANCE},
     util::{corner_point, SideX, SideY},
 };
@@ -35,7 +36,7 @@ impl ThumbKeys {
                 .map(|i| {
                     let x = key_distance * f64::from(i - i8::from(config.resting_key_index));
 
-                    key_transform * DAffine3::from_translation(dvec3(x, 0.0, 0.0))
+                    key_transform * DAffine3::from_translation(vec_x(x))
                 })
                 .collect()
         } else {
@@ -56,10 +57,8 @@ impl ThumbKeys {
                 .collect()
         };
 
-        let key_clearance = dvec2(
-            key_distance + KEY_CLEARANCE,
-            1.5 * key_distance + KEY_CLEARANCE,
-        ) / 2.0;
+        let key_clearance =
+            (dvec2(key_distance, 1.5 * key_distance) + DVec2::splat(KEY_CLEARANCE)) / 2.0;
 
         Self {
             inner,

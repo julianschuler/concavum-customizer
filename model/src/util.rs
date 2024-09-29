@@ -1,8 +1,8 @@
 use fidget::context::Tree;
-use glam::{dvec2, dvec3, DAffine3, DMat3, DQuat, DVec2, DVec3, Vec3Swizzles};
+use glam::{DAffine3, DMat3, DQuat, DVec2, DVec3, Vec3Swizzles};
 
 use crate::{
-    geometry::{zvec, Plane},
+    geometry::{vec_z, Plane},
     primitives::{Bounds, Csg, IntoTree, SimplePolygon, Transforms},
 };
 
@@ -140,7 +140,8 @@ pub fn sheared_prism_from_projected_points(
         .map(|point| (rotation * point).xy())
         .collect();
 
-    let affine = DAffine3::from_quat(rotation.inverse()) * DAffine3::from_translation(zvec(offset));
+    let affine =
+        DAffine3::from_quat(rotation.inverse()) * DAffine3::from_translation(vec_z(offset));
 
     SimplePolygon::new(vertices)
         .into_tree()
@@ -156,16 +157,13 @@ pub fn bounds_from_outline_points_and_height(
     circumference_distance: f64,
 ) -> Bounds {
     let (min, max) = outline_points.iter().fold(
-        (
-            dvec2(f64::INFINITY, f64::INFINITY),
-            dvec2(f64::NEG_INFINITY, f64::NEG_INFINITY),
-        ),
+        (DVec2::splat(f64::INFINITY), DVec2::splat(f64::NEG_INFINITY)),
         |(min, max), point| (point.min(min), point.max(max)),
     );
 
-    let padding = dvec3(circumference_distance, circumference_distance, 0.0);
-    let min = dvec3(min.x, min.y, 0.0) - padding;
-    let max = dvec3(max.x, max.y, height) + padding;
+    let padding = DVec2::splat(circumference_distance);
+    let min = (min - padding).extend(0.0);
+    let max = (max + padding).extend(height);
 
     Bounds { min, max }
 }

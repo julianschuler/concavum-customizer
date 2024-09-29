@@ -1,10 +1,10 @@
 use std::ops::{Deref, Mul};
 
 use config::{ColumnConfig, ColumnType as ConfigColumnType, FingerCluster};
-use glam::{dvec2, dvec3, DAffine3, DVec2, DVec3, Vec3Swizzles};
+use glam::{dvec3, DAffine3, DVec2, DVec3, Vec3Swizzles};
 
 use crate::{
-    geometry::{Line, Plane},
+    geometry::{vec_y, Line, Plane},
     key_positions::{CURVATURE_HEIGHT, KEY_CLEARANCE},
     util::{corner_point, SideX, SideY},
 };
@@ -131,7 +131,7 @@ impl Columns {
                     (0..config.rows.into())
                         .map(|j| {
                             let y = key_distance.y * f64::from(j - home_row_index);
-                            column_transform * DAffine3::from_translation(dvec3(0.0, y, 0.0))
+                            column_transform * DAffine3::from_translation(vec_y(y))
                         })
                         .collect()
                 } else {
@@ -161,10 +161,7 @@ impl Columns {
             })
             .collect();
 
-        let key_clearance = dvec2(
-            key_distance.x + KEY_CLEARANCE,
-            key_distance.y + KEY_CLEARANCE,
-        ) / 2.0;
+        let key_clearance = (key_distance + DVec2::splat(KEY_CLEARANCE)) / 2.0;
 
         Self {
             inner,

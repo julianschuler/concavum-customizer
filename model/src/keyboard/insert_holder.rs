@@ -1,6 +1,6 @@
 use config::Keyboard;
 use fidget::context::Tree;
-use glam::{dvec3, DVec2};
+use glam::DVec2;
 
 use crate::{
     geometry::{rotate_90_degrees, LineSegment},
@@ -76,7 +76,7 @@ impl From<InsertHolder> for Tree {
             .into_tree()
             .offset(InsertHolder::RADIUS)
             .difference(hole)
-            .translate(dvec3(insert_holder.center.x, insert_holder.center.y, 0.0))
+            .translate(insert_holder.center.extend(0.0))
             .extrude(0.0, InsertHolder::HEIGHT)
     }
 }

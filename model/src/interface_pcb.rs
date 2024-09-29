@@ -4,7 +4,7 @@ use fidget::context::Tree;
 use glam::{dvec2, dvec3, DAffine3, DMat2, DMat3, DVec2, DVec3};
 
 use crate::{
-    geometry::{rotate_90_degrees, zvec},
+    geometry::{rotate_90_degrees, vec_y, vec_z},
     keyboard::InsertHolder,
     primitives::{BoxShape, Circle, Csg, IntoTree, Rectangle, Transforms},
     util::SideX,
@@ -23,7 +23,7 @@ impl InterfacePcb {
     /// Creates a new interface PCB using the given insert holder.
     pub fn from_insert_holder(insert_holder: &InsertHolder) -> Self {
         let top_edge = insert_holder.outline_segment(Self::SIZE.x);
-        let translation = dvec3(top_edge.start.x, top_edge.start.y, Self::HOLDER_THICKNESS);
+        let translation = top_edge.start.extend(Self::HOLDER_THICKNESS);
 
         let direction = (top_edge.end - top_edge.start).normalize();
         let rotation_matrix = DMat2::from_cols(direction, rotate_90_degrees(direction));
@@ -44,10 +44,10 @@ impl InterfacePcb {
         let cutout =
             BoxShape::new(dvec3(Self::SIZE.x, bounds_diameter, bounds_diameter)).into_tree();
         let cutout = cutout
-            .translate(zvec(
+            .translate(vec_z(
                 (bounds_diameter - height) / 2.0 + Self::HOLDER_THICKNESS,
             ))
-            .union(cutout.translate(dvec3(0.0, BRACKET_WIDTH, 0.0)));
+            .union(cutout.translate(vec_y(BRACKET_WIDTH)));
 
         let translation = dvec3(
             Self::SIZE.x / 2.0,
@@ -75,10 +75,10 @@ impl InterfacePcb {
             .extrude(-Self::SIZE.y, bounds_diameter);
 
         let rotation_x = DAffine3::from_rotation_x(-PI / 2.0);
-        let height_offset = zvec(Self::SIZE.z);
+        let height_offset = vec_z(Self::SIZE.z);
 
         if matches!(side, SideX::Left) {
-            let usb_cutout = Rectangle::new(USB_SIZE - dvec2(USB_RADIUS, USB_RADIUS))
+            let usb_cutout = Rectangle::new(USB_SIZE - DVec2::splat(USB_RADIUS))
                 .into_tree()
                 .offset(USB_RADIUS)
                 .extrude(-Self::SIZE.y, bounds_diameter);

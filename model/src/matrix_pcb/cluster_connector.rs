@@ -159,8 +159,8 @@ fn select_tangent(
     thumb_arc_center: DVec2,
 ) -> DVec3 {
     let direction = thumb_arc_center - finger_arc_center;
-    let homogenous_finger_arc_center = dvec3(finger_arc_center.x, finger_arc_center.y, 1.0);
-    let homogenous_thumb_arc_center = dvec3(thumb_arc_center.x, thumb_arc_center.y, 1.0);
+    let homogenous_finger_arc_center = finger_arc_center.extend(1.0);
+    let homogenous_thumb_arc_center = thumb_arc_center.extend(1.0);
 
     tangents
         .into_iter()

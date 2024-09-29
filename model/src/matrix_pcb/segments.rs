@@ -1,4 +1,6 @@
-use glam::{dvec3, DAffine3, DMat3, DQuat, DVec3};
+use glam::{DAffine3, DMat3, DQuat, DVec3};
+
+use crate::geometry::vec_y;
 
 /// A trait defining a segment.
 pub trait Segment {
@@ -68,7 +70,7 @@ impl Segment for Line {
     fn positions(&self) -> Vec<DAffine3> {
         [
             DAffine3::IDENTITY,
-            DAffine3::from_translation(dvec3(0.0, self.length, 0.0)),
+            DAffine3::from_translation(vec_y(self.length)),
         ]
         .to_vec()
     }

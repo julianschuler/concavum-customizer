@@ -1,5 +1,5 @@
 use fidget::context::Tree;
-use glam::{dvec3, DVec2};
+use glam::DVec2;
 
 use crate::{
     keyboard::InsertHolder,
@@ -41,7 +41,7 @@ impl From<BottomPlate> for Tree {
             .hole_positions
             .into_iter()
             .map(|hole_position| {
-                let translation = dvec3(hole_position.x, hole_position.y, 0.0);
+                let translation = hole_position.extend(0.0);
 
                 Circle::new(HOLE_RADIUS).into_tree().translate(translation)
             })
