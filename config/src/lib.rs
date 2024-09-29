@@ -97,8 +97,6 @@ pub struct Preview {
     pub show_keyboard: bool,
     /// Whether to show the bottom plate.
     pub show_bottom_plate: bool,
-    /// The light positions, will be hardcoded at a later stage.
-    pub light_positions: Vec<Vec3<FiniteFloat>>,
 }
 
 #[derive(Clone, Serialize, PartialEq, Eq, Hash)]

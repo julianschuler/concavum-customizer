@@ -17,6 +17,7 @@ use keyboard::Keyboard;
 use matrix_pcb::MatrixPcb;
 
 pub use fidget::mesh::{Mesh, Settings as MeshSettings};
+pub use primitives::Bounds;
 
 /// A set of settings used for displaying a model.
 #[derive(Clone, Default)]

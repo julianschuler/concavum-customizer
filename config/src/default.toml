@@ -4,7 +4,6 @@ show_matrix_pcb = true
 show_interface_pcb = true
 show_keyboard = true
 show_bottom_plate = false
-light_positions = [[100, 0, 100], [-100, 0, 100], [100, -100, -100], [-100, -100, -100]]
 
 [finger_cluster]
 rows = 3

@@ -5,9 +5,9 @@ use model::{
     matrix_pcb::{
         ClusterConnector, ColumnConnector, KeyConnectors, Segment, CONNECTOR_WIDTH, THICKNESS,
     },
-    Mesh as ModelMesh, MeshSettings, Model,
+    Bounds, Mesh as ModelMesh, MeshSettings, Model,
 };
-use three_d::{CpuMesh, Indices, Mat4, Positions};
+use three_d::{CpuMesh, Indices, Mat4, Positions, Vec3};
 
 pub use model::DisplaySettings;
 
@@ -26,6 +26,8 @@ pub struct Settings {
     pub fpc_pad_positions: Vec<Mat4>,
     /// The display settings of the model.
     pub display_settings: DisplaySettings,
+    /// The positions of the illuminating point lights.
+    pub light_positions: Vec<Vec3>,
 }
 
 impl From<&Model> for Settings {
@@ -54,6 +56,7 @@ impl From<&Model> for Settings {
             .chain(once((&model.matrix_pcb.cluster_connector).into()))
             .collect();
         let fpc_pad_positions = mirrored_positions(&model.matrix_pcb.fpc_pad_position).to_vec();
+        let light_positions = light_positions_from_bounds(model.keyboard.right_half.bounds());
 
         Self {
             finger_key_positions,
@@ -62,6 +65,7 @@ impl From<&Model> for Settings {
             matrix_pcb_meshes,
             fpc_pad_positions,
             display_settings: model.display_settings.clone(),
+            light_positions,
         }
     }
 }
@@ -213,6 +217,24 @@ fn mirrored_positions(position: &DAffine3) -> [Mat4; 2] {
     let mirror_transform = Mat4::from_nonuniform_scale(-1.0, 1.0, 1.0);
 
     [position, mirror_transform * position]
+}
+
+/// Creates the light positios from the bounds of a keyboard half.
+fn light_positions_from_bounds(bounds: Bounds) -> Vec<Vec3> {
+    const DISTANCE: f32 = 100.0;
+
+    let min = bounds.min.as_vec3();
+    let max = bounds.max.as_vec3();
+    let center = bounds.center().as_vec3();
+
+    let from_below = Vec3::new(center.x, center.y, -DISTANCE);
+    let from_above_back = Vec3::new(max.x + DISTANCE, max.y + DISTANCE, max.z + DISTANCE);
+    let from_above_front = Vec3::new(from_above_back.x, min.y - DISTANCE, from_above_back.z);
+
+    [from_below, from_above_front, from_above_back]
+        .into_iter()
+        .flat_map(|position| [position, Vec3::new(-position.x, position.y, position.z)])
+        .collect()
 }
 
 /// A macro returning the indices of the given quad faces.

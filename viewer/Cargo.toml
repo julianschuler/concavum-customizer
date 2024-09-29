@@ -6,7 +6,6 @@ license.workspace = true
 
 [dependencies]
 config.workspace = true
-glam.workspace = true
 gui.workspace = true
 thiserror.workspace = true
 three-d.workspace = true

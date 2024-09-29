@@ -15,7 +15,7 @@ pub struct MatrixPcbs {
 }
 
 impl MatrixPcbs {
-    /// Creates a new set of matrix PCBs.
+    /// Creates a new pair of matrix PCBs.
     pub fn new(
         context: &Context,
         assets: &Assets,

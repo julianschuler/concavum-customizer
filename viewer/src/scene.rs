@@ -1,5 +1,4 @@
 use config::Color;
-use glam::DVec3;
 use gui::{DisplaySettings, Meshes, Settings};
 use three_d::{
     AmbientLight, Attenuation, Camera, ClearState, Context, CpuMesh, Light, PointLight,
@@ -58,18 +57,11 @@ impl Scene {
         );
 
         let ambient = AmbientLight::new(context, 0.05, Srgba::WHITE);
-        let lights = display_settings
-            .preview
+        let lights = settings
             .light_positions
             .iter()
-            .map(|direction| {
-                PointLight::new(
-                    context,
-                    1.0,
-                    Srgba::WHITE,
-                    &DVec3::from(*direction).as_vec3().to_array().into(),
-                    Attenuation::default(),
-                )
+            .map(|position| {
+                PointLight::new(context, 0.8, Srgba::WHITE, position, Attenuation::default())
             })
             .collect();
 

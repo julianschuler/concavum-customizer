@@ -94,9 +94,3 @@ impl Show for NonZeroU8 {
         changed
     }
 }
-
-impl<T> Show for Vec<T> {
-    fn show(&mut self, _ui: &mut Ui) -> bool {
-        false
-    }
-}

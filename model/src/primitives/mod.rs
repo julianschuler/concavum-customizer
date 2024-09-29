@@ -65,6 +65,11 @@ impl Shape {
                 .expect("available parallelism should be known"),
         }
     }
+
+    /// Returns the bounds of the shape.
+    pub fn bounds(&self) -> Bounds {
+        self.bounds
+    }
 }
 
 /// Bounded region containing a cluster given by two points.
