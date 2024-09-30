@@ -1,0 +1,60 @@
+name: Release
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+
+jobs:
+  build:
+    name: Build
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            ext: ''
+            target: x86_64-unknown-linux-gnu
+          - os: windows-latest
+            ext: '.exe'
+            target: x86_64-pc-windows-msvc
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Install dependencies
+        if: ${{ matrix.os == 'ubuntu-latest' }}
+        run: sudo apt update && sudo apt install libwayland-dev
+      - name: Build
+        run: cargo build --release --target ${{ matrix.target }}
+      - name: Rename executable
+        run: |
+          mkdir -p bin
+          mv target/${{ matrix.target }}/release/customizer${{ matrix.ext }} bin/concavum-customizer-${{ github.ref_name }}-${{ matrix.target }}${{ matrix.ext }}
+      - name: Upload executable as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: binary-${{ matrix.target }}
+          path: bin/
+  release:
+    name: Release
+    env:
+      version: ${{ github.ref_name }}
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+      contents: write
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          merge-multiple: true
+      - name: Release executables
+        uses: softprops/action-gh-release@v2
+        with:
+          name: Concavum customizer ${{ github.ref_name }}
+          body: The executables for the concavum customizer ${{ github.ref_name }}.
+          files: '*'
+          fail_on_unmatched_files: true
