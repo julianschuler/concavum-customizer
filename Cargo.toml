@@ -27,7 +27,7 @@ model = { path = "model" }
 nalgebra = { version = "0.33", default-features = false, features = ["std"] }
 pollster = "0.3"
 quote = "1.0"
-rfd = { version = "0.15", default-features = false, features = ["gtk3"] }
+rfd = { version = "0.15" }
 serde = { version = "1.0", features = ["derive"] }
 show = { path = "show" }
 show_derive = { path = "show_derive" }
