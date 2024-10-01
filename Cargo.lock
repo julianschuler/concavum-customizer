@@ -710,6 +710,13 @@ dependencies = [
 name = "customizer"
 version = "0.1.0"
 dependencies = [
+ "viewer",
+]
+
+[[package]]
+name = "customizer_wasm"
+version = "0.1.0"
+dependencies = [
  "console_error_panic_hook",
  "viewer",
  "wasm-bindgen",

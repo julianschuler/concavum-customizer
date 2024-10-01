@@ -1,11 +1,16 @@
 [package]
-name = "customizer"
+name = "customizer_wasm"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
 
 [dependencies]
 viewer.workspace = true
+console_error_panic_hook.workspace = true
+wasm-bindgen.workspace = true
 
 [lints]
 workspace = true
+
+[lib]
+crate-type = ["cdylib"]

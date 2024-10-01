@@ -2,6 +2,7 @@
 members = [
   "config",
   "customizer",
+  "customizer_wasm",
   "gui",
   "model",
   "show",
