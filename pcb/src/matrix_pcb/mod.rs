@@ -1,4 +1,6 @@
 mod builder;
+mod connectors;
+mod key_positions;
 
 use config::Config;
 
