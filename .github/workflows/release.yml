@@ -39,8 +39,6 @@ jobs:
           path: bin/
   release:
     name: Release
-    env:
-      version: ${{ github.ref_name }}
     needs: build
     runs-on: ubuntu-latest
     permissions:
@@ -50,6 +48,7 @@ jobs:
       - name: Download artifacts
         uses: actions/download-artifact@v4
         with:
+          pattern: "binary-*"
           merge-multiple: true
       - name: Release executables
         uses: softprops/action-gh-release@v2
@@ -58,3 +57,29 @@ jobs:
           body: The executables for the concavum customizer ${{ github.ref_name }}.
           files: '*'
           fail_on_unmatched_files: true
+  deploy-to-pages:
+    name: Deploy to GitHub pages
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+      - name: Install wasm-pack
+        uses: jetli/wasm-pack-action@v0.4.0
+      - name: Build using wasm-pack
+        run: wasm-pack build customizer_wasm --target no-modules --out-dir ../web/pkg --no-typescript --no-pack
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: "web"
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
