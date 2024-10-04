@@ -1,33 +1,34 @@
 # Concavum customizer
 
+![An image of the UI of the customizer](img/customizer.png)
+
 ## Overview
 
-This repository contains the source code of the interactive customizer for the [Concavum](https://github.com/julianschuler/keyboards/tree/master/concavum), a fully parametric split keyboard featuring an ergonomic layout with ortholinear (non-staggered) columns and a concave key wells.
+This repository contains the source code of the interactive customizer for the [Concavum](https://github.com/julianschuler/keyboards/tree/master/concavum), a fully parametric split keyboard featuring an ergonomic layout with ortholinear (non-staggered) columns and concave key wells.
 The customizer allows for changing all kinds of parameters like the number of columns, rows and thumb keys, the curvature, the distance between keys and many more.
 
-You can use the customizer directly in the browser by heading over to https://julianschuler.github.io/concavum-customizer. For better performance, you can also run it natively as described in the following section.
+To get started, head over to the [latest release](https://github.com/julianschuler/concavum-customizer/releases/latest) and download the executable for your operating system. If your operating system is not supported or you want to run the latest development version instead, follow the instructions in the next section.
 
-## Running the customizer natively
+## Building the customizer from source
 
-To run the customizer natively, start by installing [rust](https://www.rust-lang.org/tools/install).
-Clone the repository, switch to it and run the customizer using the following:
+Start by cloning the repository and [installing rust](https://www.rust-lang.org/tools/install).
+Run the customizer using the following:
 
 ```sh
-git clone https://github.com/julianschuler/concavum-customizer
-cd concavum-customizer
 cargo run --release
 ```
 
-## Running the customizer in a browser
+## Running the customizer in a browser (experimental)
 
-The customizer can also be run in a browser by compiling it to WebAssembly.
-Start by installing [rustup](https://www.rust-lang.org/tools/install) and [wasm-pack](https://rustwasm.github.io/wasm-pack/installer/).
-Clone the repository, switch to it and build the code using `wasm-pack`:
+There is experimental support for running the customizer in the browser.
+You can find the latest version of the customizer deployed at https://julianschuler.github.io/concavum-customizer.
+
+> **Note:** Due to the current lack of multithreading support in WebAssembly, reloading the model can be easily more than 10x slower when running in the browser compared to running natively.
+
+To run the web version locally, start by building the code using [`wasm-pack`](https://rustwasm.github.io/wasm-pack/installer/):
 
 ```sh
-git clone https://github.com/julianschuler/concavum-customizer
-cd concavum-customizer
-wasm-pack build customizer --target no-modules --out-dir ../web/pkg --no-typescript --no-pack
+wasm-pack build customizer_wasm --target no-modules --out-dir ../web/pkg --no-typescript --no-pack
 ```
 
 The files in the `web` subfolder can now be served using any HTTP server, e.g. if you have Python installed:
