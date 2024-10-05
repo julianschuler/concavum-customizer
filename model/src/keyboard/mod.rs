@@ -30,6 +30,8 @@ pub struct Keyboard {
     pub right_half: Shape,
     /// The bottom plate of the keyboard.
     pub bottom_plate: Shape,
+    /// The DXF output of the bottom plate.
+    pub bottom_plate_dxf: String,
     /// A simplified preview shape of the keyboard.
     pub preview: Shape,
     /// The position of the interface PCB.
@@ -74,6 +76,12 @@ impl Keyboard {
             config.bottom_plate_thickness.into(),
         );
         let bottom_plate = Shape::new(&bottom_plate.into_tree(), bounds);
+        let bottom_plate_dxf = BottomPlate::dxf(
+            &key_positions.columns.outline_points(),
+            &key_positions.thumb_keys.outline_points(),
+            insert_holders.iter(),
+            config.circumference_distance.into(),
+        );
 
         let cluster_preview = combined_cluster.intersection(half_space);
         let preview = Shape::new(&cluster_preview, bounds);
@@ -102,6 +110,7 @@ impl Keyboard {
             left_half,
             right_half,
             bottom_plate,
+            bottom_plate_dxf,
             preview,
             interface_pcb_position: interface_pcb.position,
         }

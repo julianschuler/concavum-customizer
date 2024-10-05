@@ -2,6 +2,7 @@ use fidget::context::Tree;
 use glam::DVec2;
 
 use crate::{
+    key_positions,
     keyboard::InsertHolder,
     primitives::{Circle, Csg, IntoTree, Transforms},
 };
@@ -30,6 +31,16 @@ impl BottomPlate {
             hole_positions: holes,
             thickness,
         }
+    }
+
+    /// Returns the DXF output of the bottom plate.
+    pub fn dxf<'a>(
+        finger_cluster_outline_points: &[DVec2],
+        thumb_cluster_outline_points: &[DVec2],
+        insert_holders: impl IntoIterator<Item = &'a InsertHolder>,
+        circumference_distance: f64,
+    ) -> String {
+        String::new()
     }
 }
 

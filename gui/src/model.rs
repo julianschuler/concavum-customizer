@@ -79,6 +79,8 @@ pub struct Meshes {
     pub right_half: CpuMesh,
     /// The mesh of the bottom plate.
     pub bottom_plate: CpuMesh,
+    /// The DXF output of the bottom plate.
+    pub bottom_plate_dxf: String,
 }
 
 /// A trait for meshing a model.
@@ -116,6 +118,7 @@ impl Mesh for Model {
             left_half,
             right_half,
             bottom_plate,
+            bottom_plate_dxf: self.keyboard.bottom_plate_dxf.clone(),
         }
     }
 }

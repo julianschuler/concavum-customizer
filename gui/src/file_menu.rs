@@ -168,6 +168,9 @@ async fn export_model(config: Config, meshes: Meshes) -> Update {
     zip.start_file("bottom_plate.stl", SimpleFileOptions::default())?;
     zip.write_stl(meshes.bottom_plate)?;
 
+    zip.start_file("bottom_plate.dxf", SimpleFileOptions::default())?;
+    zip.write_all(meshes.bottom_plate_dxf.as_bytes())?;
+
     let data = zip.finish()?;
 
     let file = AsyncFileDialog::new()
