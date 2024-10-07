@@ -35,11 +35,8 @@ impl InsertHolder {
         let edge2 = rotate_90_degrees(vertex - next_vertex).normalize();
 
         let outwards_direction = (edge1 + edge2).normalize();
-        let center = vertex
-            + (circumference_distance
-                - Self::INSERT_RADIUS
-                - Self::WALL_THICKNESS.max(shell_thickness))
-                * outwards_direction;
+        let center =
+            vertex + (circumference_distance - shell_thickness - Self::RADIUS) * outwards_direction;
 
         let outline_vertex = vertex + (circumference_distance - shell_thickness) * edge1;
 
