@@ -78,7 +78,7 @@ impl InterfacePcb {
         let height_offset = vec_z(Self::SIZE.z);
 
         if matches!(side, SideX::Left) {
-            let usb_cutout = Rectangle::new(USB_SIZE - DVec2::splat(USB_RADIUS))
+            let usb_cutout = Rectangle::new(USB_SIZE - DVec2::splat(2.0 * USB_RADIUS))
                 .into_tree()
                 .offset(USB_RADIUS)
                 .extrude(-Self::SIZE.y, bounds_diameter);
