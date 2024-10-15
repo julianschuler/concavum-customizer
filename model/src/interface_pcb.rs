@@ -41,7 +41,7 @@ impl InterfacePcb {
     pub fn holder(&self, bounds_diameter: f64) -> Tree {
         const WIDTH: f64 = 1.5;
 
-        let y_offset = (Self::SIZE.y - bounds_diameter) / 2.0 + WIDTH + Self::TOLERANCE;
+        let y_offset = (bounds_diameter - Self::SIZE.y) / 2.0 - WIDTH - Self::TOLERANCE;
         let z_offset = (Self::SIZE.z - Self::HOLDER_THICKNESS) / 2.0;
 
         let holder_size = dvec3(
@@ -54,23 +54,18 @@ impl InterfacePcb {
         let bottom_cutout_size =
             (Self::SIZE.xy() - dvec2(2.0 * WIDTH, WIDTH)).extend(bounds_diameter);
 
-        let pcb_cutout = BoxShape::new(pcb_cutout_size).into_tree().translate(dvec3(
-            0.0,
-            y_offset,
-            bounds_diameter / 2.0 - z_offset,
-        ));
+        let holder = BoxShape::new(holder_size)
+            .into_tree()
+            .translate(dvec3(0.0, y_offset, z_offset));
+        let pcb_cutout = BoxShape::new(pcb_cutout_size)
+            .into_tree()
+            .translate(vec_z(bounds_diameter / 2.0));
         let bottom_cutout = BoxShape::new(bottom_cutout_size)
             .into_tree()
-            .translate(vec_y(y_offset + WIDTH / 2.0));
+            .translate(vec_y(WIDTH / 2.0));
+        let translation = dvec3(Self::SIZE.x / 2.0, -Self::SIZE.y / 2.0, 0.0);
 
-        let translation = dvec3(
-            Self::SIZE.x / 2.0,
-            bounds_diameter / 2.0 - Self::SIZE.y - WIDTH - Self::TOLERANCE,
-            z_offset,
-        );
-
-        BoxShape::new(holder_size)
-            .into_tree()
+        holder
             .difference(pcb_cutout.union(bottom_cutout))
             .affine(self.position * DAffine3::from_translation(translation))
     }
