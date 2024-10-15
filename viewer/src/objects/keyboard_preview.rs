@@ -31,7 +31,9 @@ impl KeyboardPreview {
 
 impl Render for KeyboardPreview {
     fn render(&self, render_target: &RenderTarget, camera: &Camera, lights: &[&dyn Light]) {
-        self.inner.render(render_target, camera, lights);
+        if self.show {
+            self.inner.render(render_target, camera, lights);
+        }
     }
 
     fn update_display_settings(&mut self, display_settings: &DisplaySettings) {
