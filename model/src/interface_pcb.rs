@@ -1,7 +1,7 @@
 use std::f64::consts::PI;
 
 use fidget::context::Tree;
-use glam::{dvec2, dvec3, DAffine3, DMat2, DMat3, DVec2, DVec3};
+use glam::{dvec2, dvec3, DAffine3, DMat2, DMat3, DVec2, DVec3, Vec3Swizzles};
 
 use crate::{
     geometry::{rotate_90_degrees, vec_y, vec_z},
@@ -27,8 +27,9 @@ impl InterfacePcb {
         let direction = (top_edge.end - top_edge.start).normalize();
 
         let rotation_matrix = DMat2::from_cols(direction, rotate_90_degrees(direction));
+        let offset_direction = direction - rotate_90_degrees(direction);
         let translation =
-            (top_edge.start + Self::TOLERANCE * direction).extend(Self::HOLDER_THICKNESS);
+            (top_edge.start + Self::TOLERANCE * offset_direction).extend(Self::HOLDER_THICKNESS);
 
         let position =
             DAffine3::from_mat3_translation(DMat3::from_mat2(rotation_matrix), translation);
@@ -39,36 +40,39 @@ impl InterfacePcb {
     /// Returns the holder for the interface PCB.
     pub fn holder(&self, bounds_diameter: f64) -> Tree {
         const WIDTH: f64 = 1.5;
-        const LENGTH: f64 = 10.0;
-        const BRACKET_WIDTH: f64 = 5.0;
-        let height = Self::SIZE.z + Self::HOLDER_THICKNESS;
 
-        let cutout = BoxShape::new(dvec3(
-            Self::SIZE.x + 2.0 * Self::TOLERANCE,
+        let y_offset = (Self::SIZE.y - bounds_diameter) / 2.0 + WIDTH + Self::TOLERANCE;
+        let z_offset = (Self::SIZE.z - Self::HOLDER_THICKNESS) / 2.0;
+
+        let holder_size = dvec3(
+            Self::SIZE.x + 2.0 * (WIDTH + Self::TOLERANCE),
             bounds_diameter,
-            bounds_diameter,
-        ))
-        .into_tree();
-        let cutout = cutout
-            .translate(vec_z(
-                (bounds_diameter - height) / 2.0 + Self::HOLDER_THICKNESS,
-            ))
-            .union(cutout.translate(vec_y(BRACKET_WIDTH)));
+            Self::SIZE.z + Self::HOLDER_THICKNESS,
+        );
+        let pcb_cutout_size =
+            (Self::SIZE.xy() + DVec2::splat(2.0 * Self::TOLERANCE)).extend(bounds_diameter);
+        let bottom_cutout_size =
+            (Self::SIZE.xy() - dvec2(2.0 * WIDTH, WIDTH)).extend(bounds_diameter);
+
+        let pcb_cutout = BoxShape::new(pcb_cutout_size).into_tree().translate(dvec3(
+            0.0,
+            y_offset,
+            bounds_diameter / 2.0 - z_offset,
+        ));
+        let bottom_cutout = BoxShape::new(bottom_cutout_size)
+            .into_tree()
+            .translate(vec_y(y_offset + WIDTH / 2.0));
 
         let translation = dvec3(
             Self::SIZE.x / 2.0,
-            bounds_diameter / 2.0 - LENGTH,
-            height / 2.0 - Self::HOLDER_THICKNESS,
+            bounds_diameter / 2.0 - Self::SIZE.y - WIDTH - Self::TOLERANCE,
+            z_offset,
         );
 
-        BoxShape::new(dvec3(
-            Self::SIZE.x + 2.0 * (WIDTH + Self::TOLERANCE),
-            bounds_diameter,
-            height,
-        ))
-        .into_tree()
-        .difference(cutout)
-        .affine(self.position * DAffine3::from_translation(translation))
+        BoxShape::new(holder_size)
+            .into_tree()
+            .difference(pcb_cutout.union(bottom_cutout))
+            .affine(self.position * DAffine3::from_translation(translation))
     }
 
     /// Returns the cutouts required for the USB and TRRS ports for the given side.
@@ -82,7 +86,7 @@ impl InterfacePcb {
 
         let jack_cutout = Circle::new(JACK_RADIUS + Self::TOLERANCE)
             .into_tree()
-            .extrude(-Self::SIZE.y, bounds_diameter);
+            .extrude(-Self::SIZE.y / 2.0, bounds_diameter);
 
         let rotation_x = DAffine3::from_rotation_x(-PI / 2.0);
         let height_offset = vec_z(Self::SIZE.z);
@@ -91,7 +95,7 @@ impl InterfacePcb {
             let usb_cutout = Rectangle::new(USB_SIZE - DVec2::splat(2.0 * USB_RADIUS))
                 .into_tree()
                 .offset(USB_RADIUS + Self::TOLERANCE)
-                .extrude(-Self::SIZE.y, bounds_diameter);
+                .extrude(-Self::SIZE.y / 2.0, bounds_diameter);
 
             let usb_translation = DAffine3::from_translation(USB_OFFSET + height_offset);
             let jack_translation = DAffine3::from_translation(JACK_OFFSET_LEFT + height_offset);
