@@ -21,17 +21,17 @@ impl InsertHolder {
     const RADIUS: f64 = Self::INSERT_RADIUS + Self::WALL_THICKNESS;
 
     /// Creates a new insert holder from the given outline points and an index.
-    pub fn from_outline_points(vertices: &[DVec2], index: usize, offset: f64) -> Self {
-        let n = vertices.len();
-        let previous_vertex = vertices[(index + n - 1) % n];
-        let vertex = vertices[index];
-        let next_vertex = vertices[(index + 1) % n];
+    pub fn from_outline_points(points: &[DVec2], index: usize, outline_offset: f64) -> Self {
+        let n = points.len();
+        let previous_point = points[(index + n - 1) % n];
+        let point = points[index];
+        let next_point = points[(index + 1) % n];
 
-        let edge1 = rotate_90_degrees(previous_vertex - vertex).normalize();
-        let edge2 = rotate_90_degrees(vertex - next_vertex).normalize();
+        let edge1 = rotate_90_degrees(previous_point - point).normalize();
+        let edge2 = rotate_90_degrees(point - next_point).normalize();
 
         let outwards_direction = (edge1 + edge2).normalize();
-        let center = vertex + (offset - Self::RADIUS) * outwards_direction;
+        let center = point + (outline_offset - Self::RADIUS) * outwards_direction;
 
         Self {
             center,
