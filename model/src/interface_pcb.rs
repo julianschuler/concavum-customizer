@@ -22,26 +22,16 @@ impl InterfacePcb {
     const TOLERANCE: f64 = 0.1;
 
     /// Creates a new interface PCB from the given insert holder and outline points.
-    pub fn new(insert_holder: &InsertHolder, vertices: &[DVec2], offset: f64) -> Self {
-        let width = Self::SIZE.x + 2.0 * Self::TOLERANCE;
+    pub fn new(insert_holder: &InsertHolder, points: &[DVec2], outline_offset: f64) -> Self {
+        let tangent = insert_holder.tangent();
+        let offset =
+            Self::offset_along_tangent(tangent, &points[..=insert_holder.index()], outline_offset);
 
-        let Tangent { point, direction } = insert_holder.tangent();
-        let normal = -rotate_90_degrees(direction);
-
-        let mut predicate = true;
-        let offset = vertices[..insert_holder.index()]
-            .iter()
-            .rev()
-            .map(|vertex| vertex - point)
-            .take_while(|difference| {
-                let previous_predicate = predicate;
-                predicate = difference.dot(normal) <= width;
-                previous_predicate
-            })
-            .map(|difference| difference.dot(direction))
-            .min_by(f64::total_cmp)
-            .expect("the first value is always yielded by take_while")
-            + offset;
+        let Tangent {
+            point,
+            direction,
+            normal,
+        } = tangent;
 
         let rotation_matrix = DMat2::from_cols(normal, direction);
         let translation =
@@ -139,5 +129,45 @@ impl InterfacePcb {
 
             jack_cutout.affine(self.position * jack_translation * rotation_x)
         }
+    }
+
+    /// Calculates the offset of the interface PCB along the tangent direction to the tangent point.
+    fn offset_along_tangent(tangent: Tangent, points: &[DVec2], outline_offset: f64) -> f64 {
+        let Tangent {
+            point,
+            direction,
+            normal,
+        } = tangent;
+        let mut offset = f64::INFINITY;
+        let width = Self::SIZE.x + 2.0 * Self::TOLERANCE;
+
+        for window in points.windows(2).rev() {
+            let left_point = window[1];
+            let right_point = window[0];
+
+            let edge_direction = (right_point - left_point).normalize();
+            let edge_normal = rotate_90_degrees(edge_direction);
+
+            let left_difference = left_point + outline_offset * edge_normal - point;
+            let right_difference = right_point + outline_offset * edge_normal - point;
+
+            let left_distance = left_difference.dot(normal);
+            let right_distance = right_difference.dot(normal);
+            let left_offset = left_difference.dot(direction);
+            let right_offset = right_difference.dot(direction);
+
+            if left_distance >= width {
+                return offset.min(left_offset);
+            } else if right_distance >= width {
+                let projected_difference = right_difference
+                    - edge_direction * (right_distance - width) / edge_direction.dot(normal);
+
+                return offset.min(projected_difference.dot(direction));
+            }
+
+            offset = offset.min(left_offset.min(right_offset));
+        }
+
+        offset
     }
 }

@@ -22,9 +22,14 @@ pub fn rotate_90_degrees(vector: DVec2) -> DVec2 {
 }
 
 /// A tangent in 2D space.
+#[derive(Clone, Copy)]
 pub struct Tangent {
+    /// The point where the tangent touches the object.
     pub point: DVec2,
+    /// The direction vector of the tangent.
     pub direction: DVec2,
+    /// The normal vector of the tangent.
+    pub normal: DVec2,
 }
 
 /// A line in 3D space.

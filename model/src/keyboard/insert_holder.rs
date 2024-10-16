@@ -43,10 +43,15 @@ impl InsertHolder {
 
     /// Returns the tangent to the insert holder along the first edge.
     pub fn tangent(&self) -> Tangent {
-        let point = self.center - Self::RADIUS * rotate_90_degrees(self.edge1);
         let direction = self.edge1;
+        let normal = -rotate_90_degrees(direction);
+        let point = self.center + Self::RADIUS * normal;
 
-        Tangent { point, direction }
+        Tangent {
+            point,
+            direction,
+            normal,
+        }
     }
 
     /// Returns the center point of the insert.
