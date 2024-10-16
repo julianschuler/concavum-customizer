@@ -60,7 +60,7 @@ impl InterfacePcb {
         let pcb_cutout_size =
             (Self::SIZE.xy() + DVec2::splat(2.0 * Self::TOLERANCE)).extend(bounds_diameter);
         let bottom_cutout_size =
-            (Self::SIZE.xy() - dvec2(2.0 * WIDTH, WIDTH)).extend(bounds_diameter);
+            (Self::SIZE.xy() - dvec2(2.0 * WIDTH, WIDTH - Self::TOLERANCE)).extend(bounds_diameter);
 
         let holder = BoxShape::new(holder_size).into_tree().translate(dvec3(
             0.0,
@@ -87,7 +87,7 @@ impl InterfacePcb {
             .translate(vec_z(bounds_diameter / 2.0));
         let bottom_cutout = BoxShape::new(bottom_cutout_size)
             .into_tree()
-            .translate(vec_y(WIDTH / 2.0));
+            .translate(vec_y((WIDTH + Self::TOLERANCE) / 2.0));
         let translation = dvec3(Self::SIZE.x / 2.0, -Self::SIZE.y / 2.0, 0.0);
 
         holder
