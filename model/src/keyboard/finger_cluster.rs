@@ -36,6 +36,7 @@ impl FingerCluster {
         let outline_points = columns.outline_points();
         let cluster_height = columns.max_z() + columns.key_clearance.length();
         let circumference_distance = config.circumference_distance.into();
+        let outline_offset = circumference_distance - f64::from(config.shell_thickness);
 
         let bounds = bounds_from_outline_points_and_height(
             &outline_points,
@@ -44,12 +45,12 @@ impl FingerCluster {
         );
         let insert_holders = Self::insert_holders(
             &outline_points,
-            config,
+            outline_offset,
             columns.len(),
             columns.first().len(),
         );
 
-        let interface_pcb = InterfacePcb::from_insert_holder(&insert_holders[2]);
+        let interface_pcb = InterfacePcb::new(&insert_holders[2], &outline_points, outline_offset);
 
         let outline = SimplePolygon::new(outline_points).into_tree();
         let cluster_outline = outline.offset(circumference_distance);
@@ -72,7 +73,7 @@ impl FingerCluster {
 
     fn insert_holders(
         outline_points: &[DVec2],
-        config: &Keyboard,
+        outline_offset: f64,
         columns: usize,
         rows: usize,
     ) -> [InsertHolder; 3] {
@@ -81,9 +82,9 @@ impl FingerCluster {
         let third_index = second_index + columns;
 
         [
-            InsertHolder::from_outline_points(outline_points, first_index, config),
-            InsertHolder::from_outline_points(outline_points, second_index, config),
-            InsertHolder::from_outline_points(outline_points, third_index, config),
+            InsertHolder::from_outline_points(outline_points, first_index, outline_offset),
+            InsertHolder::from_outline_points(outline_points, second_index, outline_offset),
+            InsertHolder::from_outline_points(outline_points, third_index, outline_offset),
         ]
     }
 }

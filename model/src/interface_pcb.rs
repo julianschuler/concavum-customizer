@@ -4,7 +4,7 @@ use fidget::context::Tree;
 use glam::{dvec2, dvec3, DAffine3, DMat2, DMat3, DVec2, DVec3, Vec3Swizzles};
 
 use crate::{
-    geometry::{rotate_90_degrees, vec_y, vec_z},
+    geometry::{rotate_90_degrees, vec_y, vec_z, Tangent},
     keyboard::InsertHolder,
     primitives::{BoxShape, Circle, Csg, IntoTree, Rectangle, Transforms},
     util::SideX,
@@ -21,16 +21,32 @@ impl InterfacePcb {
     const HOLDER_THICKNESS: f64 = 1.0;
     const TOLERANCE: f64 = 0.1;
 
-    /// Creates a new interface PCB using the given insert holder.
-    pub fn from_insert_holder(insert_holder: &InsertHolder) -> Self {
-        let top_edge = insert_holder.outline_segment(Self::SIZE.x);
-        let direction = (top_edge.end - top_edge.start).normalize();
+    /// Creates a new interface PCB from the given insert holder and outline points.
+    pub fn new(insert_holder: &InsertHolder, vertices: &[DVec2], offset: f64) -> Self {
+        let width = Self::SIZE.x + 2.0 * Self::TOLERANCE;
 
-        let rotation_matrix = DMat2::from_cols(direction, rotate_90_degrees(direction));
-        let offset_direction = direction - rotate_90_degrees(direction);
+        let Tangent { point, direction } = insert_holder.tangent();
+        let normal = -rotate_90_degrees(direction);
+
+        let mut predicate = true;
+        let offset = vertices[..insert_holder.index()]
+            .iter()
+            .rev()
+            .map(|vertex| vertex - point)
+            .take_while(|difference| {
+                let previous_predicate = predicate;
+                predicate = difference.dot(normal) <= width;
+                previous_predicate
+            })
+            .map(|difference| difference.dot(direction))
+            .min_by(f64::total_cmp)
+            .expect("the first value is always yielded by take_while")
+            + offset;
+
+        let rotation_matrix = DMat2::from_cols(normal, direction);
         let translation =
-            (top_edge.start + Self::TOLERANCE * offset_direction).extend(Self::HOLDER_THICKNESS);
-
+            (point + Self::TOLERANCE * normal + (offset - Self::TOLERANCE) * direction)
+                .extend(Self::HOLDER_THICKNESS);
         let position =
             DAffine3::from_mat3_translation(DMat3::from_mat2(rotation_matrix), translation);
 

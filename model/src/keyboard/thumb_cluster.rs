@@ -33,13 +33,14 @@ impl ThumbCluster {
         let outline_points = thumb_keys.outline_points();
         let cluster_height = thumb_keys.max_z() + thumb_keys.key_clearance.length();
         let circumference_distance = config.circumference_distance.into();
+        let outline_offset = circumference_distance - f64::from(config.shell_thickness);
 
         let bounds = bounds_from_outline_points_and_height(
             &outline_points,
             cluster_height,
             circumference_distance,
         );
-        let insert_holder = InsertHolder::from_outline_points(&outline_points, 1, config);
+        let insert_holder = InsertHolder::from_outline_points(&outline_points, 1, outline_offset);
 
         let cluster_outline = ConvexPolygon::new(outline_points)
             .into_tree()

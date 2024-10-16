@@ -21,10 +21,10 @@ pub fn rotate_90_degrees(vector: DVec2) -> DVec2 {
     dvec2(-vector.y, vector.x)
 }
 
-/// A line segment in 2D space.
-pub struct LineSegment {
-    pub start: DVec2,
-    pub end: DVec2,
+/// A tangent in 2D space.
+pub struct Tangent {
+    pub point: DVec2,
+    pub direction: DVec2,
 }
 
 /// A line in 3D space.

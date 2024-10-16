@@ -1,9 +1,8 @@
-use config::Keyboard;
 use fidget::context::Tree;
 use glam::DVec2;
 
 use crate::{
-    geometry::{rotate_90_degrees, LineSegment},
+    geometry::{rotate_90_degrees, Tangent},
     primitives::{Circle, Corner, Csg, IntoTree, Transforms},
 };
 
@@ -12,7 +11,7 @@ pub struct InsertHolder {
     center: DVec2,
     edge1: DVec2,
     edge2: DVec2,
-    outline_vertex: DVec2,
+    index: usize,
 }
 
 impl InsertHolder {
@@ -22,10 +21,7 @@ impl InsertHolder {
     const RADIUS: f64 = Self::INSERT_RADIUS + Self::WALL_THICKNESS;
 
     /// Creates a new insert holder from the given outline points and an index.
-    pub fn from_outline_points(vertices: &[DVec2], index: usize, config: &Keyboard) -> Self {
-        let shell_thickness: f64 = config.shell_thickness.into();
-        let circumference_distance: f64 = config.circumference_distance.into();
-
+    pub fn from_outline_points(vertices: &[DVec2], index: usize, offset: f64) -> Self {
         let n = vertices.len();
         let previous_vertex = vertices[(index + n - 1) % n];
         let vertex = vertices[index];
@@ -35,33 +31,32 @@ impl InsertHolder {
         let edge2 = rotate_90_degrees(vertex - next_vertex).normalize();
 
         let outwards_direction = (edge1 + edge2).normalize();
-        let center =
-            vertex + (circumference_distance - shell_thickness - Self::RADIUS) * outwards_direction;
-
-        let outline_vertex = vertex + (circumference_distance - shell_thickness) * edge1;
+        let center = vertex + (offset - Self::RADIUS) * outwards_direction;
 
         Self {
             center,
             edge1,
             edge2,
-            outline_vertex,
+            index,
         }
     }
 
-    /// Returs the outline segment corresponding to insert holder scaled to the given length.
-    pub fn outline_segment(&self, length: f64) -> LineSegment {
-        let direction = -rotate_90_degrees(self.edge1);
-        let offset = (Self::RADIUS + direction.dot(self.center - self.outline_vertex)).max(0.0);
+    /// Returns the tangent to the insert holder along the first edge.
+    pub fn tangent(&self) -> Tangent {
+        let point = self.center - Self::RADIUS * rotate_90_degrees(self.edge1);
+        let direction = self.edge1;
 
-        let start = self.outline_vertex + offset * direction;
-        let end = start + length * direction;
-
-        LineSegment { start, end }
+        Tangent { point, direction }
     }
 
     /// Returns the center point of the insert.
     pub fn center(&self) -> DVec2 {
         self.center
+    }
+
+    /// Returns the outline vertex index of the insert holder.
+    pub fn index(&self) -> usize {
+        self.index
     }
 }
 
