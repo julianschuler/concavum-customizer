@@ -1,4 +1,4 @@
-use std::f64::consts::PI;
+use std::f64::consts::{FRAC_1_SQRT_2, FRAC_PI_4, PI, SQRT_2};
 
 use fidget::context::Tree;
 use glam::{dvec2, dvec3, DAffine3, DMat2, DMat3, DVec2, DVec3, Vec3Swizzles};
@@ -40,8 +40,9 @@ impl InterfacePcb {
     /// Returns the holder for the interface PCB.
     pub fn holder(&self, bounds_diameter: f64) -> Tree {
         const WIDTH: f64 = 1.5;
+        const RETENTION_CLIP_SIZE: DVec3 = dvec3(7.0, FRAC_1_SQRT_2 * WIDTH, SQRT_2 * WIDTH);
 
-        let y_offset = (bounds_diameter - Self::SIZE.y) / 2.0 - WIDTH - Self::TOLERANCE;
+        let y_offset = -Self::SIZE.y / 2.0 - WIDTH - Self::TOLERANCE;
         let z_offset = (Self::SIZE.z - Self::HOLDER_THICKNESS) / 2.0;
 
         let holder_size = dvec3(
@@ -54,9 +55,22 @@ impl InterfacePcb {
         let bottom_cutout_size =
             (Self::SIZE.xy() - dvec2(2.0 * WIDTH, WIDTH)).extend(bounds_diameter);
 
-        let holder = BoxShape::new(holder_size)
+        let holder = BoxShape::new(holder_size).into_tree().translate(dvec3(
+            0.0,
+            bounds_diameter / 2.0 + y_offset,
+            z_offset,
+        ));
+        let retention_clip = BoxShape::new(RETENTION_CLIP_SIZE)
             .into_tree()
-            .translate(dvec3(0.0, y_offset, z_offset));
+            .affine(
+                DAffine3::from_translation(dvec3(
+                    (Self::SIZE.x - RETENTION_CLIP_SIZE.x) / 2.0,
+                    y_offset + WIDTH / 2.0,
+                    Self::SIZE.z,
+                )) * DAffine3::from_rotation_x(-FRAC_PI_4)
+                    * DAffine3::from_translation(vec_z(RETENTION_CLIP_SIZE.y / 2.0)),
+            )
+            .remap_xyz(Tree::x().abs(), Tree::y(), Tree::z());
         let pcb_cutout = BoxShape::new(pcb_cutout_size)
             .into_tree()
             .translate(vec_z(bounds_diameter / 2.0));
@@ -67,6 +81,7 @@ impl InterfacePcb {
 
         holder
             .difference(pcb_cutout.union(bottom_cutout))
+            .union(retention_clip)
             .affine(self.position * DAffine3::from_translation(translation))
     }
 
