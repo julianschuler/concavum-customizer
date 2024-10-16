@@ -1,4 +1,4 @@
-use std::f64::consts::{FRAC_1_SQRT_2, FRAC_PI_4, PI, SQRT_2};
+use std::f64::consts::{FRAC_PI_2, PI};
 
 use fidget::context::Tree;
 use glam::{dvec2, dvec3, DAffine3, DMat2, DMat3, DVec2, DVec3, Vec3Swizzles};
@@ -56,7 +56,8 @@ impl InterfacePcb {
     /// Returns the holder for the interface PCB.
     pub fn holder(&self, bounds_diameter: f64) -> Tree {
         const WIDTH: f64 = 1.5;
-        const RETENTION_CLIP_SIZE: DVec3 = dvec3(7.0, FRAC_1_SQRT_2 * WIDTH, SQRT_2 * WIDTH);
+        const RETENTION_CLIP_WIDTH: f64 = 7.0;
+        const RETENTION_CLIP_DEPTH: f64 = 0.5;
 
         let y_offset = -Self::SIZE.y / 2.0 - WIDTH - Self::TOLERANCE;
         let z_offset = (Self::SIZE.z - Self::HOLDER_THICKNESS) / 2.0;
@@ -76,16 +77,20 @@ impl InterfacePcb {
             bounds_diameter / 2.0 + y_offset,
             z_offset,
         ));
-        let retention_clip = BoxShape::new(RETENTION_CLIP_SIZE)
+        let retention_clip = Circle::new(WIDTH / 2.0 + RETENTION_CLIP_DEPTH)
             .into_tree()
-            .affine(
-                DAffine3::from_translation(dvec3(
-                    (Self::SIZE.x - RETENTION_CLIP_SIZE.x) / 2.0,
-                    y_offset + WIDTH / 2.0,
-                    Self::SIZE.z,
-                )) * DAffine3::from_rotation_x(-FRAC_PI_4)
-                    * DAffine3::from_translation(vec_z(RETENTION_CLIP_SIZE.y / 2.0)),
+            .extrude(
+                Self::SIZE.x / 2.0 - RETENTION_CLIP_WIDTH,
+                Self::SIZE.x / 2.0 + WIDTH + Self::TOLERANCE,
             )
+            .affine(DAffine3 {
+                matrix3: DMat3::from_rotation_y(FRAC_PI_2),
+                translation: dvec3(
+                    0.0,
+                    y_offset + WIDTH / 2.0,
+                    Self::SIZE.z + (RETENTION_CLIP_DEPTH * (WIDTH + RETENTION_CLIP_DEPTH)).sqrt(),
+                ),
+            })
             .remap_xyz(Tree::x().abs(), Tree::y(), Tree::z());
         let pcb_cutout = BoxShape::new(pcb_cutout_size)
             .into_tree()
