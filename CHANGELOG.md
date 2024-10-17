@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.2.0] - 2024-10-17
+
+### Changed
+
+- Increase the insert holder inset
+- Improve the interface PCB positioning
+- Secure the interface PCB using a snap-fit
+- Improve the switch cutouts
+
+### Fixed
+
+- Fix too large USB-C port cutout
+- Fix keyboard preview always being shown
+
 ## [1.1.0] - 2024-10-17
 
 ### Added
@@ -14,5 +28,6 @@
 
 :seedling: Initial release.
 
+[1.2.0]: https://github.com/julianschuler/concavum-customizer/releases/tag/v1.2.0
 [1.1.0]: https://github.com/julianschuler/concavum-customizer/releases/tag/v1.1.0
 [1.0.0]: https://github.com/julianschuler/concavum-customizer/releases/tag/v1.0.0
