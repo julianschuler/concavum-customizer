@@ -7,14 +7,14 @@ use std::iter::once;
 
 use config::Keyboard as Config;
 use fidget::context::Tree;
-use glam::{dvec3, DAffine3, DVec3};
+use glam::{dvec2, DAffine3, DVec2, DVec3};
 
 pub use insert_holder::InsertHolder;
 
 use crate::{
-    geometry::Plane,
+    geometry::{vec_z, Plane},
     key_positions::KeyPositions,
-    primitives::{BoxShape, Csg, HalfSpace, IntoTree, RoundedCsg, Shape, Transforms},
+    primitives::{BoxShape, Csg, HalfSpace, IntoTree, RoundedCsg, Shape, Transforms, EPSILON},
     util::SideX,
 };
 
@@ -39,6 +39,7 @@ pub struct Keyboard {
 impl Keyboard {
     /// Creates a keyboard from the given key positions and configuration.
     pub fn new(key_positions: &KeyPositions, config: &Config) -> Self {
+        let shell_thickness = config.shell_thickness.into();
         let finger_cluster = FingerCluster::new(&key_positions.columns, config);
         let thumb_cluster = ThumbCluster::new(&key_positions.thumb_keys, config);
 
@@ -64,7 +65,7 @@ impl Keyboard {
 
         // Hollow out the combined cluster and cut off everthing below a Z value of 0
         let half_space = HalfSpace::new(Plane::new(DVec3::ZERO, DVec3::NEG_Z)).into_tree();
-        let hollowed_cluster = combined_cluster.shell(config.shell_thickness.into());
+        let hollowed_cluster = combined_cluster.shell(shell_thickness);
         let cluster = hollowed_cluster.intersection(half_space.clone());
 
         // Calculate the bottom plate and preview shape
@@ -86,7 +87,7 @@ impl Keyboard {
         );
         let cluster = cluster
             .union(holders)
-            .difference(Self::switch_cutouts(key_positions));
+            .difference(Self::switch_cutouts(key_positions, shell_thickness));
 
         // Create the left and right halves by subtracting the interface PCB cutouts
         // and mirroring the left half along the YZ-plane
@@ -108,10 +109,25 @@ impl Keyboard {
     }
 
     /// Calculates the switch cutouts from the given key positions.
-    fn switch_cutouts(key_positions: &KeyPositions) -> Tree {
-        const CUTOUT_SIZE: DVec3 = dvec3(14.0, 14.0, 10.0);
+    fn switch_cutouts(key_positions: &KeyPositions, shell_thickness: f64) -> Tree {
+        const CUTOUT_SIZE: DVec2 = dvec2(14.0, 14.0);
+        const PLATE_THICKNESS: f64 = 1.5;
+        const PLATE_CLEARANCE: f64 = 1.0;
 
-        let switch_cutout = BoxShape::new(CUTOUT_SIZE).into_tree();
+        let switch_cutout_size = CUTOUT_SIZE.extend(2.0 * (shell_thickness + EPSILON));
+        let plate_cutout_height = shell_thickness - PLATE_THICKNESS;
+
+        let switch_cutout = if plate_cutout_height > 0.0 {
+            let plate_cutout_size = (CUTOUT_SIZE + dvec2(0.0, 2.0 * PLATE_CLEARANCE))
+                .extend(plate_cutout_height + EPSILON);
+
+            BoxShape::new(plate_cutout_size)
+                .into_tree()
+                .translate(vec_z(-plate_cutout_size.z / 2.0 - PLATE_THICKNESS))
+                .union(BoxShape::new(switch_cutout_size))
+        } else {
+            BoxShape::new(switch_cutout_size).into_tree()
+        };
 
         key_positions
             .columns
