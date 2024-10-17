@@ -45,18 +45,21 @@ jobs:
       packages: write
       contents: write
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - name: Download artifacts
         uses: actions/download-artifact@v4
         with:
-          pattern: "binary-*"
+          pattern: binary-*
           merge-multiple: true
-      - name: Release executables
-        uses: softprops/action-gh-release@v2
+      - name: Create release
+        uses: docker://antonyurchenko/git-release:v6
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          name: Concavum customizer ${{ github.ref_name }}
-          body: The executables for the concavum customizer ${{ github.ref_name }}.
-          files: '*'
-          fail_on_unmatched_files: true
+          args: concavum-customizer-v*
   deploy-to-pages:
     name: Deploy to GitHub pages
     environment:
@@ -70,6 +73,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - name: Setup Pages
         uses: actions/configure-pages@v5
       - name: Install wasm-pack
@@ -79,7 +84,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: "web"
+          path: web
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
