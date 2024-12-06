@@ -68,6 +68,21 @@ impl KicadPcb {
         serializer.finish()
     }
 
+    /// Creates a new net with the given name, adds it to the PCB and returns it.
+    pub fn create_net(&mut self, name: String) -> Net {
+        let id = self
+            .nets
+            .last()
+            .map(|Net(id, _)| id + 1)
+            .unwrap_or_default();
+
+        let net = Net(id, name);
+
+        self.nets.push(net.clone());
+
+        net
+    }
+
     /// Adds a segment to the PCB.
     pub fn add_segment(
         &mut self,
@@ -258,8 +273,8 @@ impl Default for PlotParameters {
     }
 }
 
-#[derive(Serialize)]
-struct Net(u32, String);
+#[derive(Serialize, Clone)]
+pub struct Net(u32, String);
 
 #[derive(Serialize)]
 struct Segment {

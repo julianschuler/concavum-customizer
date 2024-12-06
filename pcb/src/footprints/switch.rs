@@ -1,5 +1,6 @@
 use crate::{
     footprints::{Attribute, Footprint, FootprintSettings, Pad, PadShape, PadType, Property},
+    kicad_pcb::Net,
     lines_front_back, point, position,
     primitives::{Position, Uuid},
     size,
@@ -9,15 +10,23 @@ use crate::{
 /// A Cherry MX switch.
 pub struct Switch {
     position: Position,
+    column_net: Net,
+    row_net: Net,
+    internal_net: Net,
 }
 
 impl Switch {
-    /// Creates a new switch at the given position.
-    pub fn new(position: Position) -> Self {
-        Self { position }
+    /// Creates a new switch at the given position using the given nets.
+    pub fn new(position: Position, row_net: Net, column_net: Net, internal_net: Net) -> Self {
+        Self {
+            position,
+            column_net,
+            row_net,
+            internal_net,
+        }
     }
 
-    fn pads(&self) -> Vec<Pad> {
+    fn pads(self) -> Vec<Pad> {
         let angle = self.position.angle();
         let via_drill_diameter = 0.3.mm();
         let pin_drill_diameter = 1.5.mm();
@@ -30,6 +39,7 @@ impl Switch {
                 position!(0, 0, angle),
                 size!(4, 4),
                 4.mm(),
+                None,
             ),
             Pad::new(
                 "1",
@@ -38,6 +48,7 @@ impl Switch {
                 position!(-1.65, 3.41, angle),
                 size!(0.9, 1.2),
                 via_drill_diameter,
+                Some(self.row_net),
             ),
             Pad::new(
                 "2",
@@ -46,6 +57,7 @@ impl Switch {
                 position!(-2.54, -5.08, angle),
                 size!(2.2, 2.2),
                 pin_drill_diameter,
+                Some(self.column_net.clone()),
             ),
             Pad::new(
                 "2",
@@ -54,6 +66,7 @@ impl Switch {
                 position!(-3.81, -2.54, angle),
                 size!(2.2, 2.2),
                 pin_drill_diameter,
+                Some(self.column_net),
             ),
             Pad::new(
                 "3",
@@ -62,6 +75,7 @@ impl Switch {
                 position!(2.54, -5.08, angle),
                 size!(2.2, 2.2),
                 pin_drill_diameter,
+                Some(self.internal_net.clone()),
             ),
             Pad::new(
                 "3",
@@ -70,6 +84,7 @@ impl Switch {
                 position!(3.81, -2.54, angle),
                 size!(2.2, 2.2),
                 pin_drill_diameter,
+                Some(self.internal_net.clone()),
             ),
             Pad::new(
                 "3",
@@ -78,6 +93,7 @@ impl Switch {
                 position!(1.65, 3.41, angle),
                 size!(0.9, 1.2),
                 via_drill_diameter,
+                Some(self.internal_net),
             ),
         ]
     }

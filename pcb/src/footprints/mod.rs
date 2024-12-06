@@ -4,6 +4,7 @@ mod switch;
 use serde::Serialize;
 
 use crate::{
+    kicad_pcb::Net,
     primitives::{Point, Position, Size, Uuid},
     size,
     unit::{IntoUnit, Length},
@@ -134,6 +135,7 @@ struct Pad(
     PadShape,
     PadSettings,
     Option<RoundRectSettings>,
+    Option<NetSettings>,
     PadUuid,
 );
 
@@ -146,6 +148,7 @@ impl Pad {
         position: Position,
         size: Size,
         drill: Length,
+        net: Option<Net>,
     ) -> Self {
         let roundrect_settings = if let PadShape::Roundrect = shape {
             Some(RoundRectSettings {
@@ -167,6 +170,7 @@ impl Pad {
                 remove_unused_layers: false,
             },
             roundrect_settings,
+            net.map(|net| NetSettings { net }),
             PadUuid { uuid: Uuid::new() },
         )
     }
@@ -199,6 +203,11 @@ struct PadSettings {
 #[derive(Serialize)]
 struct RoundRectSettings {
     roundrect_rratio: Length,
+}
+
+#[derive(Serialize)]
+struct NetSettings {
+    net: Net,
 }
 
 #[derive(Serialize)]
