@@ -1,3 +1,5 @@
+use std::ops::{Add, Neg, Sub};
+
 use serde::Serialize;
 
 use crate::unit::{Angle, Length};
@@ -50,9 +52,61 @@ impl Position {
         Self(x, y, angle)
     }
 
+    /// Returns the X coordinate of the position.
+    pub fn x(&self) -> Length {
+        self.0
+    }
+
+    /// Returns the Y coordinate of the position.
+    pub fn y(&self) -> Length {
+        self.1
+    }
+
     /// Returns the angle of the position.
     pub fn angle(&self) -> Option<Angle> {
         self.2
+    }
+
+    /// Applies the affine transform given by the other position to `self`.
+    ///
+    /// The transform is applied in the reference frame of `self`.
+    pub fn affine(&self, other: Position) -> Self {
+        let (sin, cos) = self.angle().unwrap_or_default().sin_cos();
+
+        let x = self.x() + cos * other.x() + sin * other.y();
+        let y = self.y() - sin * other.x() + cos * other.y();
+
+        let angle = if let Some(angle) = self.2 {
+            Some(angle + other.angle().unwrap_or_default())
+        } else {
+            other.angle()
+        };
+
+        Self::new(x, y, angle)
+    }
+}
+
+impl Add for Position {
+    type Output = Position;
+
+    fn add(self, rhs: Self) -> Self::Output {
+        self.affine(rhs)
+    }
+}
+
+impl Sub for Position {
+    type Output = Position;
+
+    fn sub(self, rhs: Self) -> Self::Output {
+        self.affine(-rhs)
+    }
+}
+
+impl Neg for Position {
+    type Output = Self;
+
+    fn neg(self) -> Self::Output {
+        Self(-self.0, -self.1, self.2.map(|angle| -angle))
     }
 }
 
