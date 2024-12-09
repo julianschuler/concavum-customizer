@@ -4,7 +4,8 @@ use config::KeySize;
 use glam::{DAffine3, DMat4};
 use model::{
     matrix_pcb::{
-        ClusterConnector, ColumnConnector, KeyConnectors, Segment, CONNECTOR_WIDTH, THICKNESS,
+        ClusterConnector, ColumnConnector, ColumnKeyConnectors, Segment, ThumbKeyConnectors,
+        CONNECTOR_WIDTH, THICKNESS,
     },
     Bounds, Mesh as ModelMesh, MeshSettings, Model,
 };
@@ -62,9 +63,10 @@ pub fn make_settings(model: &Model, config: &config::Config) -> Settings {
 
     let matrix_pcb_meshes = model
         .matrix_pcb
-        .key_connectors
+        .column_key_connectors
         .iter()
         .map(Into::into)
+        .chain(once((&model.matrix_pcb.thumb_key_connectors).into()))
         .chain(model.matrix_pcb.column_connectors.iter().map(Into::into))
         .chain(once((&model.matrix_pcb.cluster_connector).into()))
         .collect();
@@ -178,12 +180,30 @@ pub struct InstancedMesh {
     pub transformations: Vec<Mat4>,
 }
 
-impl From<&KeyConnectors> for InstancedMesh {
-    fn from(connectors: &KeyConnectors) -> Self {
+impl From<&ColumnKeyConnectors> for InstancedMesh {
+    fn from(connectors: &ColumnKeyConnectors) -> Self {
         let mesh = segment_to_mesh(&connectors.connector);
         let transformations = connectors
             .positions
             .iter()
+            .flat_map(|(left, right)| [left, right])
+            .flat_map(mirrored_positions)
+            .collect();
+
+        Self {
+            mesh,
+            transformations,
+        }
+    }
+}
+
+impl From<&ThumbKeyConnectors> for InstancedMesh {
+    fn from(connectors: &ThumbKeyConnectors) -> Self {
+        let mesh = segment_to_mesh(&connectors.connector);
+        let transformations = connectors
+            .positions
+            .iter()
+            .flat_map(|(left, right)| [left, right])
             .flat_map(mirrored_positions)
             .collect();
 
