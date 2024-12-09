@@ -86,20 +86,22 @@ impl Segment for KeyConnector {
 
 /// The connectors between keys in a column.
 #[allow(clippy::module_name_repetitions)]
-pub struct KeyConnectors {
+pub struct ColumnKeyConnectors {
     /// The connector itself.
     pub connector: KeyConnector,
     /// The positions of the connector.
-    pub positions: Vec<DAffine3>,
+    pub positions: Vec<(DAffine3, DAffine3)>,
+    /// The side offsets between two neighboring keys.
+    pub offsets: Vec<f64>,
 }
 
-impl KeyConnectors {
+impl ColumnKeyConnectors {
     /// Creates new key connectors for a given column.
     #[must_use]
     pub fn from_column(column: &Column) -> Self {
-        let positions = column
+        let (positions, offsets) = column
             .windows(2)
-            .flat_map(|window| {
+            .map(|window| {
                 let bottom_position = window[0];
                 let top_position = window[1];
 
@@ -107,10 +109,9 @@ impl KeyConnectors {
                     .inverse()
                     .transform_point3(top_position.translation);
 
-                let left_x_offset =
-                    transformed_next_key.x.max(0.0) - (PAD_SIZE.x - CONNECTOR_WIDTH) / 2.0;
-                let right_x_offset =
-                    transformed_next_key.x.min(0.0) + (PAD_SIZE.x - CONNECTOR_WIDTH) / 2.0;
+                let offset = transformed_next_key.x;
+                let left_x_offset = offset.max(0.0) - (PAD_SIZE.x - CONNECTOR_WIDTH) / 2.0;
+                let right_x_offset = offset.min(0.0) + (PAD_SIZE.x - CONNECTOR_WIDTH) / 2.0;
 
                 let start_point = vertical_connector_point(bottom_position, SideY::Top);
                 let left_position = DAffine3 {
@@ -122,23 +123,35 @@ impl KeyConnectors {
                     translation: start_point + right_x_offset * bottom_position.x_axis,
                 };
 
-                [left_position, right_position]
+                ((left_position, right_position), offset)
             })
-            .collect();
+            .unzip();
         let connector = KeyConnector::from_column(column);
 
         Self {
             connector,
             positions,
+            offsets,
         }
     }
+}
 
+/// The connectors between keys in the thumb cluster.
+#[allow(clippy::module_name_repetitions)]
+pub struct ThumbKeyConnectors {
+    /// The connector itself.
+    pub connector: KeyConnector,
+    /// The positions of the connector.
+    pub positions: Vec<(DAffine3, DAffine3)>,
+}
+
+impl ThumbKeyConnectors {
     /// Creates new key connectors for the given thumb keys.
     #[must_use]
     pub fn from_thumb_keys(thumb_keys: &ThumbKeys) -> Self {
         let positions = thumb_keys
             .windows(2)
-            .flat_map(|window| {
+            .map(|window| {
                 let left_position = window[0];
                 let matrix3 = left_position.matrix3 * DMat3::from_rotation_z(-FRAC_PI_2);
 
@@ -154,7 +167,7 @@ impl KeyConnectors {
                         + (PAD_SIZE.y - CONNECTOR_WIDTH) / 2.0 * left_position.y_axis,
                 };
 
-                [bottom_position, top_position]
+                (bottom_position, top_position)
             })
             .collect();
         let connector = KeyConnector::from_thumb_keys(thumb_keys);

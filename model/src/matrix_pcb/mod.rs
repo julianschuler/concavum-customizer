@@ -2,14 +2,12 @@ mod cluster_connector;
 mod connectors;
 mod segments;
 
-use std::iter::once;
-
 use glam::{dvec2, DAffine3, DVec2, DVec3};
 
 use crate::key_positions::{ColumnType, KeyPositions};
 
 pub use cluster_connector::ClusterConnector;
-pub use connectors::{ColumnConnector, KeyConnectors};
+pub use connectors::{ColumnConnector, ColumnKeyConnectors, ThumbKeyConnectors};
 pub use segments::Segment;
 
 /// The thickness of the matrix PCB.
@@ -32,8 +30,10 @@ const SWITCH_HEIGHT: f64 = 5.0;
 /// A PCB connecting the keys to each other in a matrix.
 pub struct MatrixPcb {
     /// The key connectors between keys in the columns.
-    pub key_connectors: Vec<KeyConnectors>,
-    /// The normal column connectors.
+    pub column_key_connectors: Vec<ColumnKeyConnectors>,
+    /// The key connectors between keys in the thumb cluster.
+    pub thumb_key_connectors: ThumbKeyConnectors,
+    /// The connectors between neighboring columns.
     pub column_connectors: Vec<ColumnConnector>,
     /// The connector between finger and thumb cluster,
     pub cluster_connector: ClusterConnector,
@@ -49,11 +49,11 @@ impl MatrixPcb {
         #[allow(clippy::cast_sign_loss)]
         let home_row_index = columns.home_row_index as usize;
 
-        let key_connectors = columns
+        let column_key_connectors = columns
             .iter()
-            .map(KeyConnectors::from_column)
-            .chain(once(KeyConnectors::from_thumb_keys(&positions.thumb_keys)))
+            .map(ColumnKeyConnectors::from_column)
             .collect();
+        let thumb_key_connectors = ThumbKeyConnectors::from_thumb_keys(&positions.thumb_keys);
         let column_connectors = columns
             .windows(2)
             .map(|window| ColumnConnector::from_columns(&window[0], &window[1], home_row_index))
@@ -77,7 +77,8 @@ impl MatrixPcb {
         };
 
         Self {
-            key_connectors,
+            column_key_connectors,
+            thumb_key_connectors,
             column_connectors,
             cluster_connector,
             fpc_pad_position,
