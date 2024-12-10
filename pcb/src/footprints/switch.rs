@@ -9,6 +9,7 @@ use crate::{
 
 /// A Cherry MX switch.
 pub struct Switch {
+    reference: String,
     position: Position,
     column_net: Net,
     row_net: Net,
@@ -17,8 +18,15 @@ pub struct Switch {
 
 impl Switch {
     /// Creates a new switch at the given position using the given nets.
-    pub fn new(position: Position, row_net: Net, column_net: Net, internal_net: Net) -> Self {
+    pub fn new(
+        reference: String,
+        position: Position,
+        row_net: Net,
+        column_net: Net,
+        internal_net: Net,
+    ) -> Self {
         Self {
+            reference,
             position,
             column_net,
             row_net,
@@ -112,11 +120,15 @@ impl From<Switch> for Footprint {
                 descr: "Cherry MX switch with diode dual side",
                 tags: "Cherry MX switch with diode dual side",
                 properties: vec![
-                    Property::new("Reference", "REF**", position!(0, -7.5, angle)),
-                    Property::new("Value", "SW_Cherry_MX", position!(0, 7.5, angle)),
-                    Property::new("Footprint", "", position!(0, 0, angle)),
-                    Property::new("Datasheet", "", position!(0, 0, angle)),
-                    Property::new("Description", "", position!(0, 0, angle)),
+                    Property::new(
+                        "Reference",
+                        switch.reference.clone(),
+                        position!(0, -7.5, angle),
+                    ),
+                    Property::new("Value", "SW_Cherry_MX".to_owned(), position!(0, 7.5, angle)),
+                    Property::new("Footprint", String::new(), position!(0, 0, angle)),
+                    Property::new("Datasheet", String::new(), position!(0, 0, angle)),
+                    Property::new("Description", String::new(), position!(0, 0, angle)),
                 ],
                 attr: Attribute::ThroughHole,
                 fp_lines: lines_front_back![

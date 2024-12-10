@@ -37,11 +37,11 @@ enum Attribute {
 }
 
 #[derive(Serialize)]
-struct Property(&'static str, &'static str, PropertySettings);
+struct Property(&'static str, String, PropertySettings);
 
 impl Property {
     /// Creates a new property at the given position.
-    fn new(key: &'static str, value: &'static str, position: Position) -> Self {
+    fn new(key: &'static str, value: String, position: Position) -> Self {
         Self(
             key,
             value,
