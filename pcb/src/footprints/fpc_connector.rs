@@ -194,7 +194,7 @@ impl From<FpcConnector> for Footprint {
                     (point!(-9.8, -1.2), point!(-9.8, 6.6), "CrtYd"),
                     (point!(-9.8, 6.6), point!(9.8, 6.6), "CrtYd"),
                     (point!(9.8, -1.2), point!(-9.8, -1.2), "CrtYd"),
-                    (point!(9.8, -1.2), point!(9.8, 1.2), "CrtYd"),
+                    (point!(9.8, -1.2), point!(9.8, 6.6), "CrtYd"),
                     (point!(-9.5, 0.52), point!(-6.2, 0.52), "Fab"),
                     (point!(-9.5, 6.3), point!(-9.5, 0.52), "Fab"),
                     (point!(9.5, 0.52), point!(6.2, 0.52), "Fab"),
