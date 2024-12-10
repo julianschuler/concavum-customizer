@@ -5,9 +5,10 @@ use model::{
 };
 
 use crate::{
-    footprints::Switch,
+    footprints::{FpcConnector, Switch},
     kicad_pcb::{KicadPcb, Net},
     matrix_pcb::{nets::Nets, switch_positions::SwitchPositions},
+    position,
     primitives::Position,
     unit::IntoUnit,
 };
@@ -53,6 +54,7 @@ impl Builder {
         let nets = Nets::create(&mut self.pcb);
 
         self.add_switches(&switch_positions, &nets);
+        self.add_fpc_connector(&switch_positions, &nets);
 
         self.pcb
     }
@@ -82,5 +84,29 @@ impl Builder {
 
         let switch = Switch::new(reference, position, row_net, column_net, internal_net);
         self.pcb.add_footprint(switch.into());
+    }
+
+    /// Adds the FPC connector to the PCB.
+    fn add_fpc_connector(&mut self, switch_positions: &SwitchPositions, nets: &Nets) {
+        let fpc_connector_nets = [
+            nets.rows[0].clone(),
+            nets.columns[0].clone(),
+            nets.columns[1].clone(),
+            nets.columns[2].clone(),
+            nets.columns[3].clone(),
+            nets.columns[4].clone(),
+            nets.rows[1].clone(),
+            nets.rows[2].clone(),
+            nets.rows[3].clone(),
+            nets.rows[4].clone(),
+            nets.rows[5].clone(),
+            nets.columns[5].clone(),
+        ];
+
+        let fpc_connector_position = switch_positions.columns[self.cluster_connector_index].first()
+            + position!(0, 5.5, None);
+        let fpc_connector =
+            FpcConnector::new("J1".to_owned(), fpc_connector_position, fpc_connector_nets);
+        self.pcb.add_footprint(fpc_connector.into());
     }
 }
