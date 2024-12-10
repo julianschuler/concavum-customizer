@@ -7,7 +7,10 @@ use glam::{dvec2, DAffine3, DVec2, DVec3};
 use crate::key_positions::{ColumnType, KeyPositions};
 
 pub use cluster_connector::ClusterConnector;
-pub use connectors::{ColumnConnector, ColumnKeyConnectors, ThumbKeyConnectors};
+pub use connectors::{
+    ColumnConnector, ColumnKeyConnectors, NormalColumnConnector, SideColumnConnector,
+    ThumbKeyConnectors,
+};
 pub use segments::Segment;
 
 /// The thickness of the matrix PCB.
