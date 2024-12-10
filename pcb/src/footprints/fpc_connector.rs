@@ -9,14 +9,19 @@ use crate::{
 
 /// An FPC connector.
 pub struct FpcConnector {
+    reference: String,
     position: Position,
     nets: [Net; 12],
 }
 
 impl FpcConnector {
     /// Creates a new FPC connector at the given position.
-    pub fn new(position: Position, nets: [Net; 12]) -> Self {
-        Self { position, nets }
+    pub fn new(reference: String, position: Position, nets: [Net; 12]) -> Self {
+        Self {
+            reference,
+            position,
+            nets,
+        }
     }
 
     #[allow(clippy::too_many_lines, clippy::similar_names)]
@@ -170,11 +175,19 @@ impl From<FpcConnector> for Footprint {
                 descr: "FPC connector dual side",
                 tags: "FPC connector dual side",
                 properties: vec![
-                    Property::new("Reference", "REF**", position!(0, 4.0, angle)),
-                    Property::new("Value", "FPC_Connector", position!(0, 7.5, angle)),
-                    Property::new("Footprint", "", position!(0, 0, angle)),
-                    Property::new("Datasheet", "", position!(0, 0, angle)),
-                    Property::new("Description", "", position!(0, 0, angle)),
+                    Property::new(
+                        "Reference",
+                        fpc_connector.reference.clone(),
+                        position!(0, 4.0, angle),
+                    ),
+                    Property::new(
+                        "Value",
+                        "FPC_Connector".to_owned(),
+                        position!(0, 7.5, angle),
+                    ),
+                    Property::new("Footprint", String::new(), position!(0, 0, angle)),
+                    Property::new("Datasheet", String::new(), position!(0, 0, angle)),
+                    Property::new("Description", String::new(), position!(0, 0, angle)),
                 ],
                 attr: Attribute::ThroughHole,
                 fp_lines: lines_front_back![
