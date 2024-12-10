@@ -86,6 +86,9 @@ pub trait IntoUnit {
 
     /// Returns an angle with the value of `self` in degree.
     fn deg(self) -> Angle;
+
+    /// Returns an angle with the value of `self` in radians.
+    fn rad(self) -> Angle;
 }
 
 impl IntoUnit for i32 {
@@ -95,6 +98,10 @@ impl IntoUnit for i32 {
 
     fn deg(self) -> Angle {
         Angle(self * VALUE_TO_UNIT)
+    }
+
+    fn rad(self) -> Angle {
+        f64::from(self).rad()
     }
 }
 
@@ -108,6 +115,10 @@ impl IntoUnit for f32 {
         #[allow(clippy::cast_possible_truncation, clippy::cast_precision_loss)]
         Angle((self * VALUE_TO_UNIT as f32) as i32)
     }
+
+    fn rad(self) -> Angle {
+        self.to_degrees().deg()
+    }
 }
 
 impl IntoUnit for f64 {
@@ -119,5 +130,9 @@ impl IntoUnit for f64 {
     fn deg(self) -> Angle {
         #[allow(clippy::cast_possible_truncation)]
         Angle((self * f64::from(VALUE_TO_UNIT)) as i32)
+    }
+
+    fn rad(self) -> Angle {
+        self.to_degrees().deg()
     }
 }
