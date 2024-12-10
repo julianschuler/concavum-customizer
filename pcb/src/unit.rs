@@ -52,7 +52,7 @@ impl Angle {
     /// Calculates the sine and cosine of the angle.
     pub fn sin_cos(self) -> (f32, f32) {
         #[allow(clippy::cast_precision_loss)]
-        f32::sin_cos((self.0 as f32).to_radians())
+        f32::sin_cos((self.0 as f32 / VALUE_TO_UNIT as f32).to_radians())
     }
 }
 
