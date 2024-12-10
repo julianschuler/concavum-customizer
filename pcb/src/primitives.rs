@@ -19,7 +19,10 @@ impl Point {
 #[macro_export]
 macro_rules! point {
     ($x:expr, $y:expr) => {
-        $crate::primitives::Point::new(($x).mm(), ($y).mm())
+        $crate::primitives::Point::new(
+            $crate::unit::IntoUnit::mm($x),
+            $crate::unit::IntoUnit::mm($y),
+        )
     };
 }
 
@@ -38,7 +41,10 @@ impl Size {
 #[macro_export]
 macro_rules! size {
     ($width:expr, $height:expr) => {
-        $crate::primitives::Size::new(($width).mm(), ($height).mm())
+        $crate::primitives::Size::new(
+            $crate::unit::IntoUnit::mm($width),
+            $crate::unit::IntoUnit::mm($height),
+        )
     };
 }
 
@@ -114,7 +120,11 @@ impl Neg for Position {
 #[macro_export]
 macro_rules! position {
     ($x:expr, $y:expr, $angle:expr) => {
-        $crate::primitives::Position::new(($x).mm(), ($y).mm(), $angle)
+        $crate::primitives::Position::new(
+            $crate::unit::IntoUnit::mm($x),
+            $crate::unit::IntoUnit::mm($y),
+            $angle,
+        )
     };
 }
 
