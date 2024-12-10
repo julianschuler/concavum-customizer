@@ -1,4 +1,4 @@
-use std::ops::{Add, Neg, Sub};
+use std::ops::{Add, AddAssign, Neg, Sub, SubAssign};
 
 use serde::Serialize;
 
@@ -105,6 +105,18 @@ impl Sub for Position {
 
     fn sub(self, rhs: Self) -> Self::Output {
         self.affine(-rhs)
+    }
+}
+
+impl AddAssign for Position {
+    fn add_assign(&mut self, rhs: Self) {
+        *self = *self + rhs;
+    }
+}
+
+impl SubAssign for Position {
+    fn sub_assign(&mut self, rhs: Self) {
+        *self = *self - rhs;
     }
 }
 
