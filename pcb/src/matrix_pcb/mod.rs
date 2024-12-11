@@ -1,6 +1,6 @@
 mod builder;
+mod features;
 mod nets;
-mod switch_positions;
 
 use config::Config;
 
