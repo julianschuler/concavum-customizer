@@ -21,6 +21,8 @@ pub struct KicadPcb {
     setup: SetupSettings,
     nets: Vec<Net>,
     footprints: Vec<Footprint>,
+    gr_lines: Vec<GrLine>,
+    gr_arcs: Vec<GrArc>,
     segments: Vec<Segment>,
     arcs: Vec<Arc>,
 }
@@ -48,6 +50,8 @@ impl KicadPcb {
             setup: SetupSettings::default(),
             nets: vec![Net(0, String::new())],
             footprints: Vec::default(),
+            gr_lines: Vec::default(),
+            gr_arcs: Vec::default(),
             segments: Vec::default(),
             arcs: Vec::default(),
         }
@@ -119,6 +123,48 @@ impl KicadPcb {
             width,
             layer,
             net,
+            uuid: Uuid::new(),
+        });
+    }
+
+    /// Adds a graphical line to the PCB.
+    pub fn add_graphical_line(
+        &mut self,
+        start: Point,
+        end: Point,
+        width: Length,
+        layer: &'static str,
+    ) {
+        self.gr_lines.push(GrLine {
+            start,
+            end,
+            stroke: Stroke {
+                width,
+                stroke_type: StrokeType::Solid,
+            },
+            layer,
+            uuid: Uuid::new(),
+        });
+    }
+
+    /// Adds a graphical arc to the PCB.
+    pub fn add_graphical_arc(
+        &mut self,
+        start: Point,
+        mid: Point,
+        end: Point,
+        width: Length,
+        layer: &'static str,
+    ) {
+        self.gr_arcs.push(GrArc {
+            start,
+            mid,
+            end,
+            stroke: Stroke {
+                width,
+                stroke_type: StrokeType::Solid,
+            },
+            layer,
             uuid: Uuid::new(),
         });
     }
@@ -275,6 +321,45 @@ impl Default for PlotParameters {
 
 #[derive(Serialize, Clone)]
 pub struct Net(u32, String);
+
+impl Net {
+    /// Returns the ID of the net.
+    pub fn id(&self) -> u32 {
+        self.0
+    }
+}
+
+#[derive(Serialize)]
+struct GrLine {
+    start: Point,
+    end: Point,
+    stroke: Stroke,
+    layer: &'static str,
+    uuid: Uuid,
+}
+
+#[derive(Serialize)]
+struct GrArc {
+    start: Point,
+    mid: Point,
+    end: Point,
+    stroke: Stroke,
+    layer: &'static str,
+    uuid: Uuid,
+}
+
+#[derive(Serialize)]
+struct Stroke {
+    width: Length,
+    #[serde(rename = "type")]
+    stroke_type: StrokeType,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "snake_case")]
+enum StrokeType {
+    Solid,
+}
 
 #[derive(Serialize)]
 struct Segment {
