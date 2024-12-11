@@ -59,24 +59,29 @@ impl Position {
     }
 
     /// Returns the X coordinate of the position.
-    pub fn x(&self) -> Length {
+    pub fn x(self) -> Length {
         self.0
     }
 
     /// Returns the Y coordinate of the position.
-    pub fn y(&self) -> Length {
+    pub fn y(self) -> Length {
         self.1
     }
 
     /// Returns the angle of the position.
-    pub fn angle(&self) -> Option<Angle> {
+    pub fn angle(self) -> Option<Angle> {
         self.2
+    }
+
+    /// Returns the corresponding point without the angle.
+    pub fn point(self) -> Point {
+        Point::new(self.x(), self.y())
     }
 
     /// Applies the affine transform given by the other position to `self`.
     ///
     /// The transform is applied in the reference frame of `self`.
-    pub fn affine(&self, other: Position) -> Self {
+    pub fn affine(self, other: Position) -> Self {
         let (sin, cos) = self.angle().unwrap_or_default().sin_cos();
 
         let x = self.x() + cos * other.x() + sin * other.y();
