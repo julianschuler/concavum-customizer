@@ -7,7 +7,10 @@ use model::{
 use crate::{
     footprints::{FpcConnector, Switch},
     kicad_pcb::{KicadPcb, Net},
-    matrix_pcb::{nets::Nets, switch_positions::SwitchPositions},
+    matrix_pcb::{
+        features::{Column, Features, ThumbSwitches},
+        nets::Nets,
+    },
     position,
     primitives::Position,
     unit::IntoUnit,
@@ -46,30 +49,25 @@ impl Builder {
 
     /// Builds the matrix PCB.
     pub fn build(mut self) -> KicadPcb {
-        let switch_positions = SwitchPositions::from_model(
+        let features = Features::from_model(
             &self.model,
             self.home_row_index,
             self.cluster_connector_index,
         );
         let nets = Nets::create(&mut self.pcb);
 
-        self.add_switches(&switch_positions, &nets);
-        self.add_fpc_connector(&switch_positions, &nets);
+        self.add_switches(&features.columns, &features.thumb_switches, &nets);
+        self.add_fpc_connector(&features.columns, &nets);
 
         self.pcb
     }
 
     /// Adds the switches for the finger and thumb cluster to the PCB.
-    fn add_switches(&mut self, switch_positions: &SwitchPositions, nets: &Nets) {
-        for (&position, column_net) in switch_positions
-            .thumb_switches
-            .positions()
-            .iter()
-            .zip(&nets.columns)
-        {
+    fn add_switches(&mut self, columns: &[Column], thumb_switches: &ThumbSwitches, nets: &Nets) {
+        for (&position, column_net) in thumb_switches.positions().iter().zip(&nets.columns) {
             self.add_switch(position, nets.rows[0].clone(), column_net.clone());
         }
-        for (column, column_net) in switch_positions.columns.iter().zip(&nets.columns) {
+        for (column, column_net) in columns.iter().zip(&nets.columns) {
             for (&position, row_net) in column.positions().zip(nets.rows.iter().skip(1)) {
                 self.add_switch(position, row_net.clone(), column_net.clone());
             }
@@ -87,7 +85,7 @@ impl Builder {
     }
 
     /// Adds the FPC connector to the PCB.
-    fn add_fpc_connector(&mut self, switch_positions: &SwitchPositions, nets: &Nets) {
+    fn add_fpc_connector(&mut self, columns: &[Column], nets: &Nets) {
         let fpc_connector_nets = [
             nets.rows[0].clone(),
             nets.columns[0].clone(),
@@ -103,8 +101,8 @@ impl Builder {
             nets.columns[5].clone(),
         ];
 
-        let fpc_connector_position = switch_positions.columns[self.cluster_connector_index].first()
-            + position!(0, 5.5, None);
+        let fpc_connector_position =
+            columns[self.cluster_connector_index].first() + position!(0, 5.5, None);
         let fpc_connector =
             FpcConnector::new("J1".to_owned(), fpc_connector_position, fpc_connector_nets);
         self.pcb.add_footprint(fpc_connector.into());
