@@ -11,7 +11,6 @@ use crate::{
         features::{Column, Features, ThumbSwitches},
         nets::Nets,
     },
-    position,
     primitives::Position,
     unit::IntoUnit,
 };
@@ -57,7 +56,7 @@ impl Builder {
         let nets = Nets::create(&mut self.pcb);
 
         self.add_switches(&features.columns, &features.thumb_switches, &nets);
-        self.add_fpc_connector(&features.columns, &nets);
+        self.add_fpc_connector(features.fpc_connector_position, &nets);
 
         self.pcb
     }
@@ -85,7 +84,7 @@ impl Builder {
     }
 
     /// Adds the FPC connector to the PCB.
-    fn add_fpc_connector(&mut self, columns: &[Column], nets: &Nets) {
+    fn add_fpc_connector(&mut self, fpc_connector_position: Position, nets: &Nets) {
         let fpc_connector_nets = [
             nets.rows[0].clone(),
             nets.columns[0].clone(),
@@ -101,8 +100,6 @@ impl Builder {
             nets.columns[5].clone(),
         ];
 
-        let fpc_connector_position =
-            columns[self.cluster_connector_index].first() + position!(0, 5.5, None);
         let fpc_connector =
             FpcConnector::new("J1".to_owned(), fpc_connector_position, fpc_connector_nets);
         self.pcb.add_footprint(fpc_connector.into());
