@@ -1,4 +1,5 @@
 mod builder;
+mod connector;
 mod features;
 mod nets;
 
