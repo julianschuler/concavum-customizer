@@ -4,6 +4,8 @@ use model::matrix_pcb::{
 };
 
 use crate::{
+    kicad_pcb::KicadPcb,
+    matrix_pcb::{OUTLINE_LAYER, OUTLINE_WIDTH},
     position,
     primitives::{Point, Position},
     unit::{Angle, IntoUnit, Length},
@@ -84,6 +86,43 @@ impl CurvedConnector {
     /// Returns the position of the switch at the end of the connector
     pub fn end_switch_position(&self) -> Position {
         self.end_switch_position
+    }
+
+    /// Adds the outline of the connector to the PCB.
+    pub fn add_outline(&self, pcb: &mut KicadPcb) {
+        let offset = (CONNECTOR_WIDTH / 2.0).mm();
+
+        let first_arc_top = self.first_arc.offset(offset);
+        let first_arc_bottom = self.first_arc.offset(-offset);
+        let second_arc_top = self.second_arc.offset(offset);
+        let second_arc_bottom = self.second_arc.offset(-offset);
+
+        pcb.add_graphical_line(
+            first_arc_top.end(),
+            second_arc_top.start(),
+            OUTLINE_WIDTH,
+            OUTLINE_LAYER,
+        );
+        pcb.add_graphical_line(
+            first_arc_bottom.end(),
+            second_arc_bottom.start(),
+            OUTLINE_WIDTH,
+            OUTLINE_LAYER,
+        );
+        for arc in [
+            first_arc_top,
+            first_arc_bottom,
+            second_arc_top,
+            second_arc_bottom,
+        ] {
+            pcb.add_graphical_arc(
+                arc.start(),
+                arc.mid(),
+                arc.end(),
+                OUTLINE_WIDTH,
+                OUTLINE_LAYER,
+            );
+        }
     }
 }
 
