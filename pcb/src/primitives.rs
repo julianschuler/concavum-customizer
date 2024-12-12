@@ -10,7 +10,7 @@ pub struct Point(Length, Length);
 
 impl Point {
     /// Creates a new point from the given coordinates.
-    pub fn new(x: Length, y: Length) -> Self {
+    pub const fn new(x: Length, y: Length) -> Self {
         Self(x, y)
     }
 }
@@ -54,7 +54,7 @@ pub struct Position(Length, Length, Option<Angle>);
 
 impl Position {
     /// Creates a new position from the given coordinates and optional angle.
-    pub fn new(x: Length, y: Length, angle: Option<Angle>) -> Self {
+    pub const fn new(x: Length, y: Length, angle: Option<Angle>) -> Self {
         Self(x, y, angle)
     }
 

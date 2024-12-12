@@ -5,9 +5,12 @@ mod nets;
 
 use config::Config;
 
-use crate::kicad_pcb::KicadPcb;
+use crate::{kicad_pcb::KicadPcb, primitives::Position, unit::Length};
 
 use builder::Builder;
+
+/// The position of the first home row key.
+const ORIGIN_POSITION: Position = Position::new(Length::mm(100.0), Length::mm(100.0), None);
 
 /// A PCB connecting the keys to each other in a matrix.
 pub struct MatrixPcb(KicadPcb);
