@@ -55,10 +55,19 @@ impl Builder {
         );
         let nets = Nets::create(&mut self.pcb);
 
+        self.add_outline(&features);
         self.add_switches(&features.columns, &features.thumb_switches, &nets);
         self.add_fpc_connector(features.fpc_connector_position, &nets);
 
         self.pcb
+    }
+
+    /// Adds the outline to the PCB using the given features.
+    fn add_outline(&mut self, features: &Features) {
+        for column_connector in &features.column_connectors {
+            column_connector.add_outline(&mut self.pcb);
+        }
+        features.cluster_connector.add_outline(&mut self.pcb);
     }
 
     /// Adds the switches for the finger and thumb cluster to the PCB.

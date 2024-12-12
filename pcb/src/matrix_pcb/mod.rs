@@ -9,6 +9,10 @@ use crate::{kicad_pcb::KicadPcb, primitives::Position, unit::Length};
 
 use builder::Builder;
 
+/// The name of the outline layer.
+const OUTLINE_LAYER: &str = "Edge.Cuts";
+/// The width of the outline.
+const OUTLINE_WIDTH: Length = Length::mm(0.05);
 /// The position of the first home row key.
 const ORIGIN_POSITION: Position = Position::new(Length::mm(100.0), Length::mm(100.0), None);
 
