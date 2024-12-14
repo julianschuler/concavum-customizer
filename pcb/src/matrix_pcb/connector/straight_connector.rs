@@ -3,8 +3,8 @@ use model::matrix_pcb::{Segment, SideColumnConnector, CONNECTOR_WIDTH, PAD_SIZE}
 use crate::{
     kicad_pcb::KicadPcb,
     matrix_pcb::{OUTLINE_LAYER, OUTLINE_WIDTH},
-    position,
-    primitives::Position,
+    point, position,
+    primitives::{Point, Position},
     unit::{IntoUnit, Length},
 };
 
@@ -38,24 +38,14 @@ impl StraightConnector {
 
     /// Adds the outline of the connector to the PCB.
     pub fn add_outline(&self, pcb: &mut KicadPcb) {
-        let offset = position!(0, CONNECTOR_WIDTH / 2.0, None);
+        let offset = point!(0, CONNECTOR_WIDTH / 2.0);
 
         let start_top = self.start + offset;
         let start_bottom = self.start - offset;
         let end_top = self.end_position() + offset;
         let end_bottom = self.end_position() - offset;
 
-        pcb.add_graphical_line(
-            start_top.point(),
-            end_top.point(),
-            OUTLINE_WIDTH,
-            OUTLINE_LAYER,
-        );
-        pcb.add_graphical_line(
-            start_bottom.point(),
-            end_bottom.point(),
-            OUTLINE_WIDTH,
-            OUTLINE_LAYER,
-        );
+        pcb.add_graphical_line(start_top, end_top, OUTLINE_WIDTH, OUTLINE_LAYER);
+        pcb.add_graphical_line(start_bottom, end_bottom, OUTLINE_WIDTH, OUTLINE_LAYER);
     }
 }
