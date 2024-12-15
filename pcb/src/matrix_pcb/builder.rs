@@ -57,7 +57,7 @@ impl Builder {
 
         self.add_outline(&features);
         self.add_switches(&features.columns, &features.thumb_switches, &nets);
-        self.add_ffc_connector(features.ffc_connector_position, &nets);
+        self.add_ffc_connector(features.ffc_connector.position(), &nets);
 
         self.pcb
     }
