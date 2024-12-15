@@ -236,8 +236,8 @@ pub struct Colors {
     pub matrix_pcb: Color,
     /// The color of the interface PCB.
     pub interface_pcb: Color,
-    /// The color of the FPC connector.
-    pub fpc_connector: Color,
+    /// The color of the FFC connector.
+    pub ffc_connector: Color,
     /// The color of the background.
     pub background: Color,
 }

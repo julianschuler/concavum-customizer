@@ -107,7 +107,7 @@ fn title_from_struct_name(string: &str) -> String {
 fn name_from_struct_field(string: &str) -> String {
     string
         .replace("pcb", "PCB")
-        .replace("fpc", "FPC")
+        .replace("ffc", "FFC")
         .chars()
         .enumerate()
         .map(|(index, char)| {

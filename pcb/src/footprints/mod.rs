@@ -1,4 +1,4 @@
-mod fpc_connector;
+mod ffc_connector;
 mod switch;
 
 use serde::Serialize;
@@ -10,7 +10,7 @@ use crate::{
     unit::{IntoUnit, Length},
 };
 
-pub use fpc_connector::FpcConnector;
+pub use ffc_connector::FfcConnector;
 pub use switch::Switch;
 
 #[derive(Serialize)]
