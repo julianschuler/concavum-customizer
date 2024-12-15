@@ -24,8 +24,8 @@ pub struct Settings {
     pub interface_pcb_positions: Vec<Mat4>,
     /// The meshes of the matrix PCBs.
     pub matrix_pcb_meshes: Vec<InstancedMesh>,
-    /// The positions of the FPC pad.
-    pub fpc_pad_positions: Vec<Mat4>,
+    /// The positions of the FFC connector pad.
+    pub ffc_pad_positions: Vec<Mat4>,
     /// The display settings of the model.
     pub display_settings: DisplaySettings,
     /// The positions of the illuminating point lights.
@@ -70,7 +70,7 @@ pub fn make_settings(model: &Model, config: &config::Config) -> Settings {
         .chain(model.matrix_pcb.column_connectors.iter().map(Into::into))
         .chain(once((&model.matrix_pcb.cluster_connector).into()))
         .collect();
-    let fpc_pad_positions = mirrored_positions(&model.matrix_pcb.fpc_pad_position).to_vec();
+    let ffc_pad_positions = mirrored_positions(&model.matrix_pcb.ffc_pad_position).to_vec();
     let light_positions = light_positions_from_bounds(model.keyboard.right_half.bounds());
 
     Settings {
@@ -78,7 +78,7 @@ pub fn make_settings(model: &Model, config: &config::Config) -> Settings {
         thumb_key_settings,
         interface_pcb_positions,
         matrix_pcb_meshes,
-        fpc_pad_positions,
+        ffc_pad_positions,
         display_settings: model.display_settings.clone(),
         light_positions,
     }

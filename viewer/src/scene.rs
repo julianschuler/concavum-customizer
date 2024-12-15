@@ -54,7 +54,7 @@ impl Scene {
             display_settings,
             settings.matrix_pcb_meshes,
             switch_positions,
-            settings.fpc_pad_positions,
+            settings.ffc_pad_positions,
         );
 
         let ambient = AmbientLight::new(context, 0.05, Srgba::WHITE);
