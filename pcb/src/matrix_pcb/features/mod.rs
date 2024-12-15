@@ -1,18 +1,15 @@
 mod column;
+mod ffc_connector;
 mod thumb_switches;
 
 use std::iter::once;
 
-use model::matrix_pcb::{MatrixPcb as Model, FPC_PAD_OFFSET, FPC_PAD_SIZE};
+use model::matrix_pcb::MatrixPcb as Model;
 
-use crate::{
-    matrix_pcb::{connector::Connector, ORIGIN_POSITION},
-    position,
-    primitives::Position,
-    unit::IntoUnit,
-};
+use crate::matrix_pcb::{connector::Connector, ORIGIN_POSITION};
 
 pub use column::Column;
+pub use ffc_connector::FfcConnector;
 pub use thumb_switches::ThumbSwitches;
 
 /// All features of the matrix PCB.
@@ -21,7 +18,7 @@ pub struct Features {
     pub thumb_switches: ThumbSwitches,
     pub column_connectors: Vec<Connector>,
     pub cluster_connector: Connector,
-    pub ffc_connector_position: Position,
+    pub ffc_connector: FfcConnector,
 }
 
 impl Features {
@@ -31,8 +28,6 @@ impl Features {
         home_row_index: usize,
         cluster_connector_index: usize,
     ) -> Self {
-        const FPC_CONNECTOR_OFFSET: f64 = 5.5;
-
         let mut switch_position = ORIGIN_POSITION;
 
         let column_connectors: Vec<_> = model
@@ -53,12 +48,11 @@ impl Features {
             })
             .collect();
 
-        let anchor = columns[cluster_connector_index].first();
-        let cluster_connector_start =
-            anchor + position!(0, FFC_PAD_OFFSET + FFC_PAD_SIZE.y / 2.0, Some(-90.deg()));
-        let cluster_connector =
-            Connector::from_cluster_connector(&model.cluster_connector, cluster_connector_start);
-        let ffc_connector_position = anchor + position!(0, FFC_CONNECTOR_OFFSET, None);
+        let ffc_connector = FfcConnector::from_anchor(columns[cluster_connector_index].first());
+        let cluster_connector = Connector::from_cluster_connector(
+            &model.cluster_connector,
+            ffc_connector.cluster_connector_start(),
+        );
 
         let thumb_switches = ThumbSwitches::from_key_connectors(
             &model.thumb_key_connectors,
@@ -70,7 +64,7 @@ impl Features {
             thumb_switches,
             column_connectors,
             cluster_connector,
-            fcc_connector_position,
+            ffc_connector,
         }
     }
 }
