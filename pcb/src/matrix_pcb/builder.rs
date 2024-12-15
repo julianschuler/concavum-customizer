@@ -5,7 +5,7 @@ use model::{
 };
 
 use crate::{
-    footprints::{FpcConnector, Switch},
+    footprints::{FfcConnector, Switch},
     kicad_pcb::{KicadPcb, Net},
     matrix_pcb::{
         features::{Column, Features, ThumbSwitches},
@@ -57,7 +57,7 @@ impl Builder {
 
         self.add_outline(&features);
         self.add_switches(&features.columns, &features.thumb_switches, &nets);
-        self.add_fpc_connector(features.fpc_connector_position, &nets);
+        self.add_ffc_connector(features.ffc_connector_position, &nets);
 
         self.pcb
     }
@@ -92,9 +92,9 @@ impl Builder {
         self.pcb.add_footprint(switch.into());
     }
 
-    /// Adds the FPC connector to the PCB.
-    fn add_fpc_connector(&mut self, fpc_connector_position: Position, nets: &Nets) {
-        let fpc_connector_nets = [
+    /// Adds the FFC connector to the PCB.
+    fn add_ffc_connector(&mut self, position: Position, nets: &Nets) {
+        let ffc_connector_nets = [
             nets.rows[0].clone(),
             nets.columns[0].clone(),
             nets.columns[1].clone(),
@@ -109,8 +109,7 @@ impl Builder {
             nets.columns[5].clone(),
         ];
 
-        let fpc_connector =
-            FpcConnector::new("J1".to_owned(), fpc_connector_position, fpc_connector_nets);
-        self.pcb.add_footprint(fpc_connector.into());
+        let ffc_connector = FfcConnector::new("J1".to_owned(), position, ffc_connector_nets);
+        self.pcb.add_footprint(ffc_connector.into());
     }
 }

@@ -22,7 +22,7 @@ impl MatrixPcbs {
         display_settings: &DisplaySettings,
         meshes: Vec<gui::InstancedMesh>,
         switch_positions: Vec<Mat4>,
-        fpc_pad_positions: Vec<Mat4>,
+        ffc_pad_positions: Vec<Mat4>,
     ) -> Self {
         let color = display_settings.colors.matrix_pcb;
 
@@ -37,9 +37,9 @@ impl MatrixPcbs {
             )))
             .chain(once(InstancedObject::new(
                 context,
-                &assets.fpc_pad,
+                &assets.ffc_pad,
                 color,
-                fpc_pad_positions,
+                ffc_pad_positions,
             )))
             .collect();
 

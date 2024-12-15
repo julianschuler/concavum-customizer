@@ -21,7 +21,7 @@ pub struct Features {
     pub thumb_switches: ThumbSwitches,
     pub column_connectors: Vec<Connector>,
     pub cluster_connector: Connector,
-    pub fpc_connector_position: Position,
+    pub ffc_connector_position: Position,
 }
 
 impl Features {
@@ -55,10 +55,10 @@ impl Features {
 
         let anchor = columns[cluster_connector_index].first();
         let cluster_connector_start =
-            anchor + position!(0, FPC_PAD_OFFSET + FPC_PAD_SIZE.y / 2.0, Some(-90.deg()));
+            anchor + position!(0, FFC_PAD_OFFSET + FFC_PAD_SIZE.y / 2.0, Some(-90.deg()));
         let cluster_connector =
             Connector::from_cluster_connector(&model.cluster_connector, cluster_connector_start);
-        let fpc_connector_position = anchor + position!(0, FPC_CONNECTOR_OFFSET, None);
+        let ffc_connector_position = anchor + position!(0, FFC_CONNECTOR_OFFSET, None);
 
         let thumb_switches = ThumbSwitches::from_key_connectors(
             &model.thumb_key_connectors,
@@ -70,7 +70,7 @@ impl Features {
             thumb_switches,
             column_connectors,
             cluster_connector,
-            fpc_connector_position,
+            fcc_connector_position,
         }
     }
 }

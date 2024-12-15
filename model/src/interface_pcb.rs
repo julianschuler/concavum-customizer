@@ -10,7 +10,7 @@ use crate::{
     util::SideX,
 };
 
-/// A PCB containing the interfaces to the outside (USB and TRRS) and inside (FPC).
+/// A PCB containing the interfaces to the outside (USB and TRRS) and inside (FFC).
 pub struct InterfacePcb {
     /// The position of the interface PCB.
     pub position: DAffine3,

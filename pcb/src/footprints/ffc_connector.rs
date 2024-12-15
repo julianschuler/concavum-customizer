@@ -7,15 +7,15 @@ use crate::{
     unit::IntoUnit,
 };
 
-/// An FPC connector.
-pub struct FpcConnector {
+/// An FFC connector.
+pub struct FfcConnector {
     reference: String,
     position: Position,
     nets: [Net; 12],
 }
 
-impl FpcConnector {
-    /// Creates a new FPC connector at the given position.
+impl FfcConnector {
+    /// Creates a new FFC connector at the given position.
     pub fn new(reference: String, position: Position, nets: [Net; 12]) -> Self {
         Self {
             reference,
@@ -162,27 +162,27 @@ impl FpcConnector {
     }
 }
 
-impl From<FpcConnector> for Footprint {
-    fn from(fpc_connector: FpcConnector) -> Self {
-        let angle = fpc_connector.position.angle();
+impl From<FfcConnector> for Footprint {
+    fn from(ffc_connector: FfcConnector) -> Self {
+        let angle = ffc_connector.position.angle();
 
         Self(
-            "fpc_connector_dual_side",
+            "ffc_connector_dual_side",
             FootprintSettings {
                 layer: "F.Cu",
                 uuid: Uuid::new(),
-                at: fpc_connector.position,
-                descr: "FPC connector dual side",
-                tags: "FPC connector dual side",
+                at: ffc_connector.position,
+                descr: "FFC connector dual side",
+                tags: "FFC connector dual side",
                 properties: vec![
                     Property::new(
                         "Reference",
-                        fpc_connector.reference.clone(),
+                        ffc_connector.reference.clone(),
                         position!(0, 4.0, angle),
                     ),
                     Property::new(
                         "Value",
-                        "FPC_Connector".to_owned(),
+                        "FFC_Connector".to_owned(),
                         position!(0, 7.5, angle),
                     ),
                     Property::new("Footprint", String::new(), position!(0, 0, angle)),
@@ -201,7 +201,7 @@ impl From<FpcConnector> for Footprint {
                     (point!(9.5, 6.3), point!(-9.5, 6.3), "Fab"),
                     (point!(9.5, 6.3), point!(9.5, 0.484), "Fab"),
                 ],
-                pads: fpc_connector.pads(),
+                pads: ffc_connector.pads(),
             },
         )
     }
