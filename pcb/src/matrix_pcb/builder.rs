@@ -64,6 +64,8 @@ impl Builder {
 
     /// Adds the outline to the PCB using the given features.
     fn add_outline(&mut self, features: &Features) {
+        features.thumb_switches.add_outline(&mut self.pcb);
+
         for column_connector in &features.column_connectors {
             column_connector.add_outline(&mut self.pcb);
         }
