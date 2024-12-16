@@ -1,6 +1,9 @@
-use model::matrix_pcb::{FFC_PAD_OFFSET, FFC_PAD_SIZE};
+use model::matrix_pcb::{CONNECTOR_WIDTH, FFC_PAD_OFFSET, FFC_PAD_SIZE, PAD_SIZE};
 
-use crate::{position, primitives::Position, unit::IntoUnit};
+use crate::{
+    kicad_pcb::KicadPcb, matrix_pcb::add_outline_path, point, position, primitives::Position,
+    unit::IntoUnit,
+};
 
 /// An FFC connector.
 pub struct FfcConnector {
@@ -23,5 +26,23 @@ impl FfcConnector {
         const FFC_CONNECTOR_OFFSET: f64 = 5.5;
 
         self.anchor + position!(0, FFC_CONNECTOR_OFFSET, None)
+    }
+
+    /// Adds the outline of the FFC connector to the PCB.
+    pub fn add_outline(&self, pcb: &mut KicadPcb) {
+        for sign in [-1.0, 1.0] {
+            let ffc_pad_top_offset = FFC_PAD_OFFSET - FFC_PAD_SIZE.y / 2.0;
+            let ffc_pad_bottom_offset = FFC_PAD_OFFSET + FFC_PAD_SIZE.y / 2.0;
+
+            let outline_points = [
+                self.anchor + point!(sign * CONNECTOR_WIDTH / 2.0, ffc_pad_bottom_offset),
+                self.anchor + point!(sign * FFC_PAD_SIZE.x / 2.0, ffc_pad_bottom_offset),
+                self.anchor + point!(sign * FFC_PAD_SIZE.x / 2.0, ffc_pad_top_offset),
+                self.anchor + point!(sign * PAD_SIZE.x / 2.0, ffc_pad_top_offset),
+                self.anchor + point!(sign * PAD_SIZE.x / 2.0, -PAD_SIZE.y / 2.0),
+            ];
+
+            add_outline_path(pcb, &outline_points);
+        }
     }
 }
