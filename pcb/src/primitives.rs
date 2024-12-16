@@ -5,7 +5,7 @@ use serde::Serialize;
 use crate::unit::{Angle, Length};
 
 /// A 2-dimensional point.
-#[derive(Serialize, Clone, Copy)]
+#[derive(Serialize, Clone, Copy, PartialEq, Eq)]
 pub struct Point(Length, Length);
 
 impl Point {

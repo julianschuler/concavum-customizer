@@ -8,7 +8,7 @@ pub const VALUE_TO_UNIT: i32 = 1_000_000;
 const MAXIMUM_ANGLE: i32 = 360 * VALUE_TO_UNIT;
 
 /// A unit of length.
-#[derive(Serialize, Clone, Copy, Default)]
+#[derive(Serialize, Clone, Copy, Default, PartialEq, Eq)]
 #[serde(transparent)]
 pub struct Length(i32);
 

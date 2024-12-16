@@ -3,9 +3,15 @@ mod connector;
 mod features;
 mod nets;
 
+use std::iter::once;
+
 use config::Config;
 
-use crate::{kicad_pcb::KicadPcb, primitives::Position, unit::Length};
+use crate::{
+    kicad_pcb::KicadPcb,
+    primitives::{Point, Position},
+    unit::Length,
+};
 
 use builder::Builder;
 
@@ -30,5 +36,32 @@ impl MatrixPcb {
     #[must_use]
     pub fn to_kicad_board(&self) -> String {
         self.0.to_board_file()
+    }
+}
+
+/// Adds the path given by the points to the outline.
+fn add_outline_path(pcb: &mut KicadPcb, points: &[Point]) {
+    for window in points.windows(2) {
+        if window[0] != window[1] {
+            pcb.add_graphical_line(window[0], window[1], OUTLINE_WIDTH, OUTLINE_LAYER);
+        }
+    }
+}
+
+/// Adds the polygon given by the points to the outline.
+///
+/// # Panic
+///
+/// Panics if there are less than three points given.
+fn add_outline_polygon(pcb: &mut KicadPcb, points: &[Point]) {
+    assert!(points.len() >= 3);
+
+    let first = *points.first().expect("there are at least three vertices");
+    let last = *points.last().expect("there are at least three vertices");
+
+    for window in points.windows(2).chain(once([last, first].as_slice())) {
+        if window[0] != window[1] {
+            pcb.add_graphical_line(window[0], window[1], OUTLINE_WIDTH, OUTLINE_LAYER);
+        }
     }
 }
