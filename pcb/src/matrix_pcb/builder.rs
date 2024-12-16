@@ -70,6 +70,7 @@ impl Builder {
             column_connector.add_outline(&mut self.pcb);
         }
         features.cluster_connector.add_outline(&mut self.pcb);
+        features.ffc_connector.add_outline(&mut self.pcb);
     }
 
     /// Adds the switches for the finger and thumb cluster to the PCB.
