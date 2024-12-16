@@ -78,6 +78,11 @@ impl CurvedConnector {
         }
     }
 
+    /// Returns the start position of the connector
+    pub fn start_position(&self) -> Position {
+        self.first_arc.start
+    }
+
     /// Returns the end position of the connector.
     pub fn end_position(&self) -> Position {
         self.second_arc.end_position()

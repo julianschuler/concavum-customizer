@@ -43,6 +43,14 @@ impl Connector {
         ))
     }
 
+    /// Returns the start position of the connector
+    pub fn start_position(&self) -> Position {
+        match self {
+            Connector::Straight(straight_connector) => straight_connector.start_position(),
+            Connector::Curved(curved_connector) => curved_connector.start_position(),
+        }
+    }
+
     /// Returns the end position of the connector.
     pub fn end_position(&self) -> Position {
         match self {

@@ -26,6 +26,11 @@ impl StraightConnector {
         Self { start, length }
     }
 
+    /// Returns the start position of the connector
+    pub fn start_position(&self) -> Position {
+        self.start
+    }
+
     /// Returns the end position of the connector.
     pub fn end_position(&self) -> Position {
         self.start + Position::new(self.length, 0.mm(), None)
