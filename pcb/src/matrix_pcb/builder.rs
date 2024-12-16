@@ -1,3 +1,5 @@
+use std::iter::once;
+
 use config::Config;
 use model::{
     matrix_pcb::{MatrixPcb as Model, THICKNESS},
@@ -8,6 +10,7 @@ use crate::{
     footprints::{FfcConnector, Switch},
     kicad_pcb::{KicadPcb, Net},
     matrix_pcb::{
+        connector::Connector,
         features::{Column, Features, ThumbSwitches},
         nets::Nets,
     },
@@ -64,6 +67,23 @@ impl Builder {
 
     /// Adds the outline to the PCB using the given features.
     fn add_outline(&mut self, features: &Features) {
+        let column_connectors: Vec<_> = once(None)
+            .chain(features.column_connectors.iter().map(Option::Some))
+            .chain(once(None))
+            .collect();
+
+        for (i, (window, column)) in column_connectors
+            .windows(2)
+            .zip(&features.columns)
+            .enumerate()
+        {
+            column.add_outline(
+                &mut self.pcb,
+                window[0].map(Connector::end_position),
+                window[1].map(Connector::start_position),
+                i == self.cluster_connector_index,
+            );
+        }
         features.thumb_switches.add_outline(&mut self.pcb);
 
         for column_connector in &features.column_connectors {
