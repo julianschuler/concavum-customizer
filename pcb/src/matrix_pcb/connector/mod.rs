@@ -80,20 +80,13 @@ impl Connector {
     }
 
     /// Adds a track to the PCB with the given offset to the center.
-    pub fn add_track(
-        &self,
-        pcb: &mut KicadPcb,
-        offset: Length,
-        width: Length,
-        layer: &'static str,
-        net: &Net,
-    ) {
+    pub fn add_track(&self, pcb: &mut KicadPcb, offset: Length, layer: &'static str, net: &Net) {
         match self {
             Connector::Straight(straight_connector) => {
-                straight_connector.add_track(pcb, offset, width, layer, net);
+                straight_connector.add_track(pcb, offset, layer, net);
             }
             Connector::Curved(curved_connector) => {
-                curved_connector.add_track(pcb, offset, width, layer, net);
+                curved_connector.add_track(pcb, offset, layer, net);
             }
         }
     }
