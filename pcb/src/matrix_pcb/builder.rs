@@ -26,6 +26,8 @@ pub struct Builder {
     model: Model,
     cluster_connector_index: usize,
     home_row_index: usize,
+    row_count: usize,
+    column_count: usize,
     switch_count: usize,
 }
 
@@ -41,12 +43,17 @@ impl Builder {
         let home_row_index = key_positions.columns.home_row_index as usize;
         let cluster_connector_index =
             usize::from(config.finger_cluster.columns.left_side_column.active);
+        #[allow(clippy::cast_sign_loss)]
+        let row_count = i8::from(config.finger_cluster.rows) as usize;
+        let column_count = model.column_key_connectors.len();
 
         Self {
             pcb,
             model,
             cluster_connector_index,
             home_row_index,
+            row_count,
+            column_count,
             switch_count: 0,
         }
     }
@@ -64,6 +71,7 @@ impl Builder {
         self.add_switches(&features.columns, &features.thumb_switches, &nets);
         self.add_ffc_connector(features.ffc_connector.position(), &nets);
 
+        self.add_column_connector_tracks(&features, &nets);
         self.add_cluster_connector_tracks(&features, &nets);
 
         self.pcb
@@ -157,16 +165,18 @@ impl Builder {
     }
 
     /// Adds the column connector tracks to the PCB.
-    fn add_column_connector_tracks(&self, features: &Features, nets: &Nets) {
-        let track_spacing = TRACK_WIDTH + TRACK_CLEARANCE;
+    fn add_column_connector_tracks(&mut self, features: &Features, nets: &Nets) {
+        let bottom_nets = &nets.rows[1..=self.row_count];
 
-        #[allow(clippy::cast_precision_loss)]
-        for connector in &features.column_connectors {
-            for i in 0..self.row_count {
-                // offset = ((track_count - 1) as f32 / 2.0 - i as f32) * track_spacing;
+        for (i, connector) in features.column_connectors.iter().rev().enumerate() {
+            let top_nets = if i >= self.column_count - self.cluster_connector_index - 1 {
+                &nets.columns[..self.cluster_connector_index]
+            } else {
+                &nets.columns[self.column_count - i - 1..self.column_count]
+            };
 
-                // connector.add_track(&mut self.pcb, offset, , , );
-            }
+            self.add_connector_tracks(connector, TOP_LAYER, top_nets);
+            self.add_connector_tracks(connector, BOTTOM_LAYER, bottom_nets);
         }
     }
 
@@ -176,19 +186,22 @@ impl Builder {
             .cluster_connector
             .add_track(&mut self.pcb, 0.mm(), TOP_LAYER, &nets.rows[0]);
 
-        let track_count = features.thumb_switches.positions().len();
+        let nets = &nets.columns[..features.thumb_switches.positions().len()];
+        self.add_connector_tracks(&features.cluster_connector, BOTTOM_LAYER, nets);
+    }
+
+    /// Adds a connector track for each of the given nets on the given layer.
+    fn add_connector_tracks(&mut self, connector: &Connector, layer: &'static str, nets: &[Net]) {
         let track_spacing = TRACK_WIDTH + TRACK_CLEARANCE;
+        let track_count = nets.len();
 
-        for i in 0..track_count {
+        let sign = if layer == TOP_LAYER { 1.0 } else { -1.0 };
+
+        for (i, net) in nets.iter().enumerate() {
             #[allow(clippy::cast_precision_loss)]
-            let offset = ((track_count - 1) as f32 / 2.0 - i as f32) * track_spacing;
+            let offset = sign * (i as f32 - (track_count - 1) as f32 / 2.0) * track_spacing;
 
-            features.cluster_connector.add_track(
-                &mut self.pcb,
-                offset,
-                BOTTOM_LAYER,
-                &nets.columns[i],
-            );
+            connector.add_track(&mut self.pcb, offset, layer, net);
         }
     }
 }
