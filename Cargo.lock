@@ -1923,6 +1923,7 @@ name = "pcb"
 version = "1.2.0"
 dependencies = [
  "config",
+ "glam",
  "itoa",
  "model",
  "serde",

@@ -6,6 +6,7 @@ license.workspace = true
 
 [dependencies]
 config.workspace = true
+glam.workspace = true
 itoa.workspace = true
 model.workspace = true
 serde.workspace = true

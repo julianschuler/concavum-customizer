@@ -1,8 +1,9 @@
 use std::ops::{Add, AddAssign, Neg, Sub, SubAssign};
 
+use glam::{vec2, Vec2};
 use serde::Serialize;
 
-use crate::unit::{Angle, Length};
+use crate::unit::{Angle, IntoUnit, Length};
 
 /// A 2-dimensional point.
 #[derive(Serialize, Clone, Copy, PartialEq, Eq)]
@@ -30,6 +31,30 @@ impl Neg for Point {
 
     fn neg(self) -> Self::Output {
         Self(-self.0, -self.1)
+    }
+}
+
+impl Sub for Point {
+    type Output = Vec2;
+
+    fn sub(self, rhs: Self) -> Self::Output {
+        vec2((self.x() - rhs.x()).into(), (self.y() - rhs.y()).into())
+    }
+}
+
+impl Add<Vec2> for Point {
+    type Output = Point;
+
+    fn add(self, rhs: Vec2) -> Self::Output {
+        Point::new(self.x() + rhs.x.mm(), self.y() + rhs.y.mm())
+    }
+}
+
+impl Sub<Vec2> for Point {
+    type Output = Point;
+
+    fn sub(self, rhs: Vec2) -> Self::Output {
+        Point::new(self.x() - rhs.x.mm(), self.y() - rhs.y.mm())
     }
 }
 

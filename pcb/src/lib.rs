@@ -3,6 +3,7 @@
 mod footprints;
 mod kicad_pcb;
 mod matrix_pcb;
+mod path;
 mod primitives;
 mod unit;
 
