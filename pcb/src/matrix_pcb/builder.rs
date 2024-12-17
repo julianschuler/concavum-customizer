@@ -13,7 +13,9 @@ use crate::{
         connector::Connector,
         features::{Column, Features, ThumbSwitches},
         nets::Nets,
+        AddPath, TOP_LAYER,
     },
+    point,
     primitives::Position,
     unit::IntoUnit,
 };
@@ -110,6 +112,22 @@ impl Builder {
         self.switch_count += 1;
         let reference = format!("SW{}", self.switch_count);
         let internal_net = self.pcb.create_net(reference.clone());
+
+        let column_track_points = [
+            position + point!(-2.54, -5.08),
+            position + point!(-3.81, -2.54),
+        ];
+        let internal_track_points = [
+            position + point!(2.54, -5.08),
+            position + point!(3.81, -2.54),
+            position + point!(3.81, 0.24),
+            position + point!(1.65, 2.4),
+            position + point!(1.65, 3.41),
+        ];
+        self.pcb
+            .add_track(&column_track_points, TOP_LAYER, &column_net);
+        self.pcb
+            .add_track(&internal_track_points, TOP_LAYER, &internal_net);
 
         let switch = Switch::new(reference, position, row_net, column_net, internal_net);
         self.pcb.add_footprint(switch.into());
