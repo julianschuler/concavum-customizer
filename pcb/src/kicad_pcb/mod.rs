@@ -94,14 +94,14 @@ impl KicadPcb {
         end: Point,
         width: Length,
         layer: &'static str,
-        net: u32,
+        net: &Net,
     ) {
         self.segments.push(Segment {
             start,
             end,
             width,
             layer,
-            net,
+            net: net.id(),
             uuid: Uuid::new(),
         });
     }
@@ -114,7 +114,7 @@ impl KicadPcb {
         end: Point,
         width: Length,
         layer: &'static str,
-        net: u32,
+        net: &Net,
     ) {
         self.arcs.push(Arc {
             start,
@@ -122,7 +122,7 @@ impl KicadPcb {
             end,
             width,
             layer,
-            net,
+            net: net.id(),
             uuid: Uuid::new(),
         });
     }
