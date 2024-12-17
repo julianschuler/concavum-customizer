@@ -10,10 +10,11 @@ use crate::{
     footprints::{FfcConnector, Switch},
     kicad_pcb::{KicadPcb, Net},
     matrix_pcb::{
+        centered_track_offset,
         connector::Connector,
         features::{Column, Features, ThumbSwitches},
         nets::Nets,
-        AddPath, BOTTOM_LAYER, TOP_LAYER, TRACK_CLEARANCE, TRACK_WIDTH,
+        AddPath, BOTTOM_LAYER, TOP_LAYER,
     },
     point,
     primitives::Position,
@@ -28,6 +29,7 @@ pub struct Builder {
     home_row_index: usize,
     row_count: usize,
     column_count: usize,
+    thumb_switch_count: usize,
     switch_count: usize,
 }
 
@@ -46,6 +48,8 @@ impl Builder {
         #[allow(clippy::cast_sign_loss)]
         let row_count = i8::from(config.finger_cluster.rows) as usize;
         let column_count = model.column_key_connectors.len();
+        #[allow(clippy::cast_sign_loss)]
+        let thumb_switch_count = i8::from(config.thumb_cluster.keys) as usize;
 
         Self {
             pcb,
@@ -54,6 +58,7 @@ impl Builder {
             home_row_index,
             row_count,
             column_count,
+            thumb_switch_count,
             switch_count: 0,
         }
     }
@@ -75,6 +80,13 @@ impl Builder {
         self.add_cluster_connector_tracks(&features, &nets);
 
         features.thumb_switches.add_tracks(&mut self.pcb, &nets);
+        features.ffc_connector.add_tracks(
+            &mut self.pcb,
+            &nets,
+            self.row_count,
+            self.column_count,
+            self.thumb_switch_count,
+        );
 
         self.pcb
     }
@@ -188,20 +200,16 @@ impl Builder {
             .cluster_connector
             .add_track(&mut self.pcb, 0.mm(), TOP_LAYER, &nets.rows[0]);
 
-        let nets = &nets.columns[..features.thumb_switches.positions().len()];
+        let nets = &nets.columns[..self.thumb_switch_count];
         self.add_connector_tracks(&features.cluster_connector, BOTTOM_LAYER, nets);
     }
 
     /// Adds a connector track for each of the given nets on the given layer.
     fn add_connector_tracks(&mut self, connector: &Connector, layer: &'static str, nets: &[Net]) {
-        let track_spacing = TRACK_WIDTH + TRACK_CLEARANCE;
-        let track_count = nets.len();
-
-        let sign = if layer == TOP_LAYER { 1.0 } else { -1.0 };
+        let sign = if layer == TOP_LAYER { 1 } else { -1 };
 
         for (i, net) in nets.iter().enumerate() {
-            #[allow(clippy::cast_precision_loss)]
-            let offset = sign * (i as f32 - (track_count - 1) as f32 / 2.0) * track_spacing;
+            let offset = sign * centered_track_offset(i, nets.len());
 
             connector.add_track(&mut self.pcb, offset, layer, net);
         }
