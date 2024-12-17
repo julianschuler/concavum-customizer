@@ -7,8 +7,9 @@ use model::matrix_pcb::{
 use crate::{
     kicad_pcb::KicadPcb,
     matrix_pcb::{add_outline_path, add_outline_polygon},
-    point, position,
+    point,
     primitives::Position,
+    unit::{IntoUnit, Length},
 };
 
 /// The positions of a column of finger key switches.
@@ -16,7 +17,7 @@ pub struct Column {
     home_switch: Position,
     switches_below: Vec<Position>,
     switches_above: Vec<Position>,
-    offsets: Vec<f64>,
+    offsets: Vec<Length>,
 }
 
 impl Column {
@@ -26,8 +27,12 @@ impl Column {
         home_switch: Position,
         home_row_index: usize,
     ) -> Self {
-        let y_offset = -key_connectors.connector.length() - PAD_SIZE.y;
-        let offsets = key_connectors.offsets.clone();
+        let y_offset = -(key_connectors.connector.length() + PAD_SIZE.y).mm();
+        let offsets: Vec<_> = key_connectors
+            .offsets
+            .iter()
+            .map(|offset| offset.mm())
+            .collect();
         let (offsets_below, offsets_above) = offsets.split_at(home_row_index);
 
         let mut position = home_switch;
@@ -35,7 +40,7 @@ impl Column {
             .iter()
             .rev()
             .map(|&x_offset| {
-                position -= position!(x_offset, y_offset, None);
+                position -= Position::new(x_offset, y_offset, None);
 
                 position
             })
@@ -45,7 +50,7 @@ impl Column {
         let switches_above = offsets_above
             .iter()
             .map(|&x_offset| {
-                position += position!(x_offset, y_offset, None);
+                position += Position::new(x_offset, y_offset, None);
 
                 position
             })
@@ -159,8 +164,9 @@ fn add_connector_outline(
     pcb: &mut KicadPcb,
     bottom_switch: Position,
     top_switch: Position,
-    offset: f64,
+    offset: Length,
 ) {
+    let offset = f64::from(offset);
     let negative_offset = offset.min(0.0);
     let positive_offset = offset.max(0.0);
 
