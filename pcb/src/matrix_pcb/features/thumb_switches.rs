@@ -1,11 +1,6 @@
 use model::matrix_pcb::{Segment, ThumbKeyConnectors, CONNECTOR_WIDTH, PAD_SIZE};
 
-use crate::{
-    kicad_pcb::KicadPcb,
-    matrix_pcb::{add_outline_path, add_outline_polygon},
-    point, position,
-    primitives::Position,
-};
+use crate::{kicad_pcb::KicadPcb, matrix_pcb::AddPath, point, position, primitives::Position};
 
 /// The positions of the thumb key switches.
 pub struct ThumbSwitches(Vec<Position>);
@@ -52,7 +47,7 @@ impl ThumbSwitches {
             last + point!(PAD_SIZE.x / 2.0, -PAD_SIZE.y / 2.0),
             first + point!(PAD_SIZE.x / 2.0, -PAD_SIZE.y / 2.0),
         ];
-        add_outline_path(pcb, &outline_points);
+        pcb.add_outline_path(&outline_points);
 
         for window in self.0.windows(2) {
             let position = window[0];
@@ -64,7 +59,7 @@ impl ThumbSwitches {
                 next_position + point!(-PAD_SIZE.x / 2.0, -PAD_SIZE.y / 2.0 + CONNECTOR_WIDTH),
                 next_position + point!(-PAD_SIZE.x / 2.0, PAD_SIZE.y / 2.0 - CONNECTOR_WIDTH),
             ];
-            add_outline_polygon(pcb, &cutout_points);
+            pcb.add_outline_polygon(&cutout_points);
         }
     }
 }
