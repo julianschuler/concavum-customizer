@@ -2,7 +2,7 @@ use model::matrix_pcb::{Segment, SideColumnConnector, CONNECTOR_WIDTH, PAD_SIZE}
 
 use crate::{
     kicad_pcb::{KicadPcb, Net},
-    matrix_pcb::{OUTLINE_LAYER, OUTLINE_WIDTH},
+    matrix_pcb::{OUTLINE_LAYER, OUTLINE_WIDTH, TRACK_WIDTH},
     point, position,
     primitives::{Point, Position},
     unit::{IntoUnit, Length},
@@ -55,18 +55,11 @@ impl StraightConnector {
     }
 
     /// Adds a track to the PCB with the given offset to the center.
-    pub fn add_track(
-        &self,
-        pcb: &mut KicadPcb,
-        offset: Length,
-        width: Length,
-        layer: &'static str,
-        net: &Net,
-    ) {
+    pub fn add_track(&self, pcb: &mut KicadPcb, offset: Length, layer: &'static str, net: &Net) {
         let offset = Point::new(0.mm(), offset);
         let start = self.start + offset;
         let end = self.end_position() + offset;
 
-        pcb.add_segment(start, end, width, layer, net);
+        pcb.add_segment(start, end, TRACK_WIDTH, layer, net);
     }
 }
