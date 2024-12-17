@@ -5,7 +5,11 @@ use curved_connector::CurvedConnector;
 use model::matrix_pcb::{ClusterConnector, ColumnConnector};
 use straight_connector::StraightConnector;
 
-use crate::{kicad_pcb::KicadPcb, primitives::Position};
+use crate::{
+    kicad_pcb::{KicadPcb, Net},
+    primitives::Position,
+    unit::Length,
+};
 
 /// A connector between columns or clusters.
 pub enum Connector {
@@ -72,6 +76,25 @@ impl Connector {
         match self {
             Connector::Straight(straight_connector) => straight_connector.add_outline(pcb),
             Connector::Curved(curved_connector) => curved_connector.add_outline(pcb),
+        }
+    }
+
+    /// Adds a track to the PCB with the given offset to the center.
+    pub fn add_track(
+        &self,
+        pcb: &mut KicadPcb,
+        offset: Length,
+        width: Length,
+        layer: &'static str,
+        net: &Net,
+    ) {
+        match self {
+            Connector::Straight(straight_connector) => {
+                straight_connector.add_track(pcb, offset, width, layer, net);
+            }
+            Connector::Curved(curved_connector) => {
+                curved_connector.add_track(pcb, offset, width, layer, net);
+            }
         }
     }
 }

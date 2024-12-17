@@ -4,7 +4,7 @@ use model::matrix_pcb::{
 };
 
 use crate::{
-    kicad_pcb::KicadPcb,
+    kicad_pcb::{KicadPcb, Net},
     matrix_pcb::{OUTLINE_LAYER, OUTLINE_WIDTH},
     position,
     primitives::{Point, Position},
@@ -127,6 +127,24 @@ impl CurvedConnector {
                 OUTLINE_WIDTH,
                 OUTLINE_LAYER,
             );
+        }
+    }
+
+    /// Adds a track to the PCB with the given offset to the center.
+    pub fn add_track(
+        &self,
+        pcb: &mut KicadPcb,
+        offset: Length,
+        width: Length,
+        layer: &'static str,
+        net: &Net,
+    ) {
+        let first_arc = self.first_arc.offset(offset);
+        let second_arc = self.second_arc.offset(offset);
+
+        pcb.add_segment(first_arc.end(), second_arc.start(), width, layer, net);
+        for arc in [first_arc, second_arc] {
+            pcb.add_arc(arc.start(), arc.mid(), arc.end(), width, layer, net);
         }
     }
 }

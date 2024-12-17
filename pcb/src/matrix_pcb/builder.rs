@@ -13,7 +13,7 @@ use crate::{
         connector::Connector,
         features::{Column, Features, ThumbSwitches},
         nets::Nets,
-        AddPath, TOP_LAYER,
+        AddPath, BOTTOM_LAYER, TOP_LAYER, TRACK_CLEARANCE, TRACK_WIDTH,
     },
     point,
     primitives::Position,
@@ -63,6 +63,8 @@ impl Builder {
         self.add_outline(&features);
         self.add_switches(&features.columns, &features.thumb_switches, &nets);
         self.add_ffc_connector(features.ffc_connector.position(), &nets);
+
+        self.add_cluster_connector_tracks(&features, &nets);
 
         self.pcb
     }
@@ -152,5 +154,32 @@ impl Builder {
 
         let ffc_connector = FfcConnector::new("J1".to_owned(), position, ffc_connector_nets);
         self.pcb.add_footprint(ffc_connector.into());
+    }
+
+    /// Adds the cluster connector tracks to the PCB.
+    fn add_cluster_connector_tracks(&mut self, features: &Features, nets: &Nets) {
+        features.cluster_connector.add_track(
+            &mut self.pcb,
+            0.mm(),
+            TRACK_WIDTH,
+            TOP_LAYER,
+            &nets.rows[0],
+        );
+
+        let track_count = features.thumb_switches.positions().len();
+        let track_spacing = TRACK_WIDTH + TRACK_CLEARANCE;
+
+        for i in 0..track_count {
+            #[allow(clippy::cast_precision_loss)]
+            let offset = ((track_count - 1) as f32 / 2.0 - i as f32) * track_spacing;
+
+            features.cluster_connector.add_track(
+                &mut self.pcb,
+                offset,
+                TRACK_WIDTH,
+                BOTTOM_LAYER,
+                &nets.columns[i],
+            );
+        }
     }
 }
