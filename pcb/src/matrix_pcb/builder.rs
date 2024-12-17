@@ -156,15 +156,25 @@ impl Builder {
         self.pcb.add_footprint(ffc_connector.into());
     }
 
+    /// Adds the column connector tracks to the PCB.
+    fn add_column_connector_tracks(&self, features: &Features, nets: &Nets) {
+        let track_spacing = TRACK_WIDTH + TRACK_CLEARANCE;
+
+        #[allow(clippy::cast_precision_loss)]
+        for connector in &features.column_connectors {
+            for i in 0..self.row_count {
+                // offset = ((track_count - 1) as f32 / 2.0 - i as f32) * track_spacing;
+
+                // connector.add_track(&mut self.pcb, offset, , , );
+            }
+        }
+    }
+
     /// Adds the cluster connector tracks to the PCB.
     fn add_cluster_connector_tracks(&mut self, features: &Features, nets: &Nets) {
-        features.cluster_connector.add_track(
-            &mut self.pcb,
-            0.mm(),
-            TRACK_WIDTH,
-            TOP_LAYER,
-            &nets.rows[0],
-        );
+        features
+            .cluster_connector
+            .add_track(&mut self.pcb, 0.mm(), TOP_LAYER, &nets.rows[0]);
 
         let track_count = features.thumb_switches.positions().len();
         let track_spacing = TRACK_WIDTH + TRACK_CLEARANCE;
@@ -176,7 +186,6 @@ impl Builder {
             features.cluster_connector.add_track(
                 &mut self.pcb,
                 offset,
-                TRACK_WIDTH,
                 BOTTOM_LAYER,
                 &nets.columns[i],
             );
