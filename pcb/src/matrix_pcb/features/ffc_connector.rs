@@ -1,8 +1,7 @@
 use model::matrix_pcb::{CONNECTOR_WIDTH, FFC_PAD_OFFSET, FFC_PAD_SIZE, PAD_SIZE};
 
 use crate::{
-    kicad_pcb::KicadPcb, matrix_pcb::add_outline_path, point, position, primitives::Position,
-    unit::IntoUnit,
+    kicad_pcb::KicadPcb, matrix_pcb::AddPath, point, position, primitives::Position, unit::IntoUnit,
 };
 
 /// An FFC connector.
@@ -42,7 +41,7 @@ impl FfcConnector {
                 self.anchor + point!(sign * PAD_SIZE.x / 2.0, -PAD_SIZE.y / 2.0),
             ];
 
-            add_outline_path(pcb, &outline_points);
+            pcb.add_outline_path(&outline_points);
         }
     }
 }

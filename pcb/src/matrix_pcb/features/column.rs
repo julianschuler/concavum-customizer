@@ -6,7 +6,7 @@ use model::matrix_pcb::{
 
 use crate::{
     kicad_pcb::KicadPcb,
-    matrix_pcb::{add_outline_path, add_outline_polygon},
+    matrix_pcb::AddPath,
     point,
     primitives::Position,
     unit::{IntoUnit, Length},
@@ -121,7 +121,7 @@ impl Column {
             last_position + point!(-PAD_SIZE.x / 2.0, -PAD_SIZE.y / 2.0),
             last_position + point!(PAD_SIZE.x / 2.0, -PAD_SIZE.y / 2.0),
         ];
-        add_outline_path(pcb, &top_outline);
+        pcb.add_outline_path(&top_outline);
 
         self.add_home_switch_outline(pcb, left_connector_position, right_connector_position);
     }
@@ -146,14 +146,14 @@ impl Column {
                     position + point!(0, -CONNECTOR_WIDTH / 2.0),
                     self.home_switch + point!(x_offset, -PAD_SIZE.y / 2.0),
                 ];
-                add_outline_path(pcb, &lower_outline_points);
-                add_outline_path(pcb, &upper_outline_points);
+                pcb.add_outline_path(&lower_outline_points);
+                pcb.add_outline_path(&upper_outline_points);
             } else {
                 let outline_points = [
                     self.home_switch + point!(x_offset, PAD_SIZE.y / 2.0),
                     self.home_switch + point!(x_offset, -PAD_SIZE.y / 2.0),
                 ];
-                add_outline_path(pcb, &outline_points);
+                pcb.add_outline_path(&outline_points);
             }
         }
     }
@@ -182,8 +182,8 @@ fn add_connector_outline(
         top_switch + point!(PAD_SIZE.x / 2.0 - positive_offset, PAD_SIZE.y / 2.0),
         top_switch + point!(PAD_SIZE.x / 2.0, PAD_SIZE.y / 2.0),
     ];
-    add_outline_path(pcb, &left_outline_points);
-    add_outline_path(pcb, &right_outline_points);
+    pcb.add_outline_path(&left_outline_points);
+    pcb.add_outline_path(&right_outline_points);
 
     if offset.abs() < PAD_SIZE.x - 2.0 * CONNECTOR_WIDTH - ROUTER_BIT_DIAMETER {
         let cutout_points = [
@@ -208,7 +208,7 @@ fn add_connector_outline(
                     PAD_SIZE.y / 2.0
                 ),
         ];
-        add_outline_polygon(pcb, &cutout_points);
+        pcb.add_outline_polygon(&cutout_points);
     }
 }
 
@@ -221,7 +221,7 @@ fn add_bottom_switch_outline(pcb: &mut KicadPcb, position: Position) {
         position + point!(PAD_SIZE.x / 2.0, -PAD_SIZE.y / 2.0),
     ];
 
-    add_outline_path(pcb, &outline_points);
+    pcb.add_outline_path(&outline_points);
 }
 
 /// Adds the outline of a single pad at the given position to the PCB.
@@ -232,6 +232,6 @@ fn add_pad_outline(pcb: &mut KicadPcb, position: Position) {
             position + point!(x_offset, -PAD_SIZE.y / 2.0),
         ];
 
-        add_outline_path(pcb, &outline_points);
+        pcb.add_outline_path(&outline_points);
     }
 }
