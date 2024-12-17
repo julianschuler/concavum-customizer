@@ -138,18 +138,18 @@ impl Builder {
     /// Adds the FFC connector to the PCB.
     fn add_ffc_connector(&mut self, position: Position, nets: &Nets) {
         let ffc_connector_nets = [
-            nets.rows[0].clone(),
             nets.columns[0].clone(),
+            nets.rows[5].clone(),
+            nets.rows[4].clone(),
+            nets.rows[3].clone(),
+            nets.rows[2].clone(),
+            nets.rows[1].clone(),
             nets.columns[1].clone(),
             nets.columns[2].clone(),
             nets.columns[3].clone(),
             nets.columns[4].clone(),
-            nets.rows[1].clone(),
-            nets.rows[2].clone(),
-            nets.rows[3].clone(),
-            nets.rows[4].clone(),
-            nets.rows[5].clone(),
             nets.columns[5].clone(),
+            nets.rows[0].clone(),
         ];
 
         let ffc_connector = FfcConnector::new("J1".to_owned(), position, ffc_connector_nets);
