@@ -132,7 +132,7 @@ impl Builder {
             position + point!(3.81, -2.54),
             position + point!(3.81, 0.24),
             position + point!(1.65, 2.4),
-            position + point!(1.65, 3.41),
+            position + point!(1.65, 3.4),
         ];
         self.pcb
             .add_track(&column_track_points, TOP_LAYER, &column_net);
