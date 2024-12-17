@@ -68,6 +68,12 @@ impl From<Length> for f32 {
     }
 }
 
+impl From<Length> for f64 {
+    fn from(value: Length) -> Self {
+        f64::from(value.0) / f64::from(VALUE_TO_UNIT)
+    }
+}
+
 /// A unit of rotation.
 #[derive(Serialize, Clone, Copy, Default)]
 #[serde(transparent)]
@@ -124,6 +130,12 @@ impl From<Angle> for f32 {
     #[allow(clippy::cast_precision_loss)]
     fn from(value: Angle) -> Self {
         value.0 as f32 / VALUE_TO_UNIT as f32
+    }
+}
+
+impl From<Angle> for f64 {
+    fn from(value: Angle) -> Self {
+        f64::from(value.0) / f64::from(VALUE_TO_UNIT)
     }
 }
 
