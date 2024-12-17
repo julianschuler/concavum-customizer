@@ -74,6 +74,8 @@ impl Builder {
         self.add_column_connector_tracks(&features, &nets);
         self.add_cluster_connector_tracks(&features, &nets);
 
+        features.thumb_switches.add_tracks(&mut self.pcb, &nets);
+
         self.pcb
     }
 
