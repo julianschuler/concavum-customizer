@@ -105,6 +105,18 @@ impl Path {
 
         Self(offset_path)
     }
+
+    /// Joins the path with the given other one, returning the resulting path.
+    pub fn join(mut self, other: &Path) -> Self {
+        self.extend_from_slice(other);
+        self
+    }
+
+    /// Appends a single point to the path, returning the resulting path.
+    pub fn append(mut self, point: Point) -> Self {
+        self.push(point);
+        self
+    }
 }
 
 impl Deref for Path {
