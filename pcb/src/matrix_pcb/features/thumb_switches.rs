@@ -2,9 +2,14 @@ use model::matrix_pcb::{Segment, ThumbKeyConnectors, CONNECTOR_WIDTH, PAD_SIZE};
 
 use crate::{
     kicad_pcb::{KicadPcb, Net},
-    matrix_pcb::{nets::Nets, AddPath, TOP_LAYER},
+    matrix_pcb::{
+        centered_track_offset, nets::Nets, AddPath, BOTTOM_LAYER, TOP_LAYER, TRACK_CLEARANCE,
+        TRACK_WIDTH,
+    },
+    path::Path,
     point, position,
     primitives::Position,
+    unit::IntoUnit,
 };
 
 /// The positions of the thumb key switches.
@@ -75,6 +80,7 @@ impl ThumbSwitches {
     /// Adds the tracks for the thumb switches to the PCB.
     pub fn add_tracks(&self, pcb: &mut KicadPcb, nets: &Nets) {
         self.add_row_track(pcb, &nets.rows[0]);
+        self.add_column_tracks(pcb, &nets.columns);
     }
 
     /// Adds the track connecting the row of the thumb switches.
@@ -121,5 +127,60 @@ impl ThumbSwitches {
 
             pcb.add_track(&track_points, TOP_LAYER, row_net);
         };
+    }
+
+    /// Adds the tracks connecting the columns of the thumb switches.
+    fn add_column_tracks(&self, pcb: &mut KicadPcb, columns: &[Net]) {
+        #[allow(clippy::approx_constant)]
+        const TRACK_OFFSET: f32 = -6.28;
+
+        let thumb_switch_count = self.positions().len();
+        let column_pad = point!(-2.54, -5.08);
+
+        let (&first, rest) = self
+            .0
+            .split_first()
+            .expect("there is always at least one thumb switch");
+        let first_column_offset = centered_track_offset(0, thumb_switch_count);
+
+        let path_center = point!(
+            0,
+            TRACK_OFFSET - f32::from(TRACK_WIDTH) / 2.0 - f32::from(TRACK_CLEARANCE)
+        );
+        let first_column_path = Path::chamfered(
+            point!(
+                f64::from(first_column_offset) + (PAD_SIZE.x - CONNECTOR_WIDTH) / 2.0,
+                -PAD_SIZE.y / 2.0
+            ),
+            path_center,
+            1.mm(),
+            false,
+        )
+        .join(&Path::angled_start(path_center, column_pad))
+        .at(first);
+        pcb.add_track(&first_column_path, BOTTOM_LAYER, &columns[0]);
+
+        let y_offset = TRACK_OFFSET + f32::from(TRACK_WIDTH) / 2.0;
+        let start_offset = centered_track_offset(1, thumb_switch_count);
+        let first_path_segment = Path::chamfered(
+            point!(
+                f64::from(start_offset) + (PAD_SIZE.x - CONNECTOR_WIDTH) / 2.0,
+                -PAD_SIZE.y / 2.0
+            ),
+            point!(PAD_SIZE.x / 2.0, y_offset),
+            0.8.mm(),
+            true,
+        )
+        .at(first);
+
+        for (i, &switch) in rest.iter().enumerate() {
+            #[allow(clippy::cast_precision_loss)]
+            let offset = i as f32 * f32::from(TRACK_WIDTH + TRACK_CLEARANCE);
+            let offset_path = first_path_segment.offset(offset).join(
+                &Path::angled_start(point!(-PAD_SIZE.x / 2.0, y_offset - offset), column_pad)
+                    .at(switch),
+            );
+            pcb.add_track(&offset_path, BOTTOM_LAYER, &columns[i + 1]);
+        }
     }
 }
