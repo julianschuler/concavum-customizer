@@ -116,16 +116,16 @@ impl ThumbSwitches {
                 pcb.add_track(&track_points, TOP_LAYER, row_net);
             }
         } else {
-            let chamfer_depth = 3.0;
-            let track_points = [
-                *first + point!(-1.65, 3.4),
-                *first + point!(-1.65, 4.4),
-                *first + point!((PAD_SIZE.x - CONNECTOR_WIDTH) / 2.0 - chamfer_depth, 4.4),
-                *first + point!((PAD_SIZE.x - CONNECTOR_WIDTH) / 2.0, 4.4 - chamfer_depth),
-                *first + point!((PAD_SIZE.x - CONNECTOR_WIDTH) / 2.0, -PAD_SIZE.y / 2.0),
-            ];
+            let path = Path::chamfered(
+                point!((PAD_SIZE.x - CONNECTOR_WIDTH) / 2.0, -PAD_SIZE.y / 2.0),
+                point!(-1.65, 4.4),
+                3.mm(),
+                false,
+            )
+            .append(point!(-1.65, 3.4))
+            .at(*first);
 
-            pcb.add_track(&track_points, TOP_LAYER, row_net);
+            pcb.add_track(&path, TOP_LAYER, row_net);
         };
     }
 
