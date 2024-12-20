@@ -1,12 +1,8 @@
 use model::matrix_pcb::{CONNECTOR_WIDTH, FFC_PAD_OFFSET, FFC_PAD_SIZE, PAD_SIZE};
 
 use crate::{
-    kicad_pcb::{KicadPcb, Net},
-    matrix_pcb::{
-        centered_track_offset,
-        nets::{self, Nets},
-        AddPath, BOTTOM_LAYER, TOP_LAYER,
-    },
+    kicad_pcb::KicadPcb,
+    matrix_pcb::{centered_track_offset, nets::Nets, AddPath, BOTTOM_LAYER, TOP_LAYER},
     path::Path,
     point, position,
     primitives::{Point, Position},
@@ -64,10 +60,10 @@ impl FfcConnector {
         column_count: usize,
         thumb_switch_count: usize,
     ) {
-        self.add_cluster_connector_tracks(pcb, &nets, thumb_switch_count);
+        self.add_cluster_connector_tracks(pcb, nets, thumb_switch_count);
     }
 
-    /// Adds the tracks between the cluster connector and FFC connector
+    /// Adds the tracks between the cluster and FFC connector
     fn add_cluster_connector_tracks(
         &self,
         pcb: &mut KicadPcb,
