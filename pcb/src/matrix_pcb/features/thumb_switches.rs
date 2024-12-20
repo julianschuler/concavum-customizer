@@ -85,26 +85,37 @@ impl ThumbSwitches {
 
     /// Adds the track connecting the row of the thumb switches.
     fn add_row_track(&self, pcb: &mut KicadPcb, row_net: &Net) {
-        let (first, rest) = self
+        let row_pad = point!(-1.65, 3.4);
+
+        let (&first, rest) = self
             .0
             .split_first()
             .expect("there is always at least one thumb switch");
 
-        if let Some((last, rest)) = rest.split_last() {
+        if let Some((&last, rest)) = rest.split_last() {
             let y_offset = (PAD_SIZE.y - CONNECTOR_WIDTH) / 2.0;
-            let track_points = [
-                *first + point!(-1.65, 3.4),
-                *first + point!(-1.65, 4.4),
-                *first + point!(-1.65 + (y_offset - 4.4), y_offset),
-                *last + point!(-1.65 - (y_offset - 4.4), y_offset),
-                *last + point!(-1.65, 4.4),
-                *last + point!(-1.65, 3.4),
-            ];
-            pcb.add_track(&track_points, TOP_LAYER, row_net);
+            let chamfer_depth = (y_offset - 4.4).mm();
+
+            let second_segment = &Path::chamfered(
+                point!(-PAD_SIZE.x / 2.0, y_offset),
+                row_pad,
+                chamfer_depth,
+                true,
+            )
+            .at(last);
+            let path = Path::chamfered(
+                row_pad,
+                point!(PAD_SIZE.x / 2.0, y_offset),
+                chamfer_depth,
+                true,
+            )
+            .at(first)
+            .join(second_segment);
+            pcb.add_track(&path, TOP_LAYER, row_net);
 
             let track_points = [
-                *first + point!((PAD_SIZE.x - CONNECTOR_WIDTH) / 2.0, y_offset),
-                *first + point!((PAD_SIZE.x - CONNECTOR_WIDTH) / 2.0, -PAD_SIZE.y / 2.0),
+                first + point!((PAD_SIZE.x - CONNECTOR_WIDTH) / 2.0, y_offset),
+                first + point!((PAD_SIZE.x - CONNECTOR_WIDTH) / 2.0, -PAD_SIZE.y / 2.0),
             ];
             pcb.add_track(&track_points, TOP_LAYER, row_net);
 
@@ -116,16 +127,16 @@ impl ThumbSwitches {
                 pcb.add_track(&track_points, TOP_LAYER, row_net);
             }
         } else {
-            let chamfer_depth = 3.0;
-            let track_points = [
-                *first + point!(-1.65, 3.4),
-                *first + point!(-1.65, 4.4),
-                *first + point!((PAD_SIZE.x - CONNECTOR_WIDTH) / 2.0 - chamfer_depth, 4.4),
-                *first + point!((PAD_SIZE.x - CONNECTOR_WIDTH) / 2.0, 4.4 - chamfer_depth),
-                *first + point!((PAD_SIZE.x - CONNECTOR_WIDTH) / 2.0, -PAD_SIZE.y / 2.0),
-            ];
+            let path = Path::chamfered(
+                point!((PAD_SIZE.x - CONNECTOR_WIDTH) / 2.0, -PAD_SIZE.y / 2.0),
+                point!(-1.65, 4.4),
+                3.mm(),
+                false,
+            )
+            .append(row_pad)
+            .at(first);
 
-            pcb.add_track(&track_points, TOP_LAYER, row_net);
+            pcb.add_track(&path, TOP_LAYER, row_net);
         };
     }
 
