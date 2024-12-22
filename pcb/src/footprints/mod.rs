@@ -7,7 +7,7 @@ use crate::{
     kicad_pcb::Net,
     primitives::{Point, Position, Size, Uuid},
     size,
-    unit::{IntoUnit, Length},
+    unit::Length,
 };
 
 pub use ffc_connector::FfcConnector;
@@ -78,7 +78,7 @@ impl Default for Font {
     fn default() -> Self {
         Self {
             size: size!(1.0, 1.0),
-            thickness: 0.15.mm(),
+            thickness: 0.15.into(),
         }
     }
 }
@@ -100,7 +100,7 @@ impl Line {
             "F.CrtYd" | "B.CrtYd" => 0.05,
             _ => 0.1,
         }
-        .mm();
+        .into();
 
         Self {
             start,
@@ -152,7 +152,7 @@ impl Pad {
     ) -> Self {
         let roundrect_settings = if let PadShape::Roundrect = shape {
             Some(RoundRectSettings {
-                roundrect_rratio: 0.25.mm(),
+                roundrect_rratio: 0.25.into(),
             })
         } else {
             None

@@ -3,7 +3,7 @@ use std::ops::{Add, AddAssign, Neg, Sub, SubAssign};
 use glam::{vec2, Vec2};
 use serde::Serialize;
 
-use crate::unit::{Angle, IntoUnit, Length};
+use crate::unit::{Angle, Length};
 
 /// A 2-dimensional point.
 #[derive(Serialize, Clone, Copy, PartialEq, Eq)]
@@ -46,7 +46,7 @@ impl Add<Vec2> for Point {
     type Output = Point;
 
     fn add(self, rhs: Vec2) -> Self::Output {
-        Point::new(self.x() + rhs.x.mm(), self.y() + rhs.y.mm())
+        Point::new(self.x() + rhs.x.into(), self.y() + rhs.y.into())
     }
 }
 
@@ -54,18 +54,15 @@ impl Sub<Vec2> for Point {
     type Output = Point;
 
     fn sub(self, rhs: Vec2) -> Self::Output {
-        Point::new(self.x() - rhs.x.mm(), self.y() - rhs.y.mm())
+        Point::new(self.x() - rhs.x.into(), self.y() - rhs.y.into())
     }
 }
 
-/// Creates a point from the given coordinates in millimeter.
+/// Creates a point from the given coordinates.
 #[macro_export]
 macro_rules! point {
     ($x:expr, $y:expr) => {
-        $crate::primitives::Point::new(
-            $crate::unit::IntoUnit::mm($x),
-            $crate::unit::IntoUnit::mm($y),
-        )
+        $crate::primitives::Point::new(($x).into(), ($y).into())
     };
 }
 
@@ -80,14 +77,11 @@ impl Size {
     }
 }
 
-/// Creates a size tuple from the given values in millimeter.
+/// Creates a size tuple from the given values.
 #[macro_export]
 macro_rules! size {
     ($width:expr, $height:expr) => {
-        $crate::primitives::Size::new(
-            $crate::unit::IntoUnit::mm($width),
-            $crate::unit::IntoUnit::mm($height),
-        )
+        $crate::primitives::Size::new(($width).into(), ($height).into())
     };
 }
 
@@ -200,15 +194,11 @@ impl Neg for Position {
     }
 }
 
-/// Creates a position from the given values in millimeter and the angle.
+/// Creates a position from the given values and the angle.
 #[macro_export]
 macro_rules! position {
     ($x:expr, $y:expr, $angle:expr) => {
-        $crate::primitives::Position::new(
-            $crate::unit::IntoUnit::mm($x),
-            $crate::unit::IntoUnit::mm($y),
-            $angle,
-        )
+        $crate::primitives::Position::new(($x).into(), ($y).into(), $angle)
     };
 }
 

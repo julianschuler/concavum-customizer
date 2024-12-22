@@ -4,7 +4,6 @@ use crate::{
     lines_front_back, point, position,
     primitives::{Position, Uuid},
     size,
-    unit::IntoUnit,
 };
 
 /// A Cherry MX switch.
@@ -36,8 +35,8 @@ impl Switch {
 
     fn pads(self) -> Vec<Pad> {
         let angle = self.position.angle();
-        let via_drill_diameter = 0.3.mm();
-        let pin_drill_diameter = 1.5.mm();
+        let via_drill_diameter = 0.3.into();
+        let pin_drill_diameter = 1.5.into();
 
         vec![
             Pad::new(
@@ -46,7 +45,7 @@ impl Switch {
                 PadShape::Circle,
                 position!(0, 0, angle),
                 size!(4, 4),
-                4.mm(),
+                4.into(),
                 None,
             ),
             Pad::new(

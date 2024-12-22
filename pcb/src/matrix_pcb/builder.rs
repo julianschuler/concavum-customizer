@@ -18,7 +18,6 @@ use crate::{
     },
     point,
     primitives::Position,
-    unit::IntoUnit,
 };
 
 /// A builder for the matrix PCB.
@@ -36,7 +35,7 @@ pub struct Builder {
 impl Builder {
     /// Creates a new builder from the given config.
     pub fn from_config(config: &Config) -> Self {
-        let pcb = KicadPcb::new(THICKNESS.mm());
+        let pcb = KicadPcb::new(THICKNESS.into());
 
         let key_positions = KeyPositions::from_config(config);
         let model = Model::from_positions(&key_positions);
@@ -198,7 +197,7 @@ impl Builder {
     fn add_cluster_connector_tracks(&mut self, features: &Features, nets: &Nets) {
         features
             .cluster_connector
-            .add_track(&mut self.pcb, 0.mm(), TOP_LAYER, &nets.rows[0]);
+            .add_track(&mut self.pcb, 0.into(), TOP_LAYER, &nets.rows[0]);
 
         let nets = &nets.columns[..self.thumb_switch_count];
         self.add_connector_tracks(&features.cluster_connector, BOTTOM_LAYER, nets);

@@ -5,7 +5,7 @@ use serde::Serialize;
 use crate::{
     footprints::Footprint,
     primitives::{Point, Uuid},
-    unit::{IntoUnit, Length},
+    unit::Length,
 };
 
 use serializer::Serializer;
@@ -29,7 +29,7 @@ pub struct KicadPcb {
 
 impl Default for KicadPcb {
     fn default() -> Self {
-        Self::new(1.6.mm())
+        Self::new(1.6.into())
     }
 }
 

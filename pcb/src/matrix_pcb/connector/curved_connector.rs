@@ -8,7 +8,7 @@ use crate::{
     matrix_pcb::{OUTLINE_LAYER, OUTLINE_WIDTH, TRACK_WIDTH},
     position,
     primitives::{Point, Position},
-    unit::{Angle, IntoUnit, Length},
+    unit::{Angle, IntoAngle, Length},
 };
 
 /// A curved connector described by two arcs.
@@ -27,7 +27,7 @@ impl CurvedConnector {
         let length = normal_column_connector.bezier_curve.length();
         let direction = normal_column_connector.left_arc_side.direction();
 
-        let radius = (direction * normal_column_connector.arc_radius).mm();
+        let radius = Length::from(direction * normal_column_connector.arc_radius);
         let angle = (direction * 90.0).deg();
         let offset = position!(
             PAD_SIZE.x / 2.0,
@@ -54,13 +54,13 @@ impl CurvedConnector {
 
         let first_arc = Arc::new(
             start,
-            -CLUSTER_CONNECTOR_ARC_RADIUS.mm(),
+            (-CLUSTER_CONNECTOR_ARC_RADIUS).into(),
             -cluster_connector.finger_cluster_arc_angle.rad(),
         );
         let second_arc_start = first_arc.end_position() + position!(length, 0, None);
         let second_arc = Arc::new(
             second_arc_start,
-            CLUSTER_CONNECTOR_ARC_RADIUS.mm(),
+            CLUSTER_CONNECTOR_ARC_RADIUS.into(),
             cluster_connector.thumb_cluster_arc_angle.rad(),
         );
 
@@ -95,7 +95,7 @@ impl CurvedConnector {
 
     /// Adds the outline of the connector to the PCB.
     pub fn add_outline(&self, pcb: &mut KicadPcb) {
-        let offset = (CONNECTOR_WIDTH / 2.0).mm();
+        let offset = (CONNECTOR_WIDTH / 2.0).into();
 
         let first_arc_top = self.first_arc.offset(offset);
         let first_arc_bottom = self.first_arc.offset(-offset);
@@ -181,7 +181,7 @@ impl Arc {
 
     /// Offsets the arc by the given length.
     pub fn offset(&self, offset: Length) -> Self {
-        let start = self.start + Position::new(0.mm(), offset, None);
+        let start = self.start + position!(0, offset, None);
         let radius = self.radius + offset;
 
         Self {
@@ -193,8 +193,6 @@ impl Arc {
 
     /// Returns the position on the arc with the angle from start.
     fn position(&self, angle: Angle) -> Position {
-        self.start
-            + Position::new(0.mm(), -self.radius, Some(angle))
-            + Position::new(0.mm(), self.radius, None)
+        self.start + position!(0, -self.radius, Some(angle)) + position!(0, self.radius, None)
     }
 }
