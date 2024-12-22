@@ -2,9 +2,17 @@ use crate::{
     footprints::{Attribute, Footprint, FootprintSettings, Pad, PadShape, PadType, Property},
     kicad_pcb::Net,
     lines_front_back, point, position,
-    primitives::{Position, Uuid},
+    primitives::{Point, Position, Uuid},
     size,
+    unit::Length,
 };
+
+/// The position of the row pad within a switch.
+pub const ROW_PAD: Point = Point::new(Length::new(-1.65), Length::new(3.4));
+/// The position of the lower column pad within a switch.
+pub const LOWER_COLUMN_PAD: Point = Point::new(Length::new(-3.81), Length::new(-2.54));
+/// The position of the upper column pad within a switch.
+pub const UPPER_COLUMN_PAD: Point = Point::new(Length::new(-2.54), Length::new(-5.08));
 
 /// A Cherry MX switch.
 pub struct Switch {
@@ -52,7 +60,7 @@ impl Switch {
                 "1",
                 PadType::ThruHole,
                 PadShape::Roundrect,
-                position!(-1.65, 3.41, angle),
+                position!(ROW_PAD.x(), ROW_PAD.y(), angle),
                 size!(0.9, 1.2),
                 via_drill_diameter,
                 Some(self.row_net),
@@ -61,7 +69,7 @@ impl Switch {
                 "2",
                 PadType::ThruHole,
                 PadShape::Circle,
-                position!(-2.54, -5.08, angle),
+                position!(UPPER_COLUMN_PAD.x(), UPPER_COLUMN_PAD.y(), angle),
                 size!(2.2, 2.2),
                 pin_drill_diameter,
                 Some(self.column_net.clone()),
@@ -70,7 +78,7 @@ impl Switch {
                 "2",
                 PadType::ThruHole,
                 PadShape::Circle,
-                position!(-3.81, -2.54, angle),
+                position!(LOWER_COLUMN_PAD.x(), LOWER_COLUMN_PAD.y(), angle),
                 size!(2.2, 2.2),
                 pin_drill_diameter,
                 Some(self.column_net),
@@ -79,7 +87,7 @@ impl Switch {
                 "3",
                 PadType::ThruHole,
                 PadShape::Circle,
-                position!(2.54, -5.08, angle),
+                position!(-UPPER_COLUMN_PAD.x(), UPPER_COLUMN_PAD.y(), angle),
                 size!(2.2, 2.2),
                 pin_drill_diameter,
                 Some(self.internal_net.clone()),
@@ -88,7 +96,7 @@ impl Switch {
                 "3",
                 PadType::ThruHole,
                 PadShape::Circle,
-                position!(3.81, -2.54, angle),
+                position!(-LOWER_COLUMN_PAD.x(), LOWER_COLUMN_PAD.y(), angle),
                 size!(2.2, 2.2),
                 pin_drill_diameter,
                 Some(self.internal_net.clone()),
@@ -97,7 +105,7 @@ impl Switch {
                 "3",
                 PadType::ThruHole,
                 PadShape::Roundrect,
-                position!(1.65, 3.41, angle),
+                position!(-ROW_PAD.x(), ROW_PAD.y(), angle),
                 size!(0.9, 1.2),
                 via_drill_diameter,
                 Some(self.internal_net),

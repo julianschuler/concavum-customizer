@@ -11,7 +11,7 @@ use crate::{
 };
 
 pub use ffc_connector::FfcConnector;
-pub use switch::Switch;
+pub use switch::{Switch, LOWER_COLUMN_PAD, ROW_PAD, UPPER_COLUMN_PAD};
 
 #[derive(Serialize)]
 pub struct Footprint(&'static str, FootprintSettings);
