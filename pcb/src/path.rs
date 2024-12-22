@@ -67,7 +67,8 @@ impl Path {
     }
 
     /// Offsets the path by the given value.
-    pub fn offset(&self, offset: f32) -> Self {
+    pub fn offset(&self, offset: Length) -> Self {
+        let offset = f32::from(offset);
         let mut offset_path = Vec::new();
 
         if let Some(&[first_point, second_point]) = self.first_chunk() {

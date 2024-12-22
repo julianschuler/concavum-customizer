@@ -90,10 +90,14 @@ impl AddPath for KicadPcb {
     }
 }
 
+/// The offset for a track with the given index.
+#[allow(clippy::cast_possible_wrap, clippy::cast_possible_truncation)]
+fn track_offset(index: usize) -> Length {
+    (index as i32) * (TRACK_WIDTH + TRACK_CLEARANCE)
+}
+
 /// The offset for a track with the given index when centering the given number of tracks.
 #[allow(clippy::cast_precision_loss)]
 pub fn centered_track_offset(index: usize, track_count: usize) -> Length {
-    let track_spacing = TRACK_WIDTH + TRACK_CLEARANCE;
-
-    (index as f32 - (track_count - 1) as f32 / 2.0) * track_spacing
+    (index as f32 - (track_count - 1) as f32 / 2.0) * (TRACK_WIDTH + TRACK_CLEARANCE)
 }

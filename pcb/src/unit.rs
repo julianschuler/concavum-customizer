@@ -14,9 +14,9 @@ pub struct Length(i32);
 
 impl Length {
     /// Returns a length with the given value in millimeters.
-    pub const fn new(value: f32) -> Length {
+    pub const fn new(value: f64) -> Length {
         #[allow(clippy::cast_possible_truncation, clippy::cast_precision_loss)]
-        Length((value * VALUE_TO_UNIT as f32) as i32)
+        Length((value * VALUE_TO_UNIT as f64) as i32)
     }
 }
 
@@ -50,6 +50,14 @@ impl Mul<Length> for f32 {
     fn mul(self, rhs: Length) -> Self::Output {
         #[allow(clippy::cast_possible_truncation, clippy::cast_precision_loss)]
         Length((self * rhs.0 as f32) as i32)
+    }
+}
+
+impl Div<i32> for Length {
+    type Output = Length;
+
+    fn div(self, rhs: i32) -> Self::Output {
+        Length(self.0 / rhs)
     }
 }
 
