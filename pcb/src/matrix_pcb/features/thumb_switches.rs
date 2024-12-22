@@ -4,8 +4,8 @@ use crate::{
     footprints::{ROW_PAD, UPPER_COLUMN_PAD},
     kicad_pcb::{KicadPcb, Net},
     matrix_pcb::{
-        centered_track_offset, nets::Nets, AddPath, BOTTOM_LAYER, TOP_LAYER, TRACK_CLEARANCE,
-        TRACK_WIDTH,
+        centered_track_offset, nets::Nets, track_offset, AddPath, BOTTOM_LAYER, TOP_LAYER,
+        TRACK_CLEARANCE, TRACK_WIDTH,
     },
     path::Path,
     point, position,
@@ -86,8 +86,8 @@ impl ThumbSwitches {
 
     /// Adds the track connecting the row of the thumb switches.
     fn add_row_track(&self, pcb: &mut KicadPcb, row_net: &Net) {
-        const X_OFFSET: f64 = (PAD_SIZE.x - CONNECTOR_WIDTH) / 2.0;
-        const Y_OFFSET: f64 = (PAD_SIZE.y - CONNECTOR_WIDTH) / 2.0;
+        const X_OFFSET: Length = Length::new((PAD_SIZE.x - CONNECTOR_WIDTH) / 2.0);
+        const Y_OFFSET: Length = Length::new((PAD_SIZE.y - CONNECTOR_WIDTH) / 2.0);
 
         let (&first, rest) = self
             .0
@@ -95,7 +95,7 @@ impl ThumbSwitches {
             .expect("there is always at least one thumb switch");
 
         if let Some((&last, rest)) = rest.split_last() {
-            let chamfer_depth = Length::from(Y_OFFSET - 1.0) - ROW_PAD.y();
+            let chamfer_depth = Y_OFFSET - ROW_PAD.y() - Length::new(1.0);
 
             let second_segment = &Path::chamfered(
                 point!(-PAD_SIZE.x / 2.0, Y_OFFSET),
@@ -144,7 +144,8 @@ impl ThumbSwitches {
     /// Adds the tracks connecting the columns of the thumb switches.
     fn add_column_tracks(&self, pcb: &mut KicadPcb, columns: &[Net]) {
         #[allow(clippy::approx_constant)]
-        const TRACK_OFFSET: f32 = -6.28;
+        const TRACK_OFFSET: Length = Length::new(-6.28);
+        const X_OFFSET: Length = Length::new((PAD_SIZE.x - CONNECTOR_WIDTH) / 2.0);
 
         let thumb_switch_count = self.positions().len();
 
@@ -154,15 +155,9 @@ impl ThumbSwitches {
             .expect("there is always at least one thumb switch");
         let first_column_offset = centered_track_offset(0, thumb_switch_count);
 
-        let path_center = point!(
-            0,
-            TRACK_OFFSET - f32::from(TRACK_WIDTH) / 2.0 - f32::from(TRACK_CLEARANCE)
-        );
+        let path_center = point!(0, TRACK_OFFSET - TRACK_WIDTH / 2 - TRACK_CLEARANCE);
         let first_column_path = Path::chamfered(
-            point!(
-                f64::from(first_column_offset) + (PAD_SIZE.x - CONNECTOR_WIDTH) / 2.0,
-                -PAD_SIZE.y / 2.0
-            ),
+            point!(first_column_offset + X_OFFSET, -PAD_SIZE.y / 2.0),
             path_center,
             1.into(),
             false,
@@ -171,13 +166,10 @@ impl ThumbSwitches {
         .at(first);
         pcb.add_track(&first_column_path, BOTTOM_LAYER, &columns[0]);
 
-        let y_offset = TRACK_OFFSET + f32::from(TRACK_WIDTH) / 2.0;
+        let y_offset = TRACK_OFFSET + TRACK_WIDTH / 2;
         let start_offset = centered_track_offset(1, thumb_switch_count);
         let first_path_segment = Path::chamfered(
-            point!(
-                f64::from(start_offset) + (PAD_SIZE.x - CONNECTOR_WIDTH) / 2.0,
-                -PAD_SIZE.y / 2.0
-            ),
+            point!(start_offset + X_OFFSET, -PAD_SIZE.y / 2.0),
             point!(PAD_SIZE.x / 2.0, y_offset),
             0.8.into(),
             true,
@@ -185,8 +177,7 @@ impl ThumbSwitches {
         .at(first);
 
         for (i, &switch) in rest.iter().enumerate() {
-            #[allow(clippy::cast_precision_loss)]
-            let offset = i as f32 * f32::from(TRACK_WIDTH + TRACK_CLEARANCE);
+            let offset = track_offset(i);
             let offset_path = first_path_segment.offset(offset).join(
                 &Path::angled_start(
                     point!(-PAD_SIZE.x / 2.0, y_offset - offset),
