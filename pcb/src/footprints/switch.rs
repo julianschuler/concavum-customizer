@@ -8,11 +8,11 @@ use crate::{
 };
 
 /// The position of the row pad within a switch.
-pub const ROW_PAD: Point = Point::new(Length::new(-1.65), Length::new(3.4));
+pub const ROW_PAD: Point = Point::new(Length::new(1.65), Length::new(3.4));
 /// The position of the lower column pad within a switch.
-pub const LOWER_COLUMN_PAD: Point = Point::new(Length::new(-3.81), Length::new(-2.54));
+pub const LOWER_COLUMN_PAD: Point = Point::new(Length::new(3.81), Length::new(-2.54));
 /// The position of the upper column pad within a switch.
-pub const UPPER_COLUMN_PAD: Point = Point::new(Length::new(-2.54), Length::new(-5.08));
+pub const UPPER_COLUMN_PAD: Point = Point::new(Length::new(2.54), Length::new(-5.08));
 
 /// A Cherry MX switch.
 pub struct Switch {
@@ -139,30 +139,30 @@ impl From<Switch> for Footprint {
                 ],
                 attr: Attribute::ThroughHole,
                 fp_lines: lines_front_back![
-                    (point!(-2.25, 2.4), point!(-2.25, 4.4), "SilkS"),
-                    (point!(-2.25, 2.4), point!(1.65, 2.4), "SilkS"),
-                    (point!(-2.25, 4.4), point!(1.65, 4.4), "SilkS"),
-                    (point!(-1.05, 2.4), point!(-1.05, 4.4), "SilkS"),
-                    (point!(-6.6, -6.6), point!(6.6, -6.6), "CrtYd"),
-                    (point!(-6.6, 6.6), point!(-6.6, -6.6), "CrtYd"),
-                    (point!(6.6, -6.6), point!(6.6, 6.6), "CrtYd"),
-                    (point!(6.6, 6.6), point!(-6.6, 6.6), "CrtYd"),
-                    (point!(-1.4, 2.5), point!(-1.4, 2.5), "Fab"),
-                    (point!(-1.4, 4.3), point!(-1.4, 2.5), "Fab"),
-                    (point!(-0.75, 3.4), point!(-0.35, 3.4), "Fab"),
-                    (point!(-0.35, 3.4), point!(-0.35, 2.85), "Fab"),
-                    (point!(-0.35, 3.4), point!(-0.35, 3.95), "Fab"),
-                    (point!(-0.35, 3.4), point!(0.25, 3.0), "Fab"),
-                    (point!(0.25, 3.0), point!(0.25, 3.8), "Fab"),
-                    (point!(0.25, 3.0), point!(0.25, 3.8), "Fab"),
-                    (point!(0.25, 3.4), point!(0.75, 3.4), "Fab"),
-                    (point!(0.25, 3.8), point!(-0.35, 3.4), "Fab"),
-                    (point!(1.4, 2.5), point!(1.4, 4.3), "Fab"),
-                    (point!(1.4, 4.3), point!(-1.4, 4.3), "Fab"),
-                    (point!(-6.35, -6.35), point!(6.35, -6.35), "Fab"),
-                    (point!(-6.35, 6.35), point!(-6.35, -6.35), "Fab"),
-                    (point!(6.35, -6.35), point!(6.35, 6.35), "Fab"),
-                    (point!(6.35, 6.35), point!(-6.35, 6.35), "Fab"),
+                    (point!(2.25, 2.4), point!(2.25, 4.4), "SilkS"),
+                    (point!(2.25, 2.4), point!(-1.65, 2.4), "SilkS"),
+                    (point!(2.25, 4.4), point!(-1.65, 4.4), "SilkS"),
+                    (point!(1.05, 2.4), point!(1.05, 4.4), "SilkS"),
+                    (point!(6.6, -6.6), point!(-6.6, -6.6), "CrtYd"),
+                    (point!(6.6, 6.6), point!(6.6, -6.6), "CrtYd"),
+                    (point!(-6.6, -6.6), point!(-6.6, 6.6), "CrtYd"),
+                    (point!(-6.6, 6.6), point!(6.6, 6.6), "CrtYd"),
+                    (point!(1.4, 2.5), point!(1.4, 2.5), "Fab"),
+                    (point!(1.4, 4.3), point!(1.4, 2.5), "Fab"),
+                    (point!(0.75, 3.4), point!(0.35, 3.4), "Fab"),
+                    (point!(0.35, 3.4), point!(0.35, 2.85), "Fab"),
+                    (point!(0.35, 3.4), point!(0.35, 3.95), "Fab"),
+                    (point!(0.35, 3.4), point!(-0.25, 3.0), "Fab"),
+                    (point!(-0.25, 3.0), point!(-0.25, 3.8), "Fab"),
+                    (point!(-0.25, 3.0), point!(-0.25, 3.8), "Fab"),
+                    (point!(-0.25, 3.4), point!(-0.75, 3.4), "Fab"),
+                    (point!(-0.25, 3.8), point!(0.35, 3.4), "Fab"),
+                    (point!(-1.4, 2.5), point!(-1.4, 4.3), "Fab"),
+                    (point!(-1.4, 4.3), point!(1.4, 4.3), "Fab"),
+                    (point!(6.35, -6.35), point!(-6.35, -6.35), "Fab"),
+                    (point!(6.35, 6.35), point!(6.35, -6.35), "Fab"),
+                    (point!(-6.35, -6.35), point!(-6.35, 6.35), "Fab"),
+                    (point!(-6.35, 6.35), point!(6.35, 6.35), "Fab"),
                 ],
                 pads: switch.pads(),
             },

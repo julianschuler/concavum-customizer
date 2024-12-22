@@ -5,7 +5,7 @@ use crate::{
     kicad_pcb::{KicadPcb, Net},
     matrix_pcb::{
         centered_track_offset, nets::Nets, track_offset, AddPath, BOTTOM_LAYER, TOP_LAYER,
-        TRACK_CLEARANCE, TRACK_WIDTH,
+        TRACK_WIDTH,
     },
     path::Path,
     point, position,
@@ -94,8 +94,16 @@ impl ThumbSwitches {
             .split_first()
             .expect("there is always at least one thumb switch");
 
+        let path = Path::angled_start(
+            point!(X_OFFSET, -PAD_SIZE.y / 2.0),
+            point!(ROW_PAD.x(), ROW_PAD.y() - 1.into()),
+        )
+        .append(ROW_PAD)
+        .at(first);
+        pcb.add_track(&path, TOP_LAYER, row_net);
+
         if let Some((&last, rest)) = rest.split_last() {
-            let chamfer_depth = Y_OFFSET - ROW_PAD.y() - Length::new(1.0);
+            let chamfer_depth = Y_OFFSET - ROW_PAD.y() - Length::from(1.0);
 
             let second_segment = &Path::chamfered(
                 point!(-PAD_SIZE.x / 2.0, Y_OFFSET),
@@ -114,12 +122,6 @@ impl ThumbSwitches {
             .join(second_segment);
             pcb.add_track(&path, TOP_LAYER, row_net);
 
-            let track_points = [
-                first + point!(X_OFFSET, Y_OFFSET),
-                first + point!(X_OFFSET, -PAD_SIZE.y / 2.0),
-            ];
-            pcb.add_track(&track_points, TOP_LAYER, row_net);
-
             for position in rest {
                 let track_points = [
                     *position + ROW_PAD,
@@ -127,24 +129,12 @@ impl ThumbSwitches {
                 ];
                 pcb.add_track(&track_points, TOP_LAYER, row_net);
             }
-        } else {
-            let path = Path::chamfered(
-                point!(X_OFFSET, -PAD_SIZE.y / 2.0),
-                point!(ROW_PAD.x(), ROW_PAD.y() + 1.into()),
-                3.into(),
-                false,
-            )
-            .append(ROW_PAD)
-            .at(first);
-
-            pcb.add_track(&path, TOP_LAYER, row_net);
-        };
+        }
     }
 
     /// Adds the tracks connecting the columns of the thumb switches.
     fn add_column_tracks(&self, pcb: &mut KicadPcb, columns: &[Net]) {
-        #[allow(clippy::approx_constant)]
-        const TRACK_OFFSET: Length = Length::new(-6.28);
+        const TRACK_OFFSET: Length = Length::new(-6.38);
         const X_OFFSET: Length = Length::new((PAD_SIZE.x - CONNECTOR_WIDTH) / 2.0);
 
         let thumb_switch_count = self.positions().len();
@@ -155,18 +145,14 @@ impl ThumbSwitches {
             .expect("there is always at least one thumb switch");
         let first_column_offset = centered_track_offset(0, thumb_switch_count);
 
-        let path_center = point!(0, TRACK_OFFSET - TRACK_WIDTH / 2 - TRACK_CLEARANCE);
-        let first_column_path = Path::chamfered(
+        let first_column_path = Path::angled_center(
             point!(first_column_offset + X_OFFSET, -PAD_SIZE.y / 2.0),
-            path_center,
-            1.into(),
-            false,
+            UPPER_COLUMN_PAD,
         )
-        .join(&Path::angled_start(path_center, UPPER_COLUMN_PAD))
         .at(first);
         pcb.add_track(&first_column_path, BOTTOM_LAYER, &columns[0]);
 
-        let y_offset = TRACK_OFFSET + TRACK_WIDTH / 2;
+        let y_offset = TRACK_OFFSET - TRACK_WIDTH / 2;
         let start_offset = centered_track_offset(1, thumb_switch_count);
         let first_path_segment = Path::chamfered(
             point!(start_offset + X_OFFSET, -PAD_SIZE.y / 2.0),
