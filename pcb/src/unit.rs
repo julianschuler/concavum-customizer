@@ -14,7 +14,7 @@ pub struct Length(i32);
 
 impl Length {
     /// Returns a length with the given value in millimeters.
-    pub const fn mm(value: f32) -> Length {
+    pub const fn new(value: f32) -> Length {
         #[allow(clippy::cast_possible_truncation, clippy::cast_precision_loss)]
         Length((value * VALUE_TO_UNIT as f32) as i32)
     }
@@ -58,6 +58,26 @@ impl Neg for Length {
 
     fn neg(self) -> Self::Output {
         Self(-self.0)
+    }
+}
+
+impl From<i32> for Length {
+    fn from(value: i32) -> Self {
+        Length(value * VALUE_TO_UNIT)
+    }
+}
+
+impl From<f32> for Length {
+    fn from(value: f32) -> Self {
+        #[allow(clippy::cast_possible_truncation, clippy::cast_precision_loss)]
+        Length((value * VALUE_TO_UNIT as f32) as i32)
+    }
+}
+
+impl From<f64> for Length {
+    fn from(value: f64) -> Self {
+        #[allow(clippy::cast_possible_truncation)]
+        Length((value * f64::from(VALUE_TO_UNIT)) as i32)
     }
 }
 
@@ -139,10 +159,8 @@ impl From<Angle> for f64 {
     }
 }
 
-pub trait IntoUnit {
-    /// Returns a length with the value of `self` in millimeters.
-    fn mm(self) -> Length;
-
+/// A trait for converting values into angles.
+pub trait IntoAngle {
     /// Returns an angle with the value of `self` in degree.
     fn deg(self) -> Angle;
 
@@ -150,11 +168,7 @@ pub trait IntoUnit {
     fn rad(self) -> Angle;
 }
 
-impl IntoUnit for i32 {
-    fn mm(self) -> Length {
-        Length(self * VALUE_TO_UNIT)
-    }
-
+impl IntoAngle for i32 {
     fn deg(self) -> Angle {
         Angle(self * VALUE_TO_UNIT)
     }
@@ -164,12 +178,7 @@ impl IntoUnit for i32 {
     }
 }
 
-impl IntoUnit for f32 {
-    fn mm(self) -> Length {
-        #[allow(clippy::cast_possible_truncation, clippy::cast_precision_loss)]
-        Length((self * VALUE_TO_UNIT as f32) as i32)
-    }
-
+impl IntoAngle for f32 {
     fn deg(self) -> Angle {
         #[allow(clippy::cast_possible_truncation, clippy::cast_precision_loss)]
         Angle((self * VALUE_TO_UNIT as f32) as i32)
@@ -180,12 +189,7 @@ impl IntoUnit for f32 {
     }
 }
 
-impl IntoUnit for f64 {
-    fn mm(self) -> Length {
-        #[allow(clippy::cast_possible_truncation)]
-        Length((self * f64::from(VALUE_TO_UNIT)) as i32)
-    }
-
+impl IntoAngle for f64 {
     fn deg(self) -> Angle {
         #[allow(clippy::cast_possible_truncation)]
         Angle((self * f64::from(VALUE_TO_UNIT)) as i32)

@@ -4,7 +4,6 @@ use crate::{
     lines_front_back, point, position,
     primitives::{Position, Uuid},
     size,
-    unit::IntoUnit,
 };
 
 /// An FFC connector.
@@ -27,7 +26,7 @@ impl FfcConnector {
     #[allow(clippy::too_many_lines, clippy::similar_names)]
     fn pads(self) -> Vec<Pad> {
         let angle = self.position.angle();
-        let via_drill_diameter = 0.3.mm();
+        let via_drill_diameter = 0.3.into();
 
         let [net1, net2, net3, net4, net5, net6, net7, net8, net9, net10, net11, net12] = self.nets;
 

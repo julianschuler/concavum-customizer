@@ -4,8 +4,8 @@ use crate::{
     kicad_pcb::{KicadPcb, Net},
     matrix_pcb::{OUTLINE_LAYER, OUTLINE_WIDTH, TRACK_WIDTH},
     point, position,
-    primitives::{Point, Position},
-    unit::{IntoUnit, Length},
+    primitives::Position,
+    unit::Length,
 };
 
 /// A straight connector described by a position and a length.
@@ -21,7 +21,7 @@ impl StraightConnector {
         switch_position: Position,
     ) -> Self {
         let start = switch_position + position!(PAD_SIZE.x / 2.0, 0, None);
-        let length = side_column_connector.length().mm();
+        let length = side_column_connector.length().into();
 
         Self { start, length }
     }
@@ -33,7 +33,7 @@ impl StraightConnector {
 
     /// Returns the end position of the connector.
     pub fn end_position(&self) -> Position {
-        self.start + Position::new(self.length, 0.mm(), None)
+        self.start + position!(self.length, 0, None)
     }
 
     /// Returns the position of the switch at the end of the connector
@@ -56,7 +56,7 @@ impl StraightConnector {
 
     /// Adds a track to the PCB with the given offset to the center.
     pub fn add_track(&self, pcb: &mut KicadPcb, offset: Length, layer: &'static str, net: &Net) {
-        let offset = Point::new(0.mm(), offset);
+        let offset = point!(0, offset);
         let start = self.start + offset;
         let end = self.end_position() + offset;
 

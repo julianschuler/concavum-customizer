@@ -22,13 +22,13 @@ const BOTTOM_LAYER: &str = "B.Cu";
 /// The name of the outline layer.
 const OUTLINE_LAYER: &str = "Edge.Cuts";
 /// The width of the outline.
-const OUTLINE_WIDTH: Length = Length::mm(0.05);
+const OUTLINE_WIDTH: Length = Length::new(0.05);
 /// The position of the first home row key.
-const ORIGIN_POSITION: Position = Position::new(Length::mm(100.0), Length::mm(100.0), None);
+const ORIGIN_POSITION: Position = Position::new(Length::new(100.0), Length::new(100.0), None);
 /// The track width.
-const TRACK_WIDTH: Length = Length::mm(0.15);
+const TRACK_WIDTH: Length = Length::new(0.15);
 /// The track clearance.
-const TRACK_CLEARANCE: Length = Length::mm(0.15);
+const TRACK_CLEARANCE: Length = Length::new(0.15);
 
 /// A PCB connecting the keys to each other in a matrix.
 pub struct MatrixPcb(KicadPcb);

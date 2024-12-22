@@ -9,7 +9,6 @@ use crate::{
     path::Path,
     point, position,
     primitives::Position,
-    unit::IntoUnit,
 };
 
 /// The positions of the thumb key switches.
@@ -94,7 +93,7 @@ impl ThumbSwitches {
 
         if let Some((&last, rest)) = rest.split_last() {
             let y_offset = (PAD_SIZE.y - CONNECTOR_WIDTH) / 2.0;
-            let chamfer_depth = (y_offset - 4.4).mm();
+            let chamfer_depth = (y_offset - 4.4).into();
 
             let second_segment = &Path::chamfered(
                 point!(-PAD_SIZE.x / 2.0, y_offset),
@@ -130,7 +129,7 @@ impl ThumbSwitches {
             let path = Path::chamfered(
                 point!((PAD_SIZE.x - CONNECTOR_WIDTH) / 2.0, -PAD_SIZE.y / 2.0),
                 point!(-1.65, 4.4),
-                3.mm(),
+                3.into(),
                 false,
             )
             .append(row_pad)
@@ -164,7 +163,7 @@ impl ThumbSwitches {
                 -PAD_SIZE.y / 2.0
             ),
             path_center,
-            1.mm(),
+            1.into(),
             false,
         )
         .join(&Path::angled_start(path_center, column_pad))
@@ -179,7 +178,7 @@ impl ThumbSwitches {
                 -PAD_SIZE.y / 2.0
             ),
             point!(PAD_SIZE.x / 2.0, y_offset),
-            0.8.mm(),
+            0.8.into(),
             true,
         )
         .at(first);

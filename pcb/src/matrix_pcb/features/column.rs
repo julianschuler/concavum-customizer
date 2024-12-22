@@ -4,13 +4,7 @@ use model::matrix_pcb::{
     ColumnKeyConnectors, Segment, CONNECTOR_WIDTH, PAD_SIZE, ROUTER_BIT_DIAMETER,
 };
 
-use crate::{
-    kicad_pcb::KicadPcb,
-    matrix_pcb::AddPath,
-    point,
-    primitives::Position,
-    unit::{IntoUnit, Length},
-};
+use crate::{kicad_pcb::KicadPcb, matrix_pcb::AddPath, point, primitives::Position, unit::Length};
 
 /// The positions of a column of finger key switches.
 pub struct Column {
@@ -27,11 +21,12 @@ impl Column {
         home_switch: Position,
         home_row_index: usize,
     ) -> Self {
-        let y_offset = -(key_connectors.connector.length() + PAD_SIZE.y).mm();
+        let y_offset = (-key_connectors.connector.length() - PAD_SIZE.y).into();
         let offsets: Vec<_> = key_connectors
             .offsets
             .iter()
-            .map(|offset| offset.mm())
+            .copied()
+            .map(Into::into)
             .collect();
         let (offsets_below, offsets_above) = offsets.split_at(home_row_index);
 

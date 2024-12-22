@@ -9,8 +9,8 @@ use crate::{
     },
     path::Path,
     point, position,
-    primitives::{Point, Position},
-    unit::IntoUnit,
+    primitives::Position,
+    unit::IntoAngle,
 };
 
 /// An FFC connector.
@@ -90,9 +90,9 @@ impl FfcConnector {
         pcb.add_track(&row_path, TOP_LAYER, row_net);
 
         let first_column_path = Path::angled_center(
-            Point::new(
+            point!(
                 centered_track_offset(0, thumb_switch_count),
-                ffc_pad_bottom_offset.mm(),
+                pad_bottom_offset
             ),
             point!(-5.5 * Self::PITCH, Self::OFFSET + PAD_OFFSET),
         )
@@ -103,9 +103,9 @@ impl FfcConnector {
             #[allow(clippy::cast_precision_loss)]
             let ffc_connector_x_offset = (i as f32 + 0.5) * Self::PITCH;
             let path = Path::angled_start(
-                Point::new(
+                point!(
                     centered_track_offset(i + 1, thumb_switch_count),
-                    ffc_pad_bottom_offset.mm(),
+                    pad_bottom_offset
                 ),
                 point!(ffc_connector_x_offset, Self::OFFSET + PAD_OFFSET),
             )
