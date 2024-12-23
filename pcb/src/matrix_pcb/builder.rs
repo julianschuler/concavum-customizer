@@ -78,14 +78,8 @@ impl Builder {
         self.add_column_connector_tracks(&features, &nets);
         self.add_cluster_connector_tracks(&features, &nets);
 
+        self.add_ffc_connector_tracks(&features, &nets);
         features.thumb_switches.add_tracks(&mut self.pcb, &nets);
-        features.ffc_connector.add_tracks(
-            &mut self.pcb,
-            &nets,
-            self.row_count,
-            self.column_count,
-            self.thumb_switch_count,
-        );
 
         self.pcb
     }
@@ -212,5 +206,19 @@ impl Builder {
 
             connector.add_track(&mut self.pcb, offset, layer, net);
         }
+    }
+
+    /// Adds the tracks for the FFC connector to the PCB.
+    fn add_ffc_connector_tracks(&mut self, features: &Features, nets: &Nets) {
+        features.ffc_connector.add_row_tracks(
+            &mut self.pcb,
+            &nets.columns[1..],
+            &features.columns[self.cluster_connector_index],
+        );
+        features.ffc_connector.add_cluster_connector_tracks(
+            &mut self.pcb,
+            nets,
+            self.thumb_switch_count,
+        );
     }
 }
