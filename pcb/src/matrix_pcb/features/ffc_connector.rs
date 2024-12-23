@@ -9,7 +9,7 @@ use crate::{
     },
     path::Path,
     point, position,
-    primitives::Position,
+    primitives::{Point, Position},
     unit::{IntoAngle, Length},
 };
 
@@ -74,7 +74,7 @@ impl FfcConnector {
 
             let path = Path::new([ROW_PAD])
                 .join(&Path::angled_center(
-                    point!(1, ROW_PAD.y()),
+                    point!(0, ROW_PAD.y()),
                     point!(x_offset, PAD_SIZE.y / 2.0),
                 ))
                 .at(position)
@@ -140,7 +140,7 @@ impl FfcConnector {
 
         let row_pad_x_offset = Self::pad_x_offset(11);
         let row_path = Path::angled_center(
-            point!(0, pad_bottom_offset),
+            point!(centered_track_offset(1, 2), pad_bottom_offset),
             point!(row_pad_x_offset, Self::Y_OFFSET + Self::PAD_OFFSET),
         )
         .append(point!(row_pad_x_offset, Self::Y_OFFSET))
@@ -149,21 +149,18 @@ impl FfcConnector {
 
         let first_pad_x_offset = Self::pad_x_offset(0);
         let first_column_path = Path::angled_center(
-            point!(
-                centered_track_offset(0, thumb_switch_count),
-                pad_bottom_offset
-            ),
+            point!(centered_track_offset(0, 2), pad_bottom_offset),
             point!(first_pad_x_offset, Self::Y_OFFSET + Self::PAD_OFFSET),
         )
         .append(point!(first_pad_x_offset, Self::Y_OFFSET))
         .at(self.anchor);
-        pcb.add_track(&first_column_path, BOTTOM_LAYER, first_column_net);
+        pcb.add_track(&first_column_path, TOP_LAYER, first_column_net);
 
         for (i, column_net) in column_nets.iter().enumerate() {
             let pad_x_offset = Self::pad_x_offset(i + 6);
-            let path = Path::angled_start(
+            let path = angled_path(
                 point!(
-                    centered_track_offset(i + 1, thumb_switch_count),
+                    centered_track_offset(i, thumb_switch_count - 1),
                     pad_bottom_offset
                 ),
                 point!(pad_x_offset, Self::Y_OFFSET + Self::PAD_OFFSET),
@@ -268,5 +265,17 @@ impl FfcConnector {
     #[allow(clippy::cast_precision_loss)]
     fn pad_x_offset(index: usize) -> Length {
         (index as f32 - 5.5) * Self::PITCH
+    }
+}
+
+/// Creates a new angled path with the non-angled section at the start if it is vertical or in
+/// the center if it is horizontal.
+fn angled_path(start: Point, end: Point) -> Path {
+    let difference = end - start;
+
+    if difference.y.abs() >= difference.x.abs() {
+        Path::angled_start(start, end)
+    } else {
+        Path::angled_center(start, end)
     }
 }

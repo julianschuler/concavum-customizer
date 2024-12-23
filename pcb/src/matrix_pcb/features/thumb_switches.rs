@@ -17,6 +17,8 @@ use crate::{
 pub struct ThumbSwitches(Vec<Position>);
 
 impl ThumbSwitches {
+    const X_OFFSET: Length = Length::new((PAD_SIZE.x - CONNECTOR_WIDTH) / 2.0);
+
     /// Creates a new set of thumb keys from the corresponding key connectors and position of the first one.
     pub fn from_key_connectors(
         key_connectors: &ThumbKeyConnectors,
@@ -86,7 +88,6 @@ impl ThumbSwitches {
 
     /// Adds the track connecting the row of the thumb switches.
     fn add_row_track(&self, pcb: &mut KicadPcb, row_net: &Net) {
-        const X_OFFSET: Length = Length::new((PAD_SIZE.x - CONNECTOR_WIDTH) / 2.0);
         const Y_OFFSET: Length = Length::new((PAD_SIZE.y - CONNECTOR_WIDTH) / 2.0);
 
         let (&first, rest) = self
@@ -94,8 +95,9 @@ impl ThumbSwitches {
             .split_first()
             .expect("there is always at least one thumb switch");
 
+        let x_offset = Self::X_OFFSET + centered_track_offset(1, 2);
         let path = Path::angled_start(
-            point!(X_OFFSET, -PAD_SIZE.y / 2.0),
+            point!(x_offset, -PAD_SIZE.y / 2.0),
             point!(ROW_PAD.x(), ROW_PAD.y() - 1.into()),
         )
         .append(ROW_PAD)
@@ -135,29 +137,25 @@ impl ThumbSwitches {
     /// Adds the tracks connecting the columns of the thumb switches.
     fn add_column_tracks(&self, pcb: &mut KicadPcb, columns: &[Net]) {
         const TRACK_OFFSET: Length = Length::new(-6.38);
-        const X_OFFSET: Length = Length::new((PAD_SIZE.x - CONNECTOR_WIDTH) / 2.0);
-
         let thumb_switch_count = self.positions().len();
 
+        let first_x_offset = Self::X_OFFSET + centered_track_offset(0, 2);
         let (&first, rest) = self
             .0
             .split_first()
             .expect("there is always at least one thumb switch");
-        let first_column_offset = centered_track_offset(0, thumb_switch_count);
 
-        let first_column_path = Path::angled_center(
-            point!(first_column_offset + X_OFFSET, -PAD_SIZE.y / 2.0),
-            UPPER_COLUMN_PAD,
-        )
-        .at(first);
-        pcb.add_track(&first_column_path, BOTTOM_LAYER, &columns[0]);
+        let first_column_path =
+            Path::angled_start(point!(first_x_offset, -PAD_SIZE.y / 2.0), UPPER_COLUMN_PAD)
+                .at(first);
+        pcb.add_track(&first_column_path, TOP_LAYER, &columns[0]);
 
+        let x_offset = Self::X_OFFSET + centered_track_offset(0, thumb_switch_count - 1);
         let y_offset = TRACK_OFFSET - TRACK_WIDTH / 2;
-        let start_offset = centered_track_offset(1, thumb_switch_count);
         let first_path_segment = Path::chamfered(
-            point!(start_offset + X_OFFSET, -PAD_SIZE.y / 2.0),
+            point!(x_offset, -PAD_SIZE.y / 2.0),
             point!(PAD_SIZE.x / 2.0, y_offset),
-            0.8.into(),
+            1.into(),
             true,
         )
         .at(first);
