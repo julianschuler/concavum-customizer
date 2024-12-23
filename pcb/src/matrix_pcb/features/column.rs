@@ -4,7 +4,15 @@ use model::matrix_pcb::{
     ColumnKeyConnectors, Segment, CONNECTOR_WIDTH, PAD_SIZE, ROUTER_BIT_DIAMETER,
 };
 
-use crate::{kicad_pcb::KicadPcb, matrix_pcb::AddPath, point, primitives::Position, unit::Length};
+use crate::{
+    footprints::{LOWER_COLUMN_PAD, ROW_PAD, UPPER_COLUMN_PAD},
+    kicad_pcb::{KicadPcb, Net},
+    matrix_pcb::{x_offset, AddPath, TOP_LAYER, TRACK_CLEARANCE, TRACK_WIDTH},
+    path::Path,
+    point,
+    primitives::Position,
+    unit::Length,
+};
 
 /// The positions of a column of finger key switches.
 pub struct Column {
@@ -92,10 +100,12 @@ impl Column {
         right_connector_position: Option<Position>,
         is_ffc_column: bool,
     ) {
-        let positions: Vec<_> = self.positions().collect();
-
-        for (window, offset) in positions.windows(2).zip(&self.offsets) {
-            add_connector_outline(pcb, *window[0], *window[1], *offset);
+        for ((&bottom_switch, &top_switch), &offset) in self
+            .positions()
+            .zip(self.positions().skip(1))
+            .zip(&self.offsets)
+        {
+            add_connector_outline(pcb, bottom_switch, top_switch, offset);
         }
 
         if let Some((&last, remaining)) = self.switches_below.split_last() {
@@ -119,6 +129,36 @@ impl Column {
         pcb.add_outline_path(&top_outline);
 
         self.add_home_switch_outline(pcb, left_connector_position, right_connector_position);
+    }
+
+    /// Adds the track connecting the switches in the column to each other.
+    pub fn add_switch_tracks(&self, pcb: &mut KicadPcb, column_net: &Net) {
+        let x_offset = x_offset(0) - TRACK_WIDTH - TRACK_CLEARANCE;
+
+        for ((&bottom_switch, &top_switch), &offset) in self
+            .positions()
+            .zip(self.positions().skip(1))
+            .zip(&self.offsets)
+        {
+            let negative_offset = offset.min(0.into());
+            let positive_offset = offset.max(0.into());
+
+            let track_path = Path::angled_end_center(
+                UPPER_COLUMN_PAD,
+                point!(x_offset + negative_offset, -PAD_SIZE.y / 2.0),
+            )
+            .at(bottom_switch)
+            .join(
+                &Path::angled_start_center(
+                    point!(x_offset - positive_offset, PAD_SIZE.y / 2.0),
+                    point!(LOWER_COLUMN_PAD.x(), ROW_PAD.y()),
+                )
+                .append(LOWER_COLUMN_PAD)
+                .at(top_switch),
+            );
+
+            pcb.add_track(&track_path, TOP_LAYER, column_net);
+        }
     }
 
     /// Adds the outline of the home switch to the PCB.

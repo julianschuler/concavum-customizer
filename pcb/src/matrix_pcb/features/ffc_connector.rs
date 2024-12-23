@@ -9,7 +9,7 @@ use crate::{
     },
     path::Path,
     point, position,
-    primitives::{Point, Position},
+    primitives::Position,
     unit::{IntoAngle, Length},
 };
 
@@ -158,7 +158,7 @@ impl FfcConnector {
 
         for (i, column_net) in column_nets.iter().enumerate() {
             let pad_x_offset = Self::pad_x_offset(i + 6);
-            let path = angled_path(
+            let path = Path::angled_start_center(
                 point!(
                     centered_track_offset(i, thumb_switch_count - 1),
                     pad_bottom_offset
@@ -265,17 +265,5 @@ impl FfcConnector {
     #[allow(clippy::cast_precision_loss)]
     fn pad_x_offset(index: usize) -> Length {
         (index as f32 - 5.5) * Self::PITCH
-    }
-}
-
-/// Creates a new angled path with the non-angled section at the start if it is vertical or in
-/// the center if it is horizontal.
-fn angled_path(start: Point, end: Point) -> Path {
-    let difference = end - start;
-
-    if difference.y.abs() >= difference.x.abs() {
-        Path::angled_start(start, end)
-    } else {
-        Path::angled_center(start, end)
     }
 }
