@@ -210,10 +210,27 @@ impl Builder {
 
     /// Adds the tracks for the FFC connector to the PCB.
     fn add_ffc_connector_tracks(&mut self, features: &Features, nets: &Nets) {
+        let left_column_connector = if self.cluster_connector_index > 0 {
+            features
+                .column_connectors
+                .get(self.cluster_connector_index - 1)
+        } else {
+            None
+        };
+        let right_column_connector = features.column_connectors.get(self.cluster_connector_index);
+
         features.ffc_connector.add_row_tracks(
             &mut self.pcb,
             &nets.columns[1..],
             &features.columns[self.cluster_connector_index],
+        );
+        features.ffc_connector.add_column_tracks(
+            &mut self.pcb,
+            nets,
+            self.row_count,
+            self.column_count,
+            left_column_connector.map(Connector::end_position),
+            right_column_connector.map(Connector::start_position),
         );
         features.ffc_connector.add_cluster_connector_tracks(
             &mut self.pcb,

@@ -1,7 +1,7 @@
 use model::matrix_pcb::{CONNECTOR_WIDTH, FFC_PAD_OFFSET, FFC_PAD_SIZE, PAD_SIZE};
 
 use crate::{
-    footprints::ROW_PAD,
+    footprints::{LOWER_COLUMN_PAD, ROW_PAD, UPPER_COLUMN_PAD},
     kicad_pcb::{KicadPcb, Net},
     matrix_pcb::{
         centered_track_offset, features::Column, nets::Nets, track_offset, x_offset, AddPath,
@@ -91,6 +91,40 @@ impl FfcConnector {
         }
     }
 
+    /// Adds the tracks between the columns and FFC connector to the PCB.
+    pub fn add_column_tracks(
+        &self,
+        pcb: &mut KicadPcb,
+        nets: &Nets,
+        row_count: usize,
+        column_count: usize,
+        left_column_connector: Option<Position>,
+        right_column_connector: Option<Position>,
+    ) {
+        let (first_column_net, column_nets) = nets.columns[..column_count]
+            .split_first()
+            .expect("there is at least one column");
+
+        if let Some(left_column_connector) = left_column_connector {
+            self.add_left_column_track(pcb, left_column_connector, first_column_net, row_count);
+
+            let (second_column_net, column_nets) = column_nets
+                .split_first()
+                .expect("there is at least one other column");
+            self.add_center_column_track(pcb, second_column_net, false);
+
+            if let Some(right_column_connector) = right_column_connector {
+                self.add_right_column_tracks(pcb, right_column_connector, column_nets, false);
+            }
+        } else {
+            self.add_center_column_track(pcb, first_column_net, true);
+
+            if let Some(right_column_connector) = right_column_connector {
+                self.add_right_column_tracks(pcb, right_column_connector, column_nets, true);
+            }
+        };
+    }
+
     /// Adds the tracks between the cluster and FFC connector.
     pub fn add_cluster_connector_tracks(
         &self,
@@ -137,6 +171,96 @@ impl FfcConnector {
             .append(point!(pad_x_offset, Self::Y_OFFSET))
             .at(self.anchor);
             pcb.add_track(&path, BOTTOM_LAYER, column_net);
+        }
+    }
+
+    /// Adds the track connecting the left column and FFC connector.
+    fn add_left_column_track(
+        &self,
+        pcb: &mut KicadPcb,
+        column_connector: Position,
+        net: &Net,
+        row_count: usize,
+    ) {
+        let x_offset = -x_offset(row_count - 1);
+        let connector_offset = Length::from(PAD_SIZE.x / 2.0) + x_offset;
+        let pad_x_offset = Self::pad_x_offset(0);
+
+        let track_path = Path::chamfered(
+            point!(0, 0),
+            point!(connector_offset, connector_offset),
+            connector_offset,
+            false,
+        )
+        .at(column_connector)
+        .join(
+            &Path::angled_start(
+                point!(x_offset, -PAD_SIZE.y / 2.0),
+                point!(pad_x_offset, Self::Y_OFFSET - Self::PAD_OFFSET),
+            )
+            .append(point!(pad_x_offset, Self::Y_OFFSET))
+            .at(self.anchor),
+        );
+        pcb.add_track(&track_path, TOP_LAYER, net);
+    }
+
+    /// Adds the track connecting the center column and FFC connector.
+    fn add_center_column_track(&self, pcb: &mut KicadPcb, net: &Net, is_first_column: bool) {
+        if is_first_column {
+            let track_path = Path::chamfered(
+                UPPER_COLUMN_PAD,
+                point!(Self::pad_x_offset(0), Self::Y_OFFSET),
+                6.6.into(),
+                true,
+            )
+            .at(self.anchor);
+
+            pcb.add_track(&track_path, BOTTOM_LAYER, net);
+        } else {
+            let x_offset = Self::pad_x_offset(6);
+            let track_path = Path::angled_start(LOWER_COLUMN_PAD, point!(x_offset, 3))
+                .append(point!(x_offset, Self::Y_OFFSET))
+                .at(self.anchor);
+
+            pcb.add_track(&track_path, TOP_LAYER, net);
+        }
+    }
+
+    /// Adds the tracks connecting the right columns and FFC connector.
+    fn add_right_column_tracks(
+        &self,
+        pcb: &mut KicadPcb,
+        right_column_connector: Position,
+        column_nets: &[Net],
+        contains_second_column: bool,
+    ) {
+        for (i, net) in column_nets.iter().enumerate() {
+            let pad_x_offset = Self::pad_x_offset(i + 6 + usize::from(!contains_second_column));
+            let pad_y_offset = if contains_second_column && i == 0 {
+                3.into()
+            } else {
+                Self::Y_OFFSET - Self::PAD_OFFSET
+            };
+            let connector_offset = Length::from(PAD_SIZE.x / 2.0) - x_offset(0);
+
+            let path = Path::chamfered(
+                point!(0, centered_track_offset(0, column_nets.len())),
+                point!(-connector_offset, connector_offset),
+                0.8.into(),
+                true,
+            )
+            .offset(track_offset(i))
+            .at(right_column_connector)
+            .join(
+                &Path::angled_start(
+                    point!(x_offset(i), -PAD_SIZE.y / 2.0),
+                    point!(pad_x_offset, pad_y_offset),
+                )
+                .append(point!(pad_x_offset, Self::Y_OFFSET))
+                .at(self.anchor),
+            );
+
+            pcb.add_track(&path, TOP_LAYER, net);
         }
     }
 
