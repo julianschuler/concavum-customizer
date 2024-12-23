@@ -25,8 +25,10 @@ pub const FFC_PAD_OFFSET: f64 = 7.9;
 pub const CONNECTOR_WIDTH: f64 = 2.0;
 /// The diameter of the routing bit.
 pub const ROUTER_BIT_DIAMETER: f64 = 2.0;
-/// The radius of the arcs of the cluster connector.
-pub const CLUSTER_CONNECTOR_ARC_RADIUS: f64 = CONNECTOR_WIDTH / 2.0 + ROUTER_BIT_DIAMETER;
+/// The radius of the arcs.
+pub const ARC_RADIUS: f64 = CONNECTOR_WIDTH / 2.0 + ROUTER_BIT_DIAMETER / 2.0;
+/// The minimum length of the connector segments.
+pub const MINIMUM_SEGMENT_LENGTH: f64 = ROUTER_BIT_DIAMETER / 2.0;
 
 const SWITCH_HEIGHT: f64 = 5.0;
 

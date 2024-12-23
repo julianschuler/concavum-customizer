@@ -1,13 +1,13 @@
-use std::f64::consts::PI;
+use std::{f64::consts::PI, iter::once};
 
 use glam::{dvec3, DAffine3, DMat3, DVec2, DVec3, Vec3Swizzles};
 
 use crate::{
-    geometry::{rotate_90_degrees, Ellipse, Line, Plane},
+    geometry::{rotate_90_degrees, vec_y, Ellipse, Line, Plane},
     matrix_pcb::{
         pad_center,
         segments::{Arc, BezierCurve},
-        Segment, CLUSTER_CONNECTOR_ARC_RADIUS, CONNECTOR_WIDTH, FFC_PAD_OFFSET, FFC_PAD_SIZE,
+        Segment, ARC_RADIUS, CONNECTOR_WIDTH, FFC_PAD_OFFSET, FFC_PAD_SIZE, MINIMUM_SEGMENT_LENGTH,
         PAD_SIZE,
     },
     util::SideY,
@@ -82,29 +82,37 @@ impl Segment for ClusterConnector {
             .last()
             .expect("there should always be a position");
 
-        let finger_cluster_arc = Arc::new(
-            CLUSTER_CONNECTOR_ARC_RADIUS,
-            self.finger_cluster_arc_angle,
-            DVec3::NEG_Z,
-        );
-        let thumb_cluster_arc = Arc::new(
-            CLUSTER_CONNECTOR_ARC_RADIUS,
-            self.thumb_cluster_arc_angle,
-            DVec3::NEG_Z,
-        );
+        let finger_cluster_arc = Arc::new(ARC_RADIUS, self.finger_cluster_arc_angle, DVec3::NEG_Z);
+        let thumb_cluster_arc = Arc::new(ARC_RADIUS, self.thumb_cluster_arc_angle, DVec3::NEG_Z);
 
-        finger_cluster_arc
-            .positions()
-            .iter()
-            .rev()
-            .map(|&position| finger_cluster_arc_position * position)
+        let finger_cluster_arc_positions = finger_cluster_arc.positions();
+        let thumb_cluster_arc_positions = thumb_cluster_arc.positions();
+
+        let start_position = finger_cluster_arc_position
+            * *finger_cluster_arc_positions
+                .last()
+                .expect("there should always be a position")
+            * DAffine3::from_translation(vec_y(MINIMUM_SEGMENT_LENGTH));
+        let end_position = thumb_cluster_arc_position
+            * *thumb_cluster_arc_positions
+                .last()
+                .expect("there should always be a position")
+            * DAffine3::from_translation(vec_y(MINIMUM_SEGMENT_LENGTH));
+
+        once(start_position)
+            .chain(
+                finger_cluster_arc_positions
+                    .iter()
+                    .rev()
+                    .map(|&position| finger_cluster_arc_position * position),
+            )
             .chain(bezier_positions)
             .chain(
-                thumb_cluster_arc
-                    .positions()
+                thumb_cluster_arc_positions
                     .iter()
                     .map(|&position| thumb_cluster_arc_position * position),
             )
+            .chain(once(end_position))
             .collect()
     }
 
@@ -115,10 +123,12 @@ impl Segment for ClusterConnector {
 /// Returns the start point of the arc for the given key position and side.
 fn arc_start(position: DAffine3, side: SideY) -> DVec3 {
     let offset = match side {
-        SideY::Bottom => (-FFC_PAD_OFFSET - FFC_PAD_SIZE.y / 2.0) * position.y_axis,
+        SideY::Bottom => {
+            (-FFC_PAD_OFFSET - FFC_PAD_SIZE.y / 2.0 - MINIMUM_SEGMENT_LENGTH) * position.y_axis
+        }
         SideY::Top => {
             (PAD_SIZE.x - CONNECTOR_WIDTH) / 2.0 * position.x_axis
-                + PAD_SIZE.y / 2.0 * position.y_axis
+                + (PAD_SIZE.y / 2.0 + MINIMUM_SEGMENT_LENGTH) * position.y_axis
         }
     };
 
@@ -127,12 +137,12 @@ fn arc_start(position: DAffine3, side: SideY) -> DVec3 {
 
 /// Returns the center point of the arc starting at the given key position and side.
 fn arc_center(position: DAffine3, side: SideY) -> DVec3 {
-    arc_start(position, side) + side.direction() * CLUSTER_CONNECTOR_ARC_RADIUS * position.x_axis
+    arc_start(position, side) + side.direction() * ARC_RADIUS * position.x_axis
 }
 
 /// Returns the end position of the arc with the given angle starting at the given key position and side.
 fn arc_end(angle: f64, position: DAffine3, side: SideY) -> DAffine3 {
-    let translation = side.direction() * CLUSTER_CONNECTOR_ARC_RADIUS * DVec3::X;
+    let translation = side.direction() * ARC_RADIUS * DVec3::X;
 
     DAffine3 {
         matrix3: position.matrix3,
@@ -148,12 +158,7 @@ fn arc_end(angle: f64, position: DAffine3, side: SideY) -> DAffine3 {
 fn calculate_circle_projection(normal: DVec3, center: DVec2) -> Ellipse {
     let minor_axis = normal.xy().try_normalize().unwrap_or(DVec2::X);
 
-    Ellipse::new(
-        minor_axis,
-        center,
-        normal.z * CLUSTER_CONNECTOR_ARC_RADIUS,
-        CLUSTER_CONNECTOR_ARC_RADIUS,
-    )
+    Ellipse::new(minor_axis, center, normal.z * ARC_RADIUS, ARC_RADIUS)
 }
 
 /// Selects the tangent along the line segment connecting the finger and thumb cluster arcs.

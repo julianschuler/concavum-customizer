@@ -1,13 +1,17 @@
-use std::f64::consts::{FRAC_PI_2, PI};
+use std::{
+    f64::consts::{FRAC_PI_2, PI},
+    iter::once,
+};
 
 use glam::{DAffine3, DMat3, DVec2, DVec3, Vec3Swizzles};
 
 use crate::{
+    geometry::vec_y,
     key_positions::{Column, ColumnType, ThumbKeys},
     matrix_pcb::{
         pad_center,
         segments::{Arc, BezierCurve, Line, Segment},
-        CONNECTOR_WIDTH, PAD_SIZE,
+        ARC_RADIUS, CONNECTOR_WIDTH, PAD_SIZE,
     },
     util::{SideX, SideY},
 };
@@ -214,8 +218,8 @@ impl ColumnConnector {
 pub struct NormalColumnConnector {
     /// The Bézier curve segment in the center of the connector.
     pub bezier_curve: BezierCurve,
-    /// The radius of the top and bottom arcs.
-    pub arc_radius: f64,
+    /// The length of the left and right straight segments.
+    pub segment_length: f64,
     /// The side of the left arc.
     pub left_arc_side: SideY,
 }
@@ -228,7 +232,7 @@ impl NormalColumnConnector {
             .inverse()
             .transform_point3(right_position.translation);
 
-        let arc_radius = (transformed_right_translation.x - PAD_SIZE.x) / 2.0;
+        let segment_length = (transformed_right_translation.x - PAD_SIZE.x) / 2.0 - ARC_RADIUS;
         let left_arc_side = match transformed_right_translation.y {
             y if y > 0.1 => SideY::Bottom,
             y if y < -0.1 => SideY::Top,
@@ -243,13 +247,13 @@ impl NormalColumnConnector {
 
         let start_position = normal_column_connector_position(
             left_position,
-            arc_radius,
+            segment_length,
             SideX::Right,
             left_arc_side,
         );
         let end_position = normal_column_connector_position(
             right_position,
-            arc_radius,
+            segment_length,
             SideX::Left,
             left_arc_side.opposite(),
         );
@@ -258,7 +262,7 @@ impl NormalColumnConnector {
 
         Self {
             bezier_curve,
-            arc_radius,
+            segment_length,
             left_arc_side,
         }
     }
@@ -267,11 +271,15 @@ impl NormalColumnConnector {
 impl Segment for NormalColumnConnector {
     fn positions(&self) -> Vec<DAffine3> {
         let arc_positions = Arc::new(
-            self.arc_radius,
+            ARC_RADIUS,
             FRAC_PI_2,
             self.left_arc_side.direction() * DVec3::NEG_Z,
         )
         .positions();
+        let arc_offset = *arc_positions
+            .last()
+            .expect("there should always be a position")
+            * DAffine3::from_translation(vec_y(self.segment_length));
 
         let bezier_positions = self.bezier_curve.positions();
         let first_arc_position = *bezier_positions
@@ -282,16 +290,20 @@ impl Segment for NormalColumnConnector {
             .last()
             .expect("there should always be a position");
 
-        arc_positions
-            .iter()
-            .rev()
-            .map(|&position| first_arc_position * position)
+        once(first_arc_position * arc_offset)
+            .chain(
+                arc_positions
+                    .iter()
+                    .rev()
+                    .map(|&position| first_arc_position * position),
+            )
             .chain(bezier_positions)
             .chain(
                 arc_positions
                     .iter()
                     .map(|&position| second_arc_position * position),
             )
+            .chain(once(second_arc_position * arc_offset))
             .collect()
     }
 
@@ -352,14 +364,14 @@ fn horizontal_connector_point(position: DAffine3, side: SideX) -> DVec3 {
 /// The attachment point of a normal column connector with the given radius in the given corner.
 fn normal_column_connector_position(
     position: DAffine3,
-    arc_radius: f64,
+    segment_length: f64,
     side_x: SideX,
     side_y: SideY,
 ) -> DAffine3 {
     let translation = pad_center(position)
-        + side_x.direction() * (PAD_SIZE.x / 2.0 + arc_radius) * position.x_axis
+        + side_x.direction() * (PAD_SIZE.x / 2.0 + segment_length + ARC_RADIUS) * position.x_axis
         + side_y.direction()
-            * ((PAD_SIZE.y - CONNECTOR_WIDTH) / 2.0 - arc_radius)
+            * ((PAD_SIZE.y - CONNECTOR_WIDTH) / 2.0 - ARC_RADIUS)
             * position.y_axis;
 
     DAffine3 {

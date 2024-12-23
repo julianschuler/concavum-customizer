@@ -1,20 +1,21 @@
 use model::matrix_pcb::{
-    ClusterConnector, NormalColumnConnector, Segment, CLUSTER_CONNECTOR_ARC_RADIUS,
-    CONNECTOR_WIDTH, PAD_SIZE,
+    ClusterConnector, NormalColumnConnector, Segment, ARC_RADIUS, CONNECTOR_WIDTH,
+    MINIMUM_SEGMENT_LENGTH, PAD_SIZE,
 };
 
 use crate::{
     kicad_pcb::{KicadPcb, Net},
     matrix_pcb::{OUTLINE_LAYER, OUTLINE_WIDTH, TRACK_WIDTH},
-    position,
+    point, position,
     primitives::{Point, Position},
     unit::{Angle, IntoAngle, Length},
 };
 
-/// A curved connector described by two arcs.
+/// A curved connector described by two arcs and straight segments.
 pub struct CurvedConnector {
     first_arc: Arc,
     second_arc: Arc,
+    segment_length: Length,
     end_switch_position: Position,
 }
 
@@ -26,11 +27,12 @@ impl CurvedConnector {
     ) -> Self {
         let length = normal_column_connector.bezier_curve.length();
         let direction = normal_column_connector.left_arc_side.direction();
+        let segment_length = normal_column_connector.segment_length.into();
 
-        let radius = Length::from(direction * normal_column_connector.arc_radius);
+        let radius = Length::from(direction * ARC_RADIUS);
         let angle = (direction * 90.0).deg();
         let offset = position!(
-            PAD_SIZE.x / 2.0,
+            PAD_SIZE.x / 2.0 + normal_column_connector.segment_length,
             -direction * (PAD_SIZE.y - CONNECTOR_WIDTH) / 2.0,
             None
         );
@@ -44,29 +46,31 @@ impl CurvedConnector {
         Self {
             first_arc,
             second_arc,
+            segment_length,
             end_switch_position,
         }
     }
 
     /// Creates a connector from a cluster connector and a start position.
     pub fn from_cluster_connector(cluster_connector: &ClusterConnector, start: Position) -> Self {
+        let segment_length = MINIMUM_SEGMENT_LENGTH.into();
         let length = cluster_connector.bezier_curve.length();
 
         let first_arc = Arc::new(
-            start,
-            (-CLUSTER_CONNECTOR_ARC_RADIUS).into(),
+            start + position!(MINIMUM_SEGMENT_LENGTH, 0, None),
+            (-ARC_RADIUS).into(),
             -cluster_connector.finger_cluster_arc_angle.rad(),
         );
         let second_arc_start = first_arc.end_position() + position!(length, 0, None);
         let second_arc = Arc::new(
             second_arc_start,
-            CLUSTER_CONNECTOR_ARC_RADIUS.into(),
+            ARC_RADIUS.into(),
             cluster_connector.thumb_cluster_arc_angle.rad(),
         );
 
         let end_switch_position = second_arc.end_position()
             + position!(
-                PAD_SIZE.y / 2.0,
+                PAD_SIZE.y / 2.0 + MINIMUM_SEGMENT_LENGTH,
                 (PAD_SIZE.x - CONNECTOR_WIDTH) / 2.0,
                 Some(90.deg())
             );
@@ -74,18 +78,19 @@ impl CurvedConnector {
         Self {
             first_arc,
             second_arc,
+            segment_length,
             end_switch_position,
         }
     }
 
     /// Returns the start position of the connector
     pub fn start_position(&self) -> Position {
-        self.first_arc.start
+        self.first_arc.start - position!(self.segment_length, 0, None)
     }
 
     /// Returns the end position of the connector.
     pub fn end_position(&self) -> Position {
-        self.second_arc.end_position()
+        self.second_arc.end_position() + position!(self.segment_length, 0, None)
     }
 
     /// Returns the position of the switch at the end of the connector
@@ -95,38 +100,40 @@ impl CurvedConnector {
 
     /// Adds the outline of the connector to the PCB.
     pub fn add_outline(&self, pcb: &mut KicadPcb) {
-        let offset = (CONNECTOR_WIDTH / 2.0).into();
+        let start_position = self.start_position();
+        let end_position = self.end_position();
 
-        let first_arc_top = self.first_arc.offset(offset);
-        let first_arc_bottom = self.first_arc.offset(-offset);
-        let second_arc_top = self.second_arc.offset(offset);
-        let second_arc_bottom = self.second_arc.offset(-offset);
+        for sign in [-1, 1] {
+            let offset = sign * Length::from(CONNECTOR_WIDTH / 2.0);
 
-        pcb.add_graphical_line(
-            first_arc_top.end(),
-            second_arc_top.start(),
-            OUTLINE_WIDTH,
-            OUTLINE_LAYER,
-        );
-        pcb.add_graphical_line(
-            first_arc_bottom.end(),
-            second_arc_bottom.start(),
-            OUTLINE_WIDTH,
-            OUTLINE_LAYER,
-        );
-        for arc in [
-            first_arc_top,
-            first_arc_bottom,
-            second_arc_top,
-            second_arc_bottom,
-        ] {
-            pcb.add_graphical_arc(
-                arc.start(),
-                arc.mid(),
-                arc.end(),
+            let first_arc = self.first_arc.offset(offset);
+            let second_arc = self.second_arc.offset(offset);
+
+            pcb.add_graphical_line(
+                first_arc.end(),
+                second_arc.start(),
                 OUTLINE_WIDTH,
                 OUTLINE_LAYER,
             );
+
+            for arc in [first_arc, second_arc] {
+                pcb.add_graphical_arc(
+                    arc.start(),
+                    arc.mid(),
+                    arc.end(),
+                    OUTLINE_WIDTH,
+                    OUTLINE_LAYER,
+                );
+            }
+
+            for (sign, position) in [(1, start_position), (-1, end_position)] {
+                pcb.add_graphical_line(
+                    position + point!(0, offset),
+                    position + point!(sign * self.segment_length, offset),
+                    OUTLINE_WIDTH,
+                    OUTLINE_LAYER,
+                );
+            }
         }
     }
 
@@ -138,6 +145,16 @@ impl CurvedConnector {
         pcb.add_segment(first_arc.end(), second_arc.start(), TRACK_WIDTH, layer, net);
         for arc in [first_arc, second_arc] {
             pcb.add_arc(arc.start(), arc.mid(), arc.end(), TRACK_WIDTH, layer, net);
+        }
+
+        for (sign, position) in [(1, self.start_position()), (-1, self.end_position())] {
+            pcb.add_segment(
+                position + point!(0, offset),
+                position + point!(sign * self.segment_length, offset),
+                TRACK_WIDTH,
+                layer,
+                net,
+            );
         }
     }
 }
