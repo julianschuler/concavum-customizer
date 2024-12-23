@@ -4,7 +4,8 @@ use crate::{
     footprints::ROW_PAD,
     kicad_pcb::{KicadPcb, Net},
     matrix_pcb::{
-        centered_track_offset, features::Column, nets::Nets, AddPath, BOTTOM_LAYER, TOP_LAYER,
+        centered_track_offset, features::Column, nets::Nets, track_offset, AddPath, BOTTOM_LAYER,
+        TOP_LAYER, TRACK_CLEARANCE, TRACK_WIDTH,
     },
     path::Path,
     point, position,
@@ -55,20 +56,36 @@ impl FfcConnector {
         }
     }
 
-    /// Adds the tracks for the FFC connector to the PCB.
-    pub fn add_tracks(
-        &self,
-        pcb: &mut KicadPcb,
-        nets: &Nets,
-        row_count: usize,
-        column_count: usize,
-        thumb_switch_count: usize,
-    ) {
-        self.add_cluster_connector_tracks(pcb, &nets, thumb_switch_count);
+    /// Adds the tracks between the rows and FFC connector to the PCB.
+    pub fn add_row_tracks(&self, pcb: &mut KicadPcb, row_nets: &[Net], ffc_column: &Column) {
+        let (first_row_net, row_nets) = row_nets.split_first().expect("there is at least one row");
+        let first_row_path = Path::angled_end(
+            point!(Self::pad_x_offset(5), Self::Y_OFFSET - Self::PAD_OFFSET),
+            ROW_PAD,
+        )
+        .at(self.anchor);
+        pcb.add_track(&first_row_path, BOTTOM_LAYER, first_row_net);
+
+        for (i, (&position, net)) in ffc_column.positions().skip(1).zip(row_nets).enumerate() {
+            let x_offset =
+                -Length::from(4.96) - TRACK_CLEARANCE - TRACK_WIDTH / 2 - track_offset(i);
+
+            let path = Path::angled_end(
+                point!(Self::pad_x_offset(4 - i), Self::Y_OFFSET - Self::PAD_OFFSET),
+                point!(x_offset, -PAD_SIZE.y / 2.0),
+            )
+            .at(self.anchor)
+            .join(
+                &Path::angled_center(point!(x_offset, PAD_SIZE.y / 2.0), point!(1, ROW_PAD.y()))
+                    .append(ROW_PAD)
+                    .at(position),
+            );
+            pcb.add_track(&path, TOP_LAYER, net);
+        }
     }
 
-    /// Adds the tracks between the cluster connector and FFC connector
-    fn add_cluster_connector_tracks(
+    /// Adds the tracks between the cluster and FFC connector.
+    pub fn add_cluster_connector_tracks(
         &self,
         pcb: &mut KicadPcb,
         nets: &Nets,
