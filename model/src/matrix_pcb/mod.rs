@@ -16,7 +16,7 @@ pub use segments::Segment;
 /// The thickness of the matrix PCB.
 pub const THICKNESS: f64 = 0.6;
 /// The size of the PCB pads underneath each key.
-pub const PAD_SIZE: DVec2 = dvec2(13.0, 14.0);
+pub const PAD_SIZE: DVec2 = dvec2(13.0, 16.0);
 /// The size of the PCB pad below the FFC connector.
 pub const FFC_PAD_SIZE: DVec2 = dvec2(19.0, 4.0);
 /// The offset of the FFC connector pad to the center of the key.
