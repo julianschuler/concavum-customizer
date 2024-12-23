@@ -101,3 +101,8 @@ fn track_offset(index: usize) -> Length {
 pub fn centered_track_offset(index: usize, track_count: usize) -> Length {
     (index as f32 - (track_count - 1) as f32 / 2.0) * (TRACK_WIDTH + TRACK_CLEARANCE)
 }
+
+/// Returns the X offset to clear the switch pads for a track with the given index.
+pub fn x_offset(index: usize) -> Length {
+    Length::from(4.96) + TRACK_CLEARANCE + TRACK_WIDTH / 2 + track_offset(index)
+}
