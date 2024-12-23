@@ -189,11 +189,20 @@ impl Builder {
 
     /// Adds the cluster connector tracks to the PCB.
     fn add_cluster_connector_tracks(&mut self, features: &Features, nets: &Nets) {
-        features
-            .cluster_connector
-            .add_track(&mut self.pcb, 0.into(), TOP_LAYER, &nets.rows[0]);
+        features.cluster_connector.add_track(
+            &mut self.pcb,
+            centered_track_offset(0, 2),
+            TOP_LAYER,
+            &nets.rows[0],
+        );
+        features.cluster_connector.add_track(
+            &mut self.pcb,
+            centered_track_offset(1, 2),
+            TOP_LAYER,
+            &nets.columns[0],
+        );
 
-        let nets = &nets.columns[..self.thumb_switch_count];
+        let nets = &nets.columns[1..self.thumb_switch_count];
         self.add_connector_tracks(&features.cluster_connector, BOTTOM_LAYER, nets);
     }
 
