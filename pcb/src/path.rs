@@ -40,6 +40,30 @@ impl Path {
         Self(vec![start, start + offset, end])
     }
 
+    /// Creates a new angled path with the non-angled section at the start if it is vertical
+    /// or in the center if it is horizontal.
+    pub fn angled_start_center(start: Point, end: Point) -> Self {
+        let difference = end - start;
+
+        if difference.y.abs() >= difference.x.abs() {
+            Self::angled_start(start, end)
+        } else {
+            Self::angled_center(start, end)
+        }
+    }
+
+    /// Creates a new angled path with the non-angled section at the end if it is vertical
+    /// or in the center if it is horizontal.
+    pub fn angled_end_center(start: Point, end: Point) -> Self {
+        let difference = end - start;
+
+        if difference.y.abs() >= difference.x.abs() {
+            Self::angled_end(start, end)
+        } else {
+            Self::angled_center(start, end)
+        }
+    }
+
     /// Creates a chamfered path with a chamfer with the given depth.
     pub fn chamfered(start: Point, end: Point, depth: Length, right: bool) -> Self {
         let difference = end - start;

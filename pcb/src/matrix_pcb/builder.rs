@@ -79,6 +79,7 @@ impl Builder {
         self.add_cluster_connector_tracks(&features, &nets);
 
         self.add_ffc_connector_tracks(&features, &nets);
+        self.add_column_tracks(&features, &nets);
         features.thumb_switches.add_tracks(&mut self.pcb, &nets);
 
         self.pcb
@@ -246,5 +247,12 @@ impl Builder {
             nets,
             self.thumb_switch_count,
         );
+    }
+
+    /// Adds the tracks for the columns to the PCB.
+    fn add_column_tracks(&mut self, features: &Features, nets: &Nets) {
+        for (column, net) in features.columns.iter().zip(&nets.columns) {
+            column.add_switch_tracks(&mut self.pcb, net);
+        }
     }
 }

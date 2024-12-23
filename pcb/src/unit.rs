@@ -18,6 +18,16 @@ impl Length {
         #[allow(clippy::cast_possible_truncation, clippy::cast_precision_loss)]
         Length((value * VALUE_TO_UNIT as f64) as i32)
     }
+
+    /// Returns the minimum of the given values.
+    pub fn min(self, other: Length) -> Length {
+        Length(self.0.min(other.0))
+    }
+
+    /// Returns the maximum of the given values.
+    pub fn max(self, other: Length) -> Length {
+        Length(self.0.max(other.0))
+    }
 }
 
 impl Add for Length {
