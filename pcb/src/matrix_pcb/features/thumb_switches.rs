@@ -150,26 +150,28 @@ impl ThumbSwitches {
                 .at(first);
         pcb.add_track(&first_column_path, TOP_LAYER, &columns[0]);
 
-        let x_offset = Self::X_OFFSET + centered_track_offset(0, thumb_switch_count - 1);
-        let y_offset = TRACK_OFFSET - TRACK_WIDTH / 2;
-        let first_path_segment = Path::chamfered(
-            point!(x_offset, -PAD_SIZE.y / 2.0),
-            point!(PAD_SIZE.x / 2.0, y_offset),
-            1.into(),
-            true,
-        )
-        .at(first);
+        if thumb_switch_count > 1 {
+            let x_offset = Self::X_OFFSET + centered_track_offset(0, thumb_switch_count - 1);
+            let y_offset = TRACK_OFFSET - TRACK_WIDTH / 2;
+            let first_path_segment = Path::chamfered(
+                point!(x_offset, -PAD_SIZE.y / 2.0),
+                point!(PAD_SIZE.x / 2.0, y_offset),
+                1.into(),
+                true,
+            )
+            .at(first);
 
-        for (i, &switch) in rest.iter().enumerate() {
-            let offset = track_offset(i);
-            let offset_path = first_path_segment.offset(offset).join(
-                &Path::angled_start(
-                    point!(-PAD_SIZE.x / 2.0, y_offset - offset),
-                    UPPER_COLUMN_PAD,
-                )
-                .at(switch),
-            );
-            pcb.add_track(&offset_path, BOTTOM_LAYER, &columns[i + 1]);
+            for (i, &switch) in rest.iter().enumerate() {
+                let offset = track_offset(i);
+                let offset_path = first_path_segment.offset(offset).join(
+                    &Path::angled_start(
+                        point!(-PAD_SIZE.x / 2.0, y_offset - offset),
+                        UPPER_COLUMN_PAD,
+                    )
+                    .at(switch),
+                );
+                pcb.add_track(&offset_path, BOTTOM_LAYER, &columns[i + 1]);
+            }
         }
     }
 }
