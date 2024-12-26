@@ -272,5 +272,20 @@ impl Builder {
                 window[1].start_position(),
             );
         }
+
+        let (left_column_connectors, right_column_connectors) = features
+            .column_connectors
+            .split_at(self.cluster_connector_index);
+
+        for left_column_connector in left_column_connectors {
+            left_column_connector.add_left_column_track(&mut self.pcb, &nets.columns[0]);
+        }
+        for (i, right_column_connector) in right_column_connectors.iter().rev().enumerate() {
+            right_column_connector.add_right_column_track(
+                &mut self.pcb,
+                i + 1,
+                &nets.columns[self.column_count - 1 - i],
+            );
+        }
     }
 }

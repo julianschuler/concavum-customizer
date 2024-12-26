@@ -5,7 +5,7 @@ use model::matrix_pcb::{
 
 use crate::{
     kicad_pcb::{KicadPcb, Net},
-    matrix_pcb::{OUTLINE_LAYER, OUTLINE_WIDTH, TRACK_WIDTH},
+    matrix_pcb::{connector::AttachmentSide, OUTLINE_LAYER, OUTLINE_WIDTH, TRACK_WIDTH},
     point, position,
     primitives::{Point, Position},
     unit::{Angle, IntoAngle, Length},
@@ -17,6 +17,7 @@ pub struct CurvedConnector {
     second_arc: Arc,
     segment_length: Length,
     end_switch_position: Position,
+    attachment_side: AttachmentSide,
 }
 
 impl CurvedConnector {
@@ -43,11 +44,19 @@ impl CurvedConnector {
 
         let end_switch_position = second_arc.end_position() + offset;
 
+        #[allow(clippy::float_cmp)]
+        let attachment_side = if direction == 1.0 {
+            AttachmentSide::Bottom
+        } else {
+            AttachmentSide::Top
+        };
+
         Self {
             first_arc,
             second_arc,
             segment_length,
             end_switch_position,
+            attachment_side,
         }
     }
 
@@ -75,11 +84,14 @@ impl CurvedConnector {
                 Some(90.deg())
             );
 
+        let attachment_side = AttachmentSide::Center;
+
         Self {
             first_arc,
             second_arc,
             segment_length,
             end_switch_position,
+            attachment_side,
         }
     }
 
@@ -96,6 +108,11 @@ impl CurvedConnector {
     /// Returns the position of the switch at the end of the connector
     pub fn end_switch_position(&self) -> Position {
         self.end_switch_position
+    }
+
+    /// Returns the attachment side of the end of the connector.
+    pub fn end_attachment_side(&self) -> AttachmentSide {
+        self.attachment_side
     }
 
     /// Adds the outline of the connector to the PCB.
