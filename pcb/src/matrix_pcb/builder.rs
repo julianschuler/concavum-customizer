@@ -254,5 +254,23 @@ impl Builder {
         for (column, net) in features.columns.iter().zip(&nets.columns) {
             column.add_switch_tracks(&mut self.pcb, net);
         }
+
+        for (i, (window, column)) in features
+            .column_connectors
+            .windows(2)
+            .zip(features.columns.iter().skip(1))
+            .skip(self.cluster_connector_index)
+            .rev()
+            .enumerate()
+        {
+            let nets = &nets.columns[self.column_count - 1 - i..self.column_count];
+
+            column.add_column_tracks(
+                &mut self.pcb,
+                nets,
+                window[0].end_position(),
+                window[1].start_position(),
+            );
+        }
     }
 }

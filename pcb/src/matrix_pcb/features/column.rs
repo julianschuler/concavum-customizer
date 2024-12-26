@@ -7,7 +7,10 @@ use model::matrix_pcb::{
 use crate::{
     footprints::{LOWER_COLUMN_PAD, ROW_PAD, UPPER_COLUMN_PAD},
     kicad_pcb::{KicadPcb, Net},
-    matrix_pcb::{x_offset, AddPath, TOP_LAYER, TRACK_CLEARANCE, TRACK_WIDTH},
+    matrix_pcb::{
+        centered_track_offset, track_offset, x_offset, AddPath, TOP_LAYER, TRACK_CLEARANCE,
+        TRACK_WIDTH,
+    },
     path::Path,
     point,
     primitives::Position,
@@ -158,6 +161,51 @@ impl Column {
             );
 
             pcb.add_track(&track_path, TOP_LAYER, column_net);
+        }
+    }
+
+    /// Adds the tracks connecting the columns.
+    pub fn add_column_tracks(
+        &self,
+        pcb: &mut KicadPcb,
+        column_nets: &[Net],
+        left_column_connector: Position,
+        right_column_connector: Position,
+    ) {
+        const CHAMFER_DEPTH: Length = Length::new(3.0);
+
+        let x_offset = x_offset(0);
+        let y_offset = ROW_PAD.y() + Length::from(1.0);
+        let connector_offset = Length::from(PAD_SIZE.x / 2.0) - x_offset;
+
+        let path = Path::chamfered(
+            point!(0, centered_track_offset(1, column_nets.len() + 1)),
+            point!(connector_offset, connector_offset),
+            1.into(),
+            false,
+        )
+        .at(left_column_connector)
+        .join(
+            &Path::new([
+                point!(-x_offset, y_offset - CHAMFER_DEPTH),
+                point!(-x_offset + CHAMFER_DEPTH, y_offset),
+                point!(x_offset - CHAMFER_DEPTH, y_offset),
+                point!(x_offset, y_offset - CHAMFER_DEPTH),
+            ])
+            .at(self.first()),
+        )
+        .join(
+            &Path::chamfered(
+                point!(-connector_offset, connector_offset),
+                point!(0, centered_track_offset(0, column_nets.len())),
+                1.into(),
+                false,
+            )
+            .at(right_column_connector),
+        );
+
+        for (i, column_net) in column_nets.iter().enumerate() {
+            pcb.add_track(&path.offset(-track_offset(i)), TOP_LAYER, column_net);
         }
     }
 
