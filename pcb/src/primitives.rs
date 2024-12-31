@@ -16,12 +16,12 @@ impl Point {
     }
 
     /// Returns the X coordinate of the position.
-    pub fn x(self) -> Length {
+    pub const fn x(self) -> Length {
         self.0
     }
 
     /// Returns the Y coordinate of the position.
-    pub fn y(self) -> Length {
+    pub const fn y(self) -> Length {
         self.1
     }
 }
