@@ -6,7 +6,7 @@ use model::matrix_pcb::{ClusterConnector, ColumnConnector, CONNECTOR_WIDTH, PAD_
 use straight_connector::StraightConnector;
 
 use crate::{
-    footprints::{LOWER_COLUMN_PAD, ROW_PAD, UPPER_COLUMN_PAD},
+    footprints::{BELOW_ROW_PAD, LOWER_COLUMN_PAD, ROW_PAD, UPPER_COLUMN_PAD},
     kicad_pcb::{KicadPcb, Net},
     matrix_pcb::{centered_track_offset, AddPath, TOP_LAYER},
     path::Path,
@@ -122,7 +122,7 @@ impl Connector {
         let track_path = match attachment_side {
             AttachmentSide::Top => Path::angled_start(start, UPPER_COLUMN_PAD),
             AttachmentSide::Center => {
-                let center = point!(0, ROW_PAD.y() + Length::from(1.0));
+                let center = point!(0, BELOW_ROW_PAD.y());
 
                 Path::angled_end(start, center).join(&Path::angled_start(center, end))
             }

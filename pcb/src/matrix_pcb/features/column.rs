@@ -5,7 +5,7 @@ use model::matrix_pcb::{
 };
 
 use crate::{
-    footprints::{LOWER_COLUMN_PAD, ROW_PAD, UPPER_COLUMN_PAD},
+    footprints::{ABOVE_ROW_PAD, BELOW_ROW_PAD, LOWER_COLUMN_PAD, ROW_PAD, UPPER_COLUMN_PAD},
     kicad_pcb::{KicadPcb, Net},
     matrix_pcb::{
         centered_track_offset, track_offset, x_offset, AddPath, TOP_LAYER, TRACK_CLEARANCE,
@@ -175,12 +175,12 @@ impl Column {
         const CHAMFER_DEPTH: Length = Length::new(3.0);
 
         let x_offset = x_offset(0);
-        let y_offset = ROW_PAD.y() + Length::from(1.0);
+        let y_offset = BELOW_ROW_PAD.y();
         let connector_offset = Length::from(PAD_SIZE.x / 2.0) - x_offset;
 
         let path = Path::chamfered(
             point!(0, centered_track_offset(1, column_nets.len() + 1)),
-            point!(connector_offset, connector_offset),
+            point!(connector_offset, PAD_SIZE.y / 2.0),
             1.into(),
             false,
         )
@@ -196,7 +196,7 @@ impl Column {
         )
         .join(
             &Path::chamfered(
-                point!(-connector_offset, connector_offset),
+                point!(-connector_offset, PAD_SIZE.y / 2.0),
                 point!(0, centered_track_offset(0, column_nets.len())),
                 1.into(),
                 false,

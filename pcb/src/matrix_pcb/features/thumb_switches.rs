@@ -1,7 +1,7 @@
 use model::matrix_pcb::{Segment, ThumbKeyConnectors, CONNECTOR_WIDTH, PAD_SIZE};
 
 use crate::{
-    footprints::{ROW_PAD, UPPER_COLUMN_PAD},
+    footprints::{ABOVE_ROW_PAD, ROW_PAD, UPPER_COLUMN_PAD},
     kicad_pcb::{KicadPcb, Net},
     matrix_pcb::{
         centered_track_offset, nets::Nets, track_offset, AddPath, BOTTOM_LAYER, TOP_LAYER,
@@ -96,16 +96,13 @@ impl ThumbSwitches {
             .expect("there is always at least one thumb switch");
 
         let x_offset = Self::X_OFFSET + centered_track_offset(1, 2);
-        let path = Path::angled_start(
-            point!(x_offset, -PAD_SIZE.y / 2.0),
-            point!(ROW_PAD.x(), ROW_PAD.y() - 1.into()),
-        )
-        .append(ROW_PAD)
-        .at(first);
+        let path = Path::angled_start(point!(x_offset, -PAD_SIZE.y / 2.0), ABOVE_ROW_PAD)
+            .append(ROW_PAD)
+            .at(first);
         pcb.add_track(&path, TOP_LAYER, row_net);
 
         if let Some((&last, rest)) = rest.split_last() {
-            let chamfer_depth = Y_OFFSET - ROW_PAD.y() - Length::from(1.0);
+            let chamfer_depth = Y_OFFSET - ABOVE_ROW_PAD.y();
 
             let second_segment = &Path::chamfered(
                 point!(-PAD_SIZE.x / 2.0, Y_OFFSET),
