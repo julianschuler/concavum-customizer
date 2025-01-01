@@ -63,6 +63,15 @@ impl Mul<Length> for f32 {
     }
 }
 
+impl Mul<Length> for f64 {
+    type Output = Length;
+
+    fn mul(self, rhs: Length) -> Self::Output {
+        #[allow(clippy::cast_possible_truncation)]
+        Length((self * f64::from(rhs.0)) as i32)
+    }
+}
+
 impl Div<i32> for Length {
     type Output = Length;
 
