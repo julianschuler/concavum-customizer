@@ -14,10 +14,15 @@ pub use thumb_switches::ThumbSwitches;
 
 /// All features of the matrix PCB.
 pub struct Features {
+    /// The columns in the finger cluster.
     pub columns: Vec<Column>,
+    /// The switches in the thumb cluster.
     pub thumb_switches: ThumbSwitches,
+    /// The connectors connecting the columns in the finger cluster.
     pub column_connectors: Vec<Connector>,
+    /// The cluster connector connecting the finger and thumb cluster.
     pub cluster_connector: Connector,
+    /// The FFC connector.
     pub ffc_connector: FfcConnector,
 }
 

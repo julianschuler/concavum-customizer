@@ -357,7 +357,7 @@ fn add_pad_outline(pcb: &mut KicadPcb, position: Position) {
     }
 }
 
-/// Creates a double chamfer for the given the given index and side.
+/// Creates a double chamfer for the given index and side.
 fn double_chamfer(index: usize, above: bool) -> Path {
     const CHAMFER_DEPTH: Length = Length::new(3.0);
 
