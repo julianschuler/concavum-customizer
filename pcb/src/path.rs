@@ -8,6 +8,7 @@ use crate::{
 };
 
 /// A directed path described by a list of points.
+#[derive(Clone)]
 pub struct Path(Vec<Point>);
 
 impl Path {
