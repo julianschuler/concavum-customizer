@@ -223,7 +223,7 @@ impl Builder {
 
         features.ffc_connector.add_row_tracks(
             &mut self.pcb,
-            &nets.columns()[1..],
+            nets.finger_rows(),
             &features.columns[self.cluster_connector_index],
         );
         features.ffc_connector.add_column_tracks(
