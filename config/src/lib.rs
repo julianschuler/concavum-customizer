@@ -16,7 +16,10 @@ use show::{
 use show_derive::Show;
 
 pub use columns::{ColumnConfig, ColumnType, Columns, NormalColumn, SideColumn};
-pub use primitives::{CurvatureAngle, FiniteFloat, PositiveFloat, Ranged, SideAngle, Vec2, Vec3};
+pub use primitives::{
+    ColumnCurvatureAngle, FiniteFloat, PositiveFloat, Ranged, SideAngle, ThumbCurvatureAngle, Vec2,
+    Vec3,
+};
 pub use show::Color;
 
 /// A configuration of a keyboard.
@@ -195,7 +198,7 @@ pub struct ThumbCluster {
     /// The number of thumb keys.
     pub keys: Ranged<i8, 1, 6>,
     /// The thumb well curvature as an angle between two neighboring keys.
-    pub curvature_angle: CurvatureAngle,
+    pub curvature_angle: ThumbCurvatureAngle,
     /// The rotation of the thumb cluster in relation to the finger cluster.
     pub rotation: Vec3<FiniteFloat>,
     /// The offset of the thumb cluster in relation to the finger cluster.

@@ -6,7 +6,7 @@ use show::{
 };
 use show_derive::Show;
 
-use crate::{CurvatureAngle, FiniteFloat, SideAngle, Vec2};
+use crate::{ColumnCurvatureAngle, FiniteFloat, SideAngle, Vec2};
 
 const MAXIMUM_NORMAL_COLUMNS: usize = 4;
 
@@ -133,7 +133,7 @@ impl Show for NormalColumns {
 #[derive(Clone, Serialize, Deserialize, Show, PartialEq, Eq, Hash)]
 pub struct NormalColumn {
     /// The column curvature as an angle between two neighboring keys.
-    pub curvature_angle: CurvatureAngle,
+    pub curvature_angle: ColumnCurvatureAngle,
     /// The offset of the column in Y and Z.
     pub offset: Vec2<FiniteFloat>,
 }
