@@ -14,8 +14,11 @@ use crate::Error;
 
 const DRAG_SPEED: f64 = 0.1;
 
-/// A curvature angle between two neighboring keys.
-pub type CurvatureAngle = Ranged<FiniteFloat, -20, 50>;
+/// A curvature angle between two neighboring column keys.
+pub type ColumnCurvatureAngle = Ranged<FiniteFloat, 0, 50>;
+
+/// A curvature angle between two neighboring thumb keys.
+pub type ThumbCurvatureAngle = Ranged<FiniteFloat, -20, 50>;
 
 /// A side angle between two columns.
 pub type SideAngle = Ranged<FiniteFloat, 0, 30>;
