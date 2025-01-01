@@ -8,8 +8,8 @@ use crate::{
     footprints::{ABOVE_ROW_PAD, BELOW_ROW_PAD, LOWER_COLUMN_PAD, ROW_PAD, UPPER_COLUMN_PAD},
     kicad_pcb::{KicadPcb, Net},
     matrix_pcb::{
-        centered_track_offset, nets::Nets, track_offset, x_offset, AddPath, TOP_LAYER, 
-        TRACK_CLEARANCE, TRACK_WIDTH,
+        centered_track_offset, connector::AttachmentSide, nets::Nets, track_offset, x_offset,
+        AddPath, BOTTOM_LAYER, TOP_LAYER, TRACK_CLEARANCE, TRACK_WIDTH,
     },
     path::Path,
     point,
@@ -228,6 +228,55 @@ impl Column {
                 pcb.add_outline_path(&outline_points);
             }
         }
+    }
+
+    /// Adds the home row track for a left- or rightmost column to the PCB.
+    fn add_outer_column_home_row_track(
+        &self,
+        pcb: &mut KicadPcb,
+        net: &Net,
+        attachment_side: AttachmentSide,
+        row_count: usize,
+        left: bool,
+    ) {
+        let sign_x = if left { 1.0 } else { -1.0 };
+        let y_offset = attachment_side.y_offset();
+
+        let start_point = point!(
+            sign_x * PAD_SIZE.x / 2.0,
+            y_offset - centered_track_offset(self.switches_below.len(), row_count)
+        );
+
+        let home_row_track_path = if matches!(attachment_side, AttachmentSide::Top) {
+            let center_point = point!(2.4, -2.4);
+
+            if left {
+                let path_point = point!(1.1, -5.6);
+
+                Path::angled_start(start_point, path_point)
+                    .join(&Path::angled_start(path_point, center_point))
+                    .join(&Path::angled_start(center_point, ABOVE_ROW_PAD))
+            } else {
+                Path::angled_start(start_point, center_point)
+                    .join(&Path::angled_start(center_point, ABOVE_ROW_PAD))
+            }
+        } else {
+            Path::angled_start(
+                start_point,
+                if left {
+                    if matches!(attachment_side, AttachmentSide::Center) {
+                        ABOVE_ROW_PAD
+                    } else {
+                        BELOW_ROW_PAD
+                    }
+                } else {
+                    point!(0, ROW_PAD.y())
+                },
+            )
+        }
+        .append(ROW_PAD)
+        .at(self.home_switch);
+        pcb.add_track(&home_row_track_path, BOTTOM_LAYER, net);
     }
 }
 
