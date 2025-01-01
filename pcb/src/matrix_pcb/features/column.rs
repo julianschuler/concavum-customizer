@@ -172,10 +172,7 @@ impl Column {
         left_column_connector: Position,
         right_column_connector: Position,
     ) {
-        const CHAMFER_DEPTH: Length = Length::new(3.0);
-
         let x_offset = x_offset(0);
-        let y_offset = BELOW_ROW_PAD.y();
         let connector_offset = Length::from(PAD_SIZE.x / 2.0) - x_offset;
 
         let path = Path::chamfered(
@@ -185,15 +182,7 @@ impl Column {
             false,
         )
         .at(left_column_connector)
-        .join(
-            &Path::new([
-                point!(-x_offset, y_offset - CHAMFER_DEPTH),
-                point!(-x_offset + CHAMFER_DEPTH, y_offset),
-                point!(x_offset - CHAMFER_DEPTH, y_offset),
-                point!(x_offset, y_offset - CHAMFER_DEPTH),
-            ])
-            .at(self.first()),
-        )
+        .join(&double_chamfer(0, false).at(self.first()))
         .join(
             &Path::chamfered(
                 point!(-connector_offset, PAD_SIZE.y / 2.0),
@@ -317,4 +306,20 @@ fn add_pad_outline(pcb: &mut KicadPcb, position: Position) {
 
         pcb.add_outline_path(&outline_points);
     }
+}
+
+/// Creates a double chamfer for the given the given index and side.
+fn double_chamfer(index: usize, above: bool) -> Path {
+    const CHAMFER_DEPTH: Length = Length::new(3.0);
+
+    let x_offset = x_offset(index);
+    let y_offset = if above { ABOVE_ROW_PAD } else { BELOW_ROW_PAD }.y();
+    let sign = if above { 1 } else { -1 };
+
+    Path::new([
+        point!(-x_offset, y_offset + sign * CHAMFER_DEPTH),
+        point!(-x_offset + CHAMFER_DEPTH, y_offset),
+        point!(x_offset - CHAMFER_DEPTH, y_offset),
+        point!(x_offset, y_offset + sign * CHAMFER_DEPTH),
+    ])
 }
