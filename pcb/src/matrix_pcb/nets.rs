@@ -61,6 +61,18 @@ impl Nets {
         &self.rows[1..=self.row_count]
     }
 
+    /// Returns the row nets above the home row.
+    pub fn upper_finger_rows(&self) -> Vec<&Net> {
+        self.rows[self.home_row_index + 2..=self.row_count]
+            .iter()
+            .collect()
+    }
+
+    /// Returns the row nets above the home row.
+    pub fn lower_finger_rows(&self) -> Vec<&Net> {
+        self.rows[1..=self.home_row_index].iter().rev().collect()
+    }
+
     /// Returns the nets of the finger columns.
     pub fn columns(&self) -> &[Net] {
         &self.columns[..self.column_count]

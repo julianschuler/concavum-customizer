@@ -86,6 +86,7 @@ impl Builder {
 
         self.add_ffc_connector_tracks(&features, &nets);
         self.add_column_tracks(&features, &nets);
+        self.add_row_tracks(&features, &nets);
         features.thumb_switches.add_tracks(&mut self.pcb, &nets);
 
         self.pcb
@@ -277,6 +278,34 @@ impl Builder {
                 i + 1,
                 &nets.columns()[self.column_count - 1 - i],
             );
+        }
+    }
+
+    /// Adds the tracks for the rows to the PCB.
+    fn add_row_tracks(&mut self, features: &Features, nets: &Nets) {
+        if let Some(column_connector) = features.column_connectors.first() {
+            features
+                .columns
+                .first()
+                .expect("there is always at least one column")
+                .add_outer_column_row_tracks(
+                    &mut self.pcb,
+                    nets,
+                    column_connector.start_attachment_side(),
+                    true,
+                );
+        }
+        if let Some(column_connector) = features.column_connectors.last() {
+            features
+                .columns
+                .last()
+                .expect("there is always at least one column")
+                .add_outer_column_row_tracks(
+                    &mut self.pcb,
+                    nets,
+                    column_connector.end_attachment_side(),
+                    false,
+                );
         }
     }
 }

@@ -198,6 +198,95 @@ impl Column {
         }
     }
 
+    /// Adds the tracks connecting the rows in a left- or rightmost column to the PCB.
+    pub fn add_outer_column_row_tracks(
+        &self,
+        pcb: &mut KicadPcb,
+        nets: &Nets,
+        attachment_side: AttachmentSide,
+        left: bool,
+    ) {
+        let sign_x: f64 = if left { 1.0 } else { -1.0 };
+        let track_x_offset = sign_x * x_offset(0);
+        let row_count = nets.finger_rows().len();
+
+        let (y_offset_below, y_offset_above) = if matches!(attachment_side, AttachmentSide::Center)
+        {
+            (ROW_PAD.y(), UPPER_COLUMN_PAD.y())
+        } else {
+            (
+                (PAD_SIZE.y / 2.0 + 2.0).into(),
+                (-PAD_SIZE.y / 2.0 - 2.0).into(),
+            )
+        };
+        let (offsets_below, offsets_above) = self.offsets.split_at(self.switches_below.len());
+        let offsets_below: Vec<_> = offsets_below.iter().rev().map(|&offset| -offset).collect();
+
+        for (switches, offsets, row_nets, y_offset, above) in [
+            (
+                &self.switches_below,
+                offsets_below.as_slice(),
+                nets.lower_finger_rows(),
+                y_offset_below,
+                false,
+            ),
+            (
+                &self.switches_above,
+                offsets_above,
+                nets.upper_finger_rows(),
+                y_offset_above,
+                true,
+            ),
+        ] {
+            let sign_y: f64 = if above { 1.0 } else { -1.0 };
+
+            if !switches.is_empty() {
+                let start_path = Path::chamfered(
+                    point!(
+                        sign_x * PAD_SIZE.x / 2.0,
+                        attachment_side.y_offset()
+                            + sign_y * centered_track_offset(switches.len() - 1, row_count)
+                    ),
+                    point!(track_x_offset, y_offset + sign_y.into()),
+                    0.8.into(),
+                    left != above,
+                )
+                .at(self.home_switch);
+
+                for (i, net) in row_nets.iter().enumerate() {
+                    let path = once(&self.home_switch)
+                        .chain(switches)
+                        .zip(offsets)
+                        .take(i + 1)
+                        .map(|(&switch, &offset)| {
+                            Path::angled_end_center(
+                                point!(track_x_offset, y_offset),
+                                point!(track_x_offset + offset, sign_y * -PAD_SIZE.y / 2.0),
+                            )
+                            .append(point!(
+                                track_x_offset + offset,
+                                sign_y * (-PAD_SIZE.y / 2.0 - 1.0)
+                            ))
+                            .at(switch)
+                        })
+                        .fold(start_path.clone(), |path, other| path.join(&other))
+                        .offset(sign_x * sign_y * -track_offset(i))
+                        .join(&row_path(i, left, above).at(switches[i]));
+
+                    pcb.add_track(&path, BOTTOM_LAYER, net);
+                }
+            }
+        }
+
+        self.add_outer_column_home_row_track(
+            pcb,
+            nets.home_row(),
+            attachment_side,
+            row_count,
+            left,
+        );
+    }
+
     /// Adds the outline of the home switch to the PCB.
     fn add_home_switch_outline(
         &self,
@@ -371,4 +460,26 @@ fn double_chamfer(index: usize, above: bool) -> Path {
         point!(x_offset - CHAMFER_DEPTH, y_offset),
         point!(x_offset, y_offset + sign * CHAMFER_DEPTH),
     ])
+}
+
+/// Returns the row path with the given index, going to the respective sides.
+fn row_path(index: usize, left: bool, above: bool) -> Path {
+    if left {
+        if above {
+            Path::angled_start_center(point!(x_offset(index), PAD_SIZE.y / 2.0), BELOW_ROW_PAD)
+        } else {
+            Path::angled_start(point!(x_offset(index), -PAD_SIZE.y / 2.0), ABOVE_ROW_PAD)
+        }
+    } else if above {
+        Path::angled_center(
+            point!(-x_offset(index), PAD_SIZE.y / 2.0),
+            point!(0, ROW_PAD.y()),
+        )
+    } else {
+        Path::angled_start(
+            point!(-x_offset(index), -PAD_SIZE.y / 2.0),
+            point!(0, ROW_PAD.y()),
+        )
+    }
+    .append(ROW_PAD)
 }
