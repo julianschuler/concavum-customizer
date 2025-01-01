@@ -82,8 +82,8 @@ impl ThumbSwitches {
 
     /// Adds the tracks for the thumb switches to the PCB.
     pub fn add_tracks(&self, pcb: &mut KicadPcb, nets: &Nets) {
-        self.add_row_track(pcb, &nets.rows[0]);
-        self.add_column_tracks(pcb, &nets.columns);
+        self.add_row_track(pcb, nets.thumb_row());
+        self.add_column_tracks(pcb, nets.columns());
     }
 
     /// Adds the track connecting the row of the thumb switches.

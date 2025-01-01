@@ -97,11 +97,11 @@ impl FfcConnector {
         pcb: &mut KicadPcb,
         nets: &Nets,
         row_count: usize,
-        column_count: usize,
         left_column_connector: Option<Position>,
         right_column_connector: Option<Position>,
     ) {
-        let (first_column_net, column_nets) = nets.columns[..column_count]
+        let (first_column_net, column_nets) = nets
+            .columns()
             .split_first()
             .expect("there is at least one column");
 
@@ -133,8 +133,9 @@ impl FfcConnector {
         thumb_switch_count: usize,
     ) {
         let pad_bottom_offset = FFC_PAD_OFFSET + FFC_PAD_SIZE.y / 2.0;
-        let row_net = &nets.rows[0];
-        let (first_column_net, column_nets) = nets.columns[..thumb_switch_count]
+        let row_net = nets.thumb_row();
+        let (first_column_net, column_nets) = nets
+            .thumb_columns()
             .split_first()
             .expect("there is at least one thumb switch");
 
