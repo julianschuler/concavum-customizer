@@ -108,10 +108,7 @@ impl Connector {
 
     /// Adds the column track connecting the column to the right.
     pub fn add_right_column_track(&self, pcb: &mut KicadPcb, track_count: usize, column_net: &Net) {
-        let attachment_side = match self {
-            Connector::Straight(_) => AttachmentSide::Center,
-            Connector::Curved(curved_connector) => curved_connector.end_attachment_side(),
-        };
+        let attachment_side = self.end_attachment_side();
         let start = point!(
             -PAD_SIZE.x / 2.0,
             attachment_side.y_offset() + centered_track_offset(0, track_count)
@@ -131,6 +128,19 @@ impl Connector {
         .at(self.end_switch_position());
 
         pcb.add_track(&track_path, TOP_LAYER, column_net);
+    }
+
+    /// Returns the attachment side of the start of the connector.
+    pub fn start_attachment_side(&self) -> AttachmentSide {
+        self.end_attachment_side().opposite()
+    }
+
+    /// Returns the attachment side of the end of the connector.
+    pub fn end_attachment_side(&self) -> AttachmentSide {
+        match self {
+            Connector::Straight(_) => AttachmentSide::Center,
+            Connector::Curved(curved_connector) => curved_connector.end_attachment_side(),
+        }
     }
 }
 
@@ -152,5 +162,14 @@ impl AttachmentSide {
         } * (PAD_SIZE.y - CONNECTOR_WIDTH)
             / 2.0)
             .into()
+    }
+
+    /// Returns the opposite attachment side.
+    pub fn opposite(self) -> Self {
+        match self {
+            AttachmentSide::Top => AttachmentSide::Bottom,
+            AttachmentSide::Center => AttachmentSide::Center,
+            AttachmentSide::Bottom => AttachmentSide::Top,
+        }
     }
 }
