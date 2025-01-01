@@ -8,8 +8,8 @@ use crate::{
     footprints::{ABOVE_ROW_PAD, BELOW_ROW_PAD, LOWER_COLUMN_PAD, ROW_PAD, UPPER_COLUMN_PAD},
     kicad_pcb::{KicadPcb, Net},
     matrix_pcb::{
-        centered_track_offset, track_offset, x_offset, AddPath, TOP_LAYER, TRACK_CLEARANCE,
-        TRACK_WIDTH,
+        centered_track_offset, nets::Nets, track_offset, x_offset, AddPath, TOP_LAYER, 
+        TRACK_CLEARANCE, TRACK_WIDTH,
     },
     path::Path,
     point,

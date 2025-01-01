@@ -69,7 +69,13 @@ impl Builder {
             self.home_row_index,
             self.cluster_connector_index,
         );
-        let nets = Nets::create(&mut self.pcb);
+        let nets = Nets::create(
+            &mut self.pcb,
+            self.row_count,
+            self.column_count,
+            self.thumb_switch_count,
+            self.home_row_index,
+        );
 
         self.add_outline(&features);
         self.add_switches(&features.columns, &features.thumb_switches, &nets);
@@ -115,11 +121,11 @@ impl Builder {
 
     /// Adds the switches for the finger and thumb cluster to the PCB.
     fn add_switches(&mut self, columns: &[Column], thumb_switches: &ThumbSwitches, nets: &Nets) {
-        for (&position, column_net) in thumb_switches.positions().iter().zip(&nets.columns) {
-            self.add_switch(position, nets.rows[0].clone(), column_net.clone());
+        for (&position, column_net) in thumb_switches.positions().iter().zip(nets.thumb_columns()) {
+            self.add_switch(position, nets.thumb_row().clone(), column_net.clone());
         }
-        for (column, column_net) in columns.iter().zip(&nets.columns) {
-            for (&position, row_net) in column.positions().zip(nets.rows.iter().skip(1)) {
+        for (column, column_net) in columns.iter().zip(nets.columns()) {
+            for (&position, row_net) in column.positions().zip(nets.finger_rows()) {
                 self.add_switch(position, row_net.clone(), column_net.clone());
             }
         }
@@ -153,34 +159,20 @@ impl Builder {
 
     /// Adds the FFC connector to the PCB.
     fn add_ffc_connector(&mut self, position: Position, nets: &Nets) {
-        let ffc_connector_nets = [
-            nets.columns[0].clone(),
-            nets.rows[5].clone(),
-            nets.rows[4].clone(),
-            nets.rows[3].clone(),
-            nets.rows[2].clone(),
-            nets.rows[1].clone(),
-            nets.columns[1].clone(),
-            nets.columns[2].clone(),
-            nets.columns[3].clone(),
-            nets.columns[4].clone(),
-            nets.columns[5].clone(),
-            nets.rows[0].clone(),
-        ];
+        let ffc_connector = FfcConnector::new("J1".to_owned(), position, nets.ffc_connector_nets());
 
-        let ffc_connector = FfcConnector::new("J1".to_owned(), position, ffc_connector_nets);
         self.pcb.add_footprint(ffc_connector.into());
     }
 
     /// Adds the column connector tracks to the PCB.
     fn add_column_connector_tracks(&mut self, features: &Features, nets: &Nets) {
-        let bottom_nets = &nets.rows[1..=self.row_count];
+        let bottom_nets = &nets.finger_rows();
 
         for (i, connector) in features.column_connectors.iter().rev().enumerate() {
             let top_nets = if i >= self.column_count - self.cluster_connector_index - 1 {
-                &nets.columns[..self.cluster_connector_index]
+                &nets.columns()[..self.cluster_connector_index]
             } else {
-                &nets.columns[self.column_count - i - 1..self.column_count]
+                &nets.columns()[self.column_count - i - 1..]
             };
 
             self.add_connector_tracks(connector, TOP_LAYER, top_nets);
@@ -194,16 +186,16 @@ impl Builder {
             &mut self.pcb,
             centered_track_offset(0, 2),
             TOP_LAYER,
-            &nets.rows[0],
+            nets.thumb_row(),
         );
         features.cluster_connector.add_track(
             &mut self.pcb,
             centered_track_offset(1, 2),
             TOP_LAYER,
-            &nets.columns[0],
+            &nets.columns()[0],
         );
 
-        let nets = &nets.columns[1..self.thumb_switch_count];
+        let nets = &nets.thumb_columns()[1..];
         self.add_connector_tracks(&features.cluster_connector, BOTTOM_LAYER, nets);
     }
 
@@ -231,14 +223,13 @@ impl Builder {
 
         features.ffc_connector.add_row_tracks(
             &mut self.pcb,
-            &nets.columns[1..],
+            &nets.columns()[1..],
             &features.columns[self.cluster_connector_index],
         );
         features.ffc_connector.add_column_tracks(
             &mut self.pcb,
             nets,
             self.row_count,
-            self.column_count,
             left_column_connector.map(Connector::end_position),
             right_column_connector.map(Connector::start_position),
         );
@@ -251,7 +242,7 @@ impl Builder {
 
     /// Adds the tracks for the columns to the PCB.
     fn add_column_tracks(&mut self, features: &Features, nets: &Nets) {
-        for (column, net) in features.columns.iter().zip(&nets.columns) {
+        for (column, net) in features.columns.iter().zip(nets.columns()) {
             column.add_switch_tracks(&mut self.pcb, net);
         }
 
@@ -263,7 +254,7 @@ impl Builder {
             .rev()
             .enumerate()
         {
-            let nets = &nets.columns[self.column_count - 1 - i..self.column_count];
+            let nets = &nets.columns()[self.column_count - 1 - i..];
 
             column.add_column_tracks(
                 &mut self.pcb,
@@ -278,13 +269,13 @@ impl Builder {
             .split_at(self.cluster_connector_index);
 
         for left_column_connector in left_column_connectors {
-            left_column_connector.add_left_column_track(&mut self.pcb, &nets.columns[0]);
+            left_column_connector.add_left_column_track(&mut self.pcb, &nets.columns()[0]);
         }
         for (i, right_column_connector) in right_column_connectors.iter().rev().enumerate() {
             right_column_connector.add_right_column_track(
                 &mut self.pcb,
                 i + 1,
-                &nets.columns[self.column_count - 1 - i],
+                &nets.columns()[self.column_count - 1 - i],
             );
         }
     }
