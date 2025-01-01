@@ -106,7 +106,7 @@ impl Connector {
         pcb.add_track(&track_points, TOP_LAYER, column_net);
     }
 
-    /// Adds the column track connecting the column to the left.
+    /// Adds the column track connecting the column to the right.
     pub fn add_right_column_track(&self, pcb: &mut KicadPcb, track_count: usize, column_net: &Net) {
         let attachment_side = match self {
             Connector::Straight(_) => AttachmentSide::Center,
