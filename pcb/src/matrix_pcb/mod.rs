@@ -2,6 +2,7 @@ mod builder;
 mod connector;
 mod features;
 mod nets;
+mod panelizer;
 
 use std::iter::once;
 
