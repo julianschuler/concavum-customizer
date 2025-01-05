@@ -13,6 +13,11 @@ const MAXIMUM_ANGLE: i32 = 360 * VALUE_TO_UNIT;
 pub struct Length(i32);
 
 impl Length {
+    /// The minimum possible length.
+    pub const MIN: Self = Self(i32::MIN);
+    /// The maximum possible length.
+    pub const MAX: Self = Self(i32::MAX);
+
     /// Returns a length with the given value in millimeters.
     pub const fn new(value: f64) -> Length {
         #[allow(clippy::cast_possible_truncation, clippy::cast_precision_loss)]

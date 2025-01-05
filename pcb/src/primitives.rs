@@ -10,6 +10,11 @@ use crate::unit::{Angle, Length};
 pub struct Point(Length, Length);
 
 impl Point {
+    /// The point with coordinates with minimum value.
+    pub const MIN: Self = Self::new(Length::MIN, Length::MIN);
+    /// The point with coordinates with maximum value.
+    pub const MAX: Self = Self::new(Length::MAX, Length::MAX);
+
     /// Creates a new point from the given coordinates.
     pub const fn new(x: Length, y: Length) -> Self {
         Self(x, y)
@@ -23,6 +28,16 @@ impl Point {
     /// Returns the Y coordinate of the position.
     pub const fn y(self) -> Length {
         self.1
+    }
+
+    /// Returns the point containing the minimum values for each coordinate of `self` and `other`.
+    pub fn min(self, other: Self) -> Self {
+        Point::new(self.x().min(other.x()), self.y().min(other.y()))
+    }
+
+    /// Returns the point containing the maximum values for each coordinate of `self` and `other`.
+    pub fn max(self, other: Self) -> Self {
+        Point::new(self.x().max(other.x()), self.y().max(other.y()))
     }
 }
 
