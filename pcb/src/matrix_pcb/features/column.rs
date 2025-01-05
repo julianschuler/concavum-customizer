@@ -5,7 +5,9 @@ use model::matrix_pcb::{
 };
 
 use crate::{
-    footprints::{ABOVE_ROW_PAD, BELOW_ROW_PAD, LOWER_COLUMN_PAD, ROW_PAD, UPPER_COLUMN_PAD},
+    footprints::{
+        ABOVE_ROW_PAD, BELOW_ROW_PAD, LEFT_OF_ROW_PAD, LOWER_COLUMN_PAD, ROW_PAD, UPPER_COLUMN_PAD,
+    },
     kicad_pcb::{KicadPcb, Net},
     matrix_pcb::{
         centered_track_offset, connector::AttachmentSide, nets::Nets, track_offset, x_offset,
@@ -359,7 +361,7 @@ impl Column {
                         BELOW_ROW_PAD
                     }
                 } else {
-                    point!(0, ROW_PAD.y())
+                    LEFT_OF_ROW_PAD
                 },
             )
         }
@@ -471,15 +473,9 @@ fn row_path(index: usize, left: bool, above: bool) -> Path {
             Path::angled_start(point!(x_offset(index), -PAD_SIZE.y / 2.0), ABOVE_ROW_PAD)
         }
     } else if above {
-        Path::angled_center(
-            point!(-x_offset(index), PAD_SIZE.y / 2.0),
-            point!(0, ROW_PAD.y()),
-        )
+        Path::angled_center(point!(-x_offset(index), PAD_SIZE.y / 2.0), LEFT_OF_ROW_PAD)
     } else {
-        Path::angled_start(
-            point!(-x_offset(index), -PAD_SIZE.y / 2.0),
-            point!(0, ROW_PAD.y()),
-        )
+        Path::angled_start(point!(-x_offset(index), -PAD_SIZE.y / 2.0), LEFT_OF_ROW_PAD)
     }
     .append(ROW_PAD)
 }

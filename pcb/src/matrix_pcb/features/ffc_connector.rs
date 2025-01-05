@@ -1,7 +1,7 @@
 use model::matrix_pcb::{CONNECTOR_WIDTH, FFC_PAD_OFFSET, FFC_PAD_SIZE, PAD_SIZE};
 
 use crate::{
-    footprints::{LOWER_COLUMN_PAD, ROW_PAD, UPPER_COLUMN_PAD},
+    footprints::{LEFT_OF_ROW_PAD, LOWER_COLUMN_PAD, ROW_PAD, UPPER_COLUMN_PAD},
     kicad_pcb::{KicadPcb, Net},
     matrix_pcb::{
         centered_track_offset, features::Column, nets::Nets, track_offset, x_offset, AddPath,
@@ -74,7 +74,7 @@ impl FfcConnector {
 
             let path = Path::new([ROW_PAD])
                 .join(&Path::angled_center(
-                    point!(0, ROW_PAD.y()),
+                    LEFT_OF_ROW_PAD,
                     point!(x_offset, PAD_SIZE.y / 2.0),
                 ))
                 .at(position)
