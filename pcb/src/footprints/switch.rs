@@ -134,9 +134,9 @@ impl From<Switch> for Footprint {
                     Property::new(
                         "Reference",
                         switch.reference.clone(),
-                        position!(0, -7.5, angle),
+                        position!(0, -7.1, angle),
                     ),
-                    Property::new("Value", "SW_Cherry_MX".to_owned(), position!(0, 7.5, angle)),
+                    Property::new("Value", "SW_Cherry_MX".to_owned(), position!(0, 7.1, angle)),
                     Property::new("Footprint", String::new(), position!(0, 0, angle)),
                     Property::new("Datasheet", String::new(), position!(0, 0, angle)),
                     Property::new("Description", String::new(), position!(0, 0, angle)),
@@ -168,6 +168,7 @@ impl From<Switch> for Footprint {
                     (point!(-6.35, -6.35), point!(-6.35, 6.35), "Fab"),
                     (point!(-6.35, 6.35), point!(6.35, 6.35), "Fab"),
                 ],
+                fp_texts: Vec::new(),
                 pads: switch.pads(),
             },
         )

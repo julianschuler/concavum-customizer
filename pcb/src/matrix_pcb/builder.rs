@@ -2,12 +2,12 @@ use std::iter::once;
 
 use config::Config;
 use model::{
-    matrix_pcb::{MatrixPcb as Model, THICKNESS},
+    matrix_pcb::{MatrixPcb as Model, PAD_SIZE, ROUTER_BIT_DIAMETER, THICKNESS},
     KeyPositions,
 };
 
 use crate::{
-    footprints::{FfcConnector, Switch},
+    footprints::{FfcConnector, Switch, Tab},
     kicad_pcb::{KicadPcb, Net},
     matrix_pcb::{
         centered_track_offset,
@@ -16,8 +16,9 @@ use crate::{
         nets::Nets,
         AddPath, BOTTOM_LAYER, TOP_LAYER,
     },
-    point,
+    point, position,
     primitives::Position,
+    unit::{IntoAngle, Length},
 };
 
 /// A builder for the matrix PCB.
@@ -88,6 +89,8 @@ impl Builder {
         self.add_column_tracks(&features, &nets);
         self.add_row_tracks(&features, &nets);
         features.thumb_switches.add_tracks(&mut self.pcb, &nets);
+
+        self.add_tabs(&features);
 
         self.pcb
     }
@@ -306,6 +309,36 @@ impl Builder {
                     column_connector.end_attachment_side(),
                     false,
                 );
+        }
+    }
+
+    /// Adds the tab markers to the PCB.
+    fn add_tabs(&mut self, features: &Features) {
+        let tab_offset = Length::new(PAD_SIZE.y / 2.0) + Length::EPSILON;
+        let last_thumb_switch = features.thumb_switches.last();
+
+        let upper_thumb_corner = last_thumb_switch + point!(PAD_SIZE.x / 2.0, -PAD_SIZE.y / 2.0);
+        let lower_thumb_corner = last_thumb_switch + point!(PAD_SIZE.x / 2.0, PAD_SIZE.y / 2.0);
+
+        let minimum_x_value = upper_thumb_corner.x().max(lower_thumb_corner.x())
+            + ROUTER_BIT_DIAMETER.into()
+            + Tab::WIDTH / 2;
+
+        for column in &features.columns {
+            let tab = Tab::new(column.last() + position!(0, -tab_offset, Some(-90.deg())));
+
+            self.pcb.add_footprint(tab.into());
+        }
+
+        for position in once(features.thumb_switches.first())
+            .chain((features.thumb_switches.positions().len() > 1).then_some(last_thumb_switch))
+            .chain(features.columns.iter().filter_map(|column| {
+                (column.first().x() >= minimum_x_value).then_some(column.first())
+            }))
+        {
+            let lower_tab = Tab::new(position + position!(0, tab_offset, Some(90.deg())));
+
+            self.pcb.add_footprint(lower_tab.into());
         }
     }
 }

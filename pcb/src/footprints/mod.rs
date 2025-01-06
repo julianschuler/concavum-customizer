@@ -1,5 +1,6 @@
 mod ffc_connector;
 mod switch;
+mod tab;
 
 use serde::Serialize;
 
@@ -14,6 +15,7 @@ pub use ffc_connector::FfcConnector;
 pub use switch::{
     Switch, ABOVE_ROW_PAD, BELOW_ROW_PAD, LOWER_COLUMN_PAD, ROW_PAD, UPPER_COLUMN_PAD,
 };
+pub use tab::Tab;
 
 #[derive(Serialize)]
 pub struct Footprint(&'static str, FootprintSettings);
@@ -29,13 +31,16 @@ struct FootprintSettings {
     properties: Vec<Property>,
     attr: Attribute,
     fp_lines: Vec<Line>,
+    fp_texts: Vec<Text>,
     pads: Vec<Pad>,
 }
 
 #[derive(Serialize)]
-#[serde(rename_all = "snake_case")]
 enum Attribute {
+    #[serde(rename = "through_hole")]
     ThroughHole,
+    #[serde(rename = "board_only exclude_from_pos_files exclude_from_bom allow_missing_courtyard")]
+    Marker,
 }
 
 #[derive(Serialize)]
@@ -128,6 +133,39 @@ struct Stroke {
 #[serde(rename_all = "snake_case")]
 enum StrokeType {
     Solid,
+}
+
+#[derive(Serialize)]
+struct Text(TextType, &'static str, TextSettings);
+
+impl Text {
+    /// Creates a new user text at the given position.
+    fn new(text: &'static str, position: Position) -> Self {
+        Self(
+            TextType::User,
+            text,
+            TextSettings {
+                at: position,
+                layer: "Dwgs.User",
+                uuid: Uuid::new(),
+                effects: Effects::default(),
+            },
+        )
+    }
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "snake_case")]
+enum TextType {
+    User,
+}
+
+#[derive(Serialize)]
+struct TextSettings {
+    at: Position,
+    layer: &'static str,
+    uuid: Uuid,
+    effects: Effects,
 }
 
 #[derive(Serialize)]

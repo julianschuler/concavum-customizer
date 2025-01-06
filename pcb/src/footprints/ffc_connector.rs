@@ -200,6 +200,7 @@ impl From<FfcConnector> for Footprint {
                     (point!(9.5, 6.3), point!(-9.5, 6.3), "Fab"),
                     (point!(9.5, 6.3), point!(9.5, 0.484), "Fab"),
                 ],
+                fp_texts: Vec::new(),
                 pads: ffc_connector.pads(),
             },
         )

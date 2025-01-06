@@ -8,11 +8,14 @@ pub const VALUE_TO_UNIT: i32 = 1_000_000;
 const MAXIMUM_ANGLE: i32 = 360 * VALUE_TO_UNIT;
 
 /// A unit of length.
-#[derive(Serialize, Clone, Copy, Default, PartialEq, Eq)]
+#[derive(Serialize, Clone, Copy, Default, PartialEq, Eq, PartialOrd)]
 #[serde(transparent)]
 pub struct Length(i32);
 
 impl Length {
+    /// The smallest positive difference between two lengths.
+    pub const EPSILON: Length = Length(1);
+
     /// Returns a length with the given value in millimeters.
     pub const fn new(value: f64) -> Length {
         #[allow(clippy::cast_possible_truncation, clippy::cast_precision_loss)]
