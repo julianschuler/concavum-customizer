@@ -13,13 +13,13 @@ use crate::{
     unit::Length,
 };
 
-/// The positions of the thumb key switches.
+/// The positions of the thumb switches.
 pub struct ThumbSwitches(Vec<Position>);
 
 impl ThumbSwitches {
     const X_OFFSET: Length = Length::new((PAD_SIZE.x - CONNECTOR_WIDTH) / 2.0);
 
-    /// Creates a new set of thumb keys from the corresponding key connectors and position of the first one.
+    /// Creates a new set of thumb switches from the corresponding key connectors and position of the first one.
     pub fn from_key_connectors(
         key_connectors: &ThumbKeyConnectors,
         first_switch: Position,
@@ -34,27 +34,31 @@ impl ThumbSwitches {
         Self(positions)
     }
 
-    /// Returns the positions of the thumb keys.
+    /// Returns the positions of the thumb switch.
     pub fn positions(&self) -> &[Position] {
         &self.0
     }
 
+    /// Returs the position of the first thumb switch.
+    pub fn first(&self) -> Position {
+        self.0
+            .first()
+            .copied()
+            .expect("there is always at least one thumb switch")
+    }
+
+    /// Returns the position of the last thumb switch.
+    pub fn last(&self) -> Position {
+        self.0
+            .last()
+            .copied()
+            .expect("there is always at least one thumb switch")
+    }
+
     /// Adds the outline for the thumb switches to the PCB.
     pub fn add_outline(&self, pcb: &mut KicadPcb) {
-        let first = {
-            let this = &self;
-            this.0
-                .first()
-                .copied()
-                .expect("there is always at least one thumb key")
-        };
-        let last = {
-            let this = &self;
-            this.0
-                .last()
-                .copied()
-                .expect("there is always at least one thumb key")
-        };
+        let first = self.first();
+        let last = self.last();
 
         let outline_points = [
             first + point!(PAD_SIZE.x / 2.0 - CONNECTOR_WIDTH, -PAD_SIZE.y / 2.0),
