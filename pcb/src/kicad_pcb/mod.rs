@@ -25,6 +25,7 @@ pub struct KicadPcb {
     gr_arcs: Vec<GrArc>,
     segments: Vec<Segment>,
     arcs: Vec<Arc>,
+    zones: Vec<Zone>,
 }
 
 impl Default for KicadPcb {
@@ -54,6 +55,7 @@ impl KicadPcb {
             gr_arcs: Vec::default(),
             segments: Vec::default(),
             arcs: Vec::default(),
+            zones: Vec::default(),
         }
     }
 
@@ -172,6 +174,28 @@ impl KicadPcb {
     /// Adds the given footprint to the PCB.
     pub fn add_footprint(&mut self, footprint: Footprint) {
         self.footprints.push(footprint);
+    }
+
+    /// Adds a zone connected to the given net described by the given polygon points.
+    pub fn add_zone(&mut self, polygon_points: Vec<Point>) {
+        let zone = Zone {
+            net: 0,
+            net_name: "",
+            layers: "F&B.Cu",
+            uuid: Uuid::new(),
+            hatch: Hatch::default(),
+            connect_pads: ConnectPads::default(),
+            min_thickness: 0.25.into(),
+            filled_areas_thickness: false,
+            fill: Fill::default(),
+            polygon: Polygon {
+                pts: PolygonPoints {
+                    xys: polygon_points,
+                },
+            },
+        };
+
+        self.zones.push(zone);
     }
 }
 
@@ -380,4 +404,75 @@ struct Arc {
     layer: &'static str,
     net: u32,
     uuid: Uuid,
+}
+
+#[derive(Serialize)]
+struct Zone {
+    net: u32,
+    net_name: &'static str,
+    layers: &'static str,
+    uuid: Uuid,
+    hatch: Hatch,
+    connect_pads: ConnectPads,
+    min_thickness: Length,
+    filled_areas_thickness: bool,
+    fill: Fill,
+    polygon: Polygon,
+}
+
+#[derive(Serialize)]
+struct Hatch(HatchType, Length);
+
+impl Default for Hatch {
+    fn default() -> Self {
+        Self(HatchType::Edge, 0.5.into())
+    }
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "snake_case")]
+enum HatchType {
+    Edge,
+}
+
+#[derive(Serialize)]
+struct ConnectPads {
+    clearance: Length,
+}
+
+impl Default for ConnectPads {
+    fn default() -> Self {
+        Self {
+            clearance: 0.5.into(),
+        }
+    }
+}
+
+#[derive(Serialize)]
+struct Fill {
+    thermal_gap: Length,
+    thermal_bridge_width: Length,
+    island_removal_mode: u32,
+    island_area_min: Length,
+}
+
+impl Default for Fill {
+    fn default() -> Self {
+        Self {
+            thermal_gap: 0.5.into(),
+            thermal_bridge_width: 0.5.into(),
+            island_removal_mode: 1,
+            island_area_min: 10.into(),
+        }
+    }
+}
+
+#[derive(Serialize)]
+struct Polygon {
+    pts: PolygonPoints,
+}
+
+#[derive(Serialize)]
+struct PolygonPoints {
+    xys: Vec<Point>,
 }

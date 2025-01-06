@@ -14,6 +14,7 @@ use crate::{
         connector::Connector,
         features::{Column, Features, ThumbSwitches},
         nets::Nets,
+        panelize::panelize,
         AddPath, BOTTOM_LAYER, TOP_LAYER,
     },
     point,
@@ -88,6 +89,8 @@ impl Builder {
         self.add_column_tracks(&features, &nets);
         self.add_row_tracks(&features, &nets);
         features.thumb_switches.add_tracks(&mut self.pcb, &nets);
+
+        panelize(&mut self.pcb, &features);
 
         self.pcb
     }
