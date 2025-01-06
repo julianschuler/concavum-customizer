@@ -67,15 +67,20 @@ impl ModelReloader {
         let model = Model::from_config(config);
 
         if let Some(meshes) = self.cached_meshes(config) {
-            self.updater
-                .send_update(Update::New((&model).into(), meshes));
+            self.updater.send_update(Update::New(
+                crate::model::make_settings(&model, config),
+                meshes,
+            ));
         } else {
             let cancellation_token = CancellationToken::new();
             self.cancellation_token = cancellation_token.clone();
 
             let start = Instant::now();
 
-            self.updater.send_update(Update::Settings((&model).into()));
+            self.updater
+                .send_update(Update::Settings(crate::model::make_settings(
+                    &model, config,
+                )));
 
             let cancellation_token = self.cancellation_token.clone();
             let updater = self.updater.clone();

@@ -10,7 +10,7 @@ use std::{
 
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize};
 use show::{
-    egui::{DragValue, Frame, Margin, ScrollArea, Ui},
+    egui::{ComboBox, DragValue, Frame, Margin, ScrollArea, Ui},
     Show,
 };
 use show_derive::Show;
@@ -189,11 +189,62 @@ impl Show for HomeRowIndex {
     }
 }
 
+#[derive(Copy, Clone, Serialize, Deserialize, PartialEq, Eq, Hash, Default)]
+/// Size of keys (1U = regular square, 1.5U = rectangular)
+pub enum KeySize {
+    /// Regular square key
+    U1,
+    /// Larger key
+    #[default]
+    U1_5,
+}
+
+impl std::fmt::Display for KeySize {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            KeySize::U1 => write!(f, "1U"),
+            KeySize::U1_5 => write!(f, "1.5U"),
+        }?;
+        Ok(())
+    }
+}
+
+#[derive(Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
+#[serde(transparent)]
+/// Configuration for thumb key sizes
+pub struct ThumbKeySizeValue {
+    inner: KeySize,
+}
+
+impl Show for ThumbKeySizeValue {
+    fn show(&mut self, ui: &mut Ui) -> bool {
+        let mut changed = false;
+        ComboBox::from_label("")
+            .selected_text(self.inner.to_string())
+            .show_ui(ui, |ui| {
+                for value in [KeySize::U1, KeySize::U1_5] {
+                    changed |= ui
+                        .selectable_value(&mut self.inner, value, value.to_string())
+                        .changed();
+                }
+            });
+        changed
+    }
+}
+
+impl From<&ThumbKeySizeValue> for KeySize {
+    fn from(value: &ThumbKeySizeValue) -> Self {
+        value.inner
+    }
+}
+
 /// A configuration of a thumb cluster.
 #[derive(Clone, Serialize, Deserialize, Show, PartialEq, Eq, Hash)]
 pub struct ThumbCluster {
     /// The number of thumb keys.
     pub keys: Ranged<i8, 1, 6>,
+    /// Size of the thumb keys, as in 1U or 1.5U
+    pub key_size: ThumbKeySizeValue,
     /// The thumb well curvature as an angle between two neighboring keys.
     pub curvature_angle: CurvatureAngle,
     /// The rotation of the thumb cluster in relation to the finger cluster.

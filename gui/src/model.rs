@@ -16,8 +16,8 @@ pub use model::DisplaySettings;
 pub struct Settings {
     /// The positions of the finger keys.
     pub finger_key_positions: Vec<Mat4>,
-    /// The positions of the thumb keys.
-    pub thumb_key_positions: Vec<Mat4>,
+    /// Settings for thumb keys (size, position)
+    pub thumb_key_settings: ThumbKeySettings,
     /// The positions of the interface PCBs.
     pub interface_pcb_positions: Vec<Mat4>,
     /// The meshes of the matrix PCBs.
@@ -30,43 +30,52 @@ pub struct Settings {
     pub light_positions: Vec<Vec3>,
 }
 
-impl From<&Model> for Settings {
-    fn from(model: &Model) -> Self {
-        let finger_key_positions = model
-            .key_positions
-            .columns
-            .iter()
-            .flat_map(|column| column.iter().flat_map(mirrored_positions))
-            .collect();
-        let thumb_key_positions = model
-            .key_positions
-            .thumb_keys
-            .iter()
-            .flat_map(mirrored_positions)
-            .collect();
-        let interface_pcb_positions =
-            mirrored_positions(&model.keyboard.interface_pcb_position).to_vec();
+#[derive(Clone, Default)]
+pub struct ThumbKeySettings {
+    pub key_size: config::KeySize,
+    /// The positions of the thumb keys.
+    pub thumb_key_positions: Vec<Mat4>,
+}
 
-        let matrix_pcb_meshes = model
-            .matrix_pcb
-            .key_connectors
-            .iter()
-            .map(Into::into)
-            .chain(model.matrix_pcb.column_connectors.iter().map(Into::into))
-            .chain(once((&model.matrix_pcb.cluster_connector).into()))
-            .collect();
-        let fpc_pad_positions = mirrored_positions(&model.matrix_pcb.fpc_pad_position).to_vec();
-        let light_positions = light_positions_from_bounds(model.keyboard.right_half.bounds());
+pub fn make_settings(model: &Model, config: &config::Config) -> Settings {
+    let finger_key_positions = model
+        .key_positions
+        .columns
+        .iter()
+        .flat_map(|column| column.iter().flat_map(mirrored_positions))
+        .collect();
+    let thumb_key_positions = model
+        .key_positions
+        .thumb_keys
+        .iter()
+        .flat_map(mirrored_positions)
+        .collect();
+    let thumb_key_settings = ThumbKeySettings {
+        thumb_key_positions,
+        key_size: (&config.thumb_cluster.key_size).into(),
+    };
+    let interface_pcb_positions =
+        mirrored_positions(&model.keyboard.interface_pcb_position).to_vec();
 
-        Self {
-            finger_key_positions,
-            thumb_key_positions,
-            interface_pcb_positions,
-            matrix_pcb_meshes,
-            fpc_pad_positions,
-            display_settings: model.display_settings.clone(),
-            light_positions,
-        }
+    let matrix_pcb_meshes = model
+        .matrix_pcb
+        .key_connectors
+        .iter()
+        .map(Into::into)
+        .chain(model.matrix_pcb.column_connectors.iter().map(Into::into))
+        .chain(once((&model.matrix_pcb.cluster_connector).into()))
+        .collect();
+    let fpc_pad_positions = mirrored_positions(&model.matrix_pcb.fpc_pad_position).to_vec();
+    let light_positions = light_positions_from_bounds(model.keyboard.right_half.bounds());
+
+    Settings {
+        finger_key_positions,
+        thumb_key_settings,
+        interface_pcb_positions,
+        matrix_pcb_meshes,
+        fpc_pad_positions,
+        display_settings: model.display_settings.clone(),
+        light_positions,
     }
 }
 

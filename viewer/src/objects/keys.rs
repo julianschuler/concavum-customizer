@@ -23,6 +23,7 @@ impl Keys {
         switch_positions: Vec<Mat4>,
         finger_key_positions: Vec<Mat4>,
         thumb_key_positions: Vec<Mat4>,
+        thumb_key_size: config::KeySize,
     ) -> Self {
         let colors = &display_settings.colors;
 
@@ -34,9 +35,13 @@ impl Keys {
             colors.keycap,
             finger_key_positions,
         );
+        let thumb_keycap_asset = match thumb_key_size {
+            config::KeySize::U1_5 => &assets.keycap_1_5u,
+            config::KeySize::U1 => &assets.keycap_1u,
+        };
         let thumb_keycaps = InstancedObject::new(
             context,
-            &assets.keycap_1_5u,
+            thumb_keycap_asset,
             colors.keycap,
             thumb_key_positions,
         );

@@ -28,7 +28,7 @@ impl Scene {
         let switch_positions: Vec<_> = settings
             .finger_key_positions
             .iter()
-            .chain(&settings.thumb_key_positions)
+            .chain(&settings.thumb_key_settings.thumb_key_positions)
             .copied()
             .collect();
         let display_settings = &settings.display_settings;
@@ -39,7 +39,8 @@ impl Scene {
             display_settings,
             switch_positions.clone(),
             settings.finger_key_positions,
-            settings.thumb_key_positions,
+            settings.thumb_key_settings.thumb_key_positions,
+            settings.thumb_key_settings.key_size,
         );
         let interface_pcbs = InterfacePcbs::new(
             context,
