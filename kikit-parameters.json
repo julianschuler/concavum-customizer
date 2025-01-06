@@ -1,0 +1,48 @@
+{
+  "layout": {
+    "renamenet": "{orig}"
+  },
+  "tabs": {
+    "type": "annotation"
+  },
+  "cuts": {
+    "type": "mousebites"
+  },
+  "framing": {
+    "type": "railstb"
+  },
+  "copperfill": {
+    "type": "solid"
+  },
+  "post": {
+    "millradius": "1mm"
+  },
+  "text": {
+    "type": "simple",
+    "text": "Open Source Hardware - https://github.com/julianschuler/concavum-customizer",
+    "anchor": "mt",
+    "voffset": "2.5mm",
+    "layer": "F.SilkS"
+  },
+  "text2": {
+    "type": "simple",
+    "text": "Open Source Hardware - https://github.com/julianschuler/concavum-customizer",
+    "anchor": "mt",
+    "voffset": "2.5mm",
+    "layer": "B.SilkS"
+  },
+  "text3": {
+    "type": "simple",
+    "text": "This PCB was automatically generated using the Concavum Customizer.",
+    "anchor": "mb",
+    "voffset": "-2.5mm",
+    "layer": "F.SilkS"
+  },
+  "text4": {
+    "type": "simple",
+    "text": "This PCB was automatically generated using the Concavum Customizer.",
+    "anchor": "mb",
+    "voffset": "-2.5mm",
+    "layer": "B.SilkS"
+  }
+}
