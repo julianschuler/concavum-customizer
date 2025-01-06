@@ -13,6 +13,8 @@ pub const ROW_PAD: Point = Point::new(Length::new(1.65), Length::new(3.4));
 pub const ABOVE_ROW_PAD: Point = Point::new(ROW_PAD.x(), Length::new(2.4));
 /// The position below the row pad within a switch.
 pub const BELOW_ROW_PAD: Point = Point::new(ROW_PAD.x(), Length::new(4.4));
+/// The position left of the row pad within a switch.
+pub const LEFT_OF_ROW_PAD: Point = Point::new(Length::new(0.0), ROW_PAD.y());
 /// The position of the lower column pad within a switch.
 pub const LOWER_COLUMN_PAD: Point = Point::new(Length::new(3.81), Length::new(-2.54));
 /// The position of the upper column pad within a switch.

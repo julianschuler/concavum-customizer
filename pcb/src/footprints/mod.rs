@@ -13,7 +13,8 @@ use crate::{
 
 pub use ffc_connector::FfcConnector;
 pub use switch::{
-    Switch, ABOVE_ROW_PAD, BELOW_ROW_PAD, LOWER_COLUMN_PAD, ROW_PAD, UPPER_COLUMN_PAD,
+    Switch, ABOVE_ROW_PAD, BELOW_ROW_PAD, LEFT_OF_ROW_PAD, LOWER_COLUMN_PAD, ROW_PAD,
+    UPPER_COLUMN_PAD,
 };
 pub use tab::Tab;
 
