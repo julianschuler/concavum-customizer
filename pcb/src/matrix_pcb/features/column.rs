@@ -224,13 +224,14 @@ impl Column {
         let (offsets_below, offsets_above) = self.offsets.split_at(self.switches_below.len());
         let offsets_below: Vec<_> = offsets_below.iter().rev().map(|&offset| -offset).collect();
 
-        for (switches, offsets, row_nets, y_offset, above) in [
+        for (switches, offsets, row_nets, y_offset, above, sign_y) in [
             (
                 &self.switches_below,
                 offsets_below.as_slice(),
                 nets.lower_finger_rows(),
                 y_offset_below,
                 false,
+                -1.0,
             ),
             (
                 &self.switches_above,
@@ -238,10 +239,9 @@ impl Column {
                 nets.upper_finger_rows(),
                 y_offset_above,
                 true,
+                1.0,
             ),
         ] {
-            let sign_y: f64 = if above { 1.0 } else { -1.0 };
-
             if !switches.is_empty() {
                 let start_path = Path::chamfered(
                     point!(
@@ -279,14 +279,6 @@ impl Column {
                 }
             }
         }
-
-        self.add_outer_column_home_row_track(
-            pcb,
-            nets.home_row(),
-            attachment_side,
-            row_count,
-            left,
-        );
     }
 
     /// Adds the outline of the home switch to the PCB.
@@ -319,55 +311,6 @@ impl Column {
                 pcb.add_outline_path(&outline_points);
             }
         }
-    }
-
-    /// Adds the home row track for a left- or rightmost column to the PCB.
-    fn add_outer_column_home_row_track(
-        &self,
-        pcb: &mut KicadPcb,
-        net: &Net,
-        attachment_side: AttachmentSide,
-        row_count: usize,
-        left: bool,
-    ) {
-        let sign_x = if left { 1.0 } else { -1.0 };
-        let y_offset = attachment_side.y_offset();
-
-        let start_point = point!(
-            sign_x * PAD_SIZE.x / 2.0,
-            y_offset - centered_track_offset(self.switches_below.len(), row_count)
-        );
-
-        let home_row_track_path = if matches!(attachment_side, AttachmentSide::Top) {
-            let center_point = point!(2.4, -2.4);
-
-            if left {
-                let path_point = point!(1.1, -5.6);
-
-                Path::angled_start(start_point, path_point)
-                    .join(&Path::angled_start(path_point, center_point))
-                    .join(&Path::angled_start(center_point, ABOVE_ROW_PAD))
-            } else {
-                Path::angled_start(start_point, center_point)
-                    .join(&Path::angled_start(center_point, ABOVE_ROW_PAD))
-            }
-        } else {
-            Path::angled_start(
-                start_point,
-                if left {
-                    if matches!(attachment_side, AttachmentSide::Center) {
-                        ABOVE_ROW_PAD
-                    } else {
-                        BELOW_ROW_PAD
-                    }
-                } else {
-                    LEFT_OF_ROW_PAD
-                },
-            )
-        }
-        .append(ROW_PAD)
-        .at(self.home_switch);
-        pcb.add_track(&home_row_track_path, BOTTOM_LAYER, net);
     }
 }
 

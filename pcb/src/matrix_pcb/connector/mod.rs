@@ -6,9 +6,11 @@ use model::matrix_pcb::{ClusterConnector, ColumnConnector, CONNECTOR_WIDTH, PAD_
 use straight_connector::StraightConnector;
 
 use crate::{
-    footprints::{BELOW_ROW_PAD, LOWER_COLUMN_PAD, ROW_PAD, UPPER_COLUMN_PAD},
+    footprints::{
+        ABOVE_ROW_PAD, BELOW_ROW_PAD, LEFT_OF_ROW_PAD, LOWER_COLUMN_PAD, ROW_PAD, UPPER_COLUMN_PAD,
+    },
     kicad_pcb::{KicadPcb, Net},
-    matrix_pcb::{centered_track_offset, AddPath, TOP_LAYER},
+    matrix_pcb::{centered_track_offset, AddPath, BOTTOM_LAYER, TOP_LAYER},
     path::Path,
     point,
     primitives::Position,
@@ -154,6 +156,52 @@ impl Connector {
         .at(self.end_switch_position());
 
         pcb.add_track(&track_path, TOP_LAYER, column_net);
+    }
+
+    /// Adds the home row tracks connecting to the left and right columns to the PCB.
+    pub fn add_home_row_tracks(&self, pcb: &mut KicadPcb, net: &Net, home_row_offset: Length) {
+        for (left, sign_x, attachment_side, position) in [
+            (
+                true,
+                1.0,
+                self.start_attachment_side(),
+                self.start_switch_position(),
+            ),
+            (
+                false,
+                -1.0,
+                self.end_attachment_side(),
+                self.end_switch_position(),
+            ),
+        ] {
+            let y_offset = attachment_side.y_offset() - home_row_offset;
+            let start_point = point!(sign_x * PAD_SIZE.x / 2.0, y_offset);
+
+            let home_row_track_path = if matches!(attachment_side, AttachmentSide::Top) {
+                let first_path_point = point!(2.4, -1.6);
+                let second_path_point = point!(0.7, -5.6);
+
+                Path::angled_start(start_point, second_path_point)
+                    .join(&Path::angled_start(second_path_point, first_path_point))
+                    .join(&Path::angled_start(first_path_point, ABOVE_ROW_PAD))
+            } else {
+                Path::angled_start(
+                    start_point,
+                    if left {
+                        if matches!(attachment_side, AttachmentSide::Center) {
+                            ABOVE_ROW_PAD
+                        } else {
+                            BELOW_ROW_PAD
+                        }
+                    } else {
+                        LEFT_OF_ROW_PAD
+                    },
+                )
+            }
+            .append(ROW_PAD)
+            .at(position);
+            pcb.add_track(&home_row_track_path, BOTTOM_LAYER, net);
+        }
     }
 }
 

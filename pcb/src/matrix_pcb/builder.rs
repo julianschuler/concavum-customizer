@@ -286,6 +286,11 @@ impl Builder {
 
     /// Adds the tracks for the rows to the PCB.
     fn add_row_tracks(&mut self, features: &Features, nets: &Nets) {
+        let home_row_offset = centered_track_offset(self.home_row_index, self.row_count);
+        for column_connector in &features.column_connectors {
+            column_connector.add_home_row_tracks(&mut self.pcb, nets.home_row(), home_row_offset);
+        }
+
         if let Some(column_connector) = features.column_connectors.first() {
             features
                 .columns
