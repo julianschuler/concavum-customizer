@@ -31,6 +31,10 @@ impl StraightConnector {
         self.start
     }
 
+    pub fn start_switch_position(&self) -> Position {
+        self.start_position() + position!(-PAD_SIZE.x / 2.0, 0, None)
+    }
+
     /// Returns the end position of the connector.
     pub fn end_position(&self) -> Position {
         self.start + position!(self.length, 0, None)

@@ -57,6 +57,7 @@ impl Features {
         let cluster_connector = Connector::from_cluster_connector(
             &model.cluster_connector,
             ffc_connector.cluster_connector_start(),
+            columns[cluster_connector_index].first(),
         );
 
         let thumb_switches = ThumbSwitches::from_key_connectors(

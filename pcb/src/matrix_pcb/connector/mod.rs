@@ -44,19 +44,37 @@ impl Connector {
     }
 
     /// Creates a connector from a cluster connector and a start position.
-    pub fn from_cluster_connector(cluster_connector: &ClusterConnector, start: Position) -> Self {
+    pub fn from_cluster_connector(
+        cluster_connector: &ClusterConnector,
+        start: Position,
+        start_switch_position: Position,
+    ) -> Self {
         Self::Curved(CurvedConnector::from_cluster_connector(
             cluster_connector,
             start,
+            start_switch_position,
         ))
     }
 
-    /// Returns the start position of the connector
+    /// Returns the start position of the connector.
     pub fn start_position(&self) -> Position {
         match self {
             Connector::Straight(straight_connector) => straight_connector.start_position(),
             Connector::Curved(curved_connector) => curved_connector.start_position(),
         }
+    }
+
+    /// Returns the position of the switch at the start of the connector.
+    pub fn start_switch_position(&self) -> Position {
+        match self {
+            Connector::Straight(straight_connector) => straight_connector.start_switch_position(),
+            Connector::Curved(curved_connector) => curved_connector.start_switch_position(),
+        }
+    }
+
+    /// Returns the attachment side of the start of the connector.
+    pub fn start_attachment_side(&self) -> AttachmentSide {
+        self.end_attachment_side().opposite()
     }
 
     /// Returns the end position of the connector.
@@ -72,6 +90,14 @@ impl Connector {
         match self {
             Connector::Straight(straight_connector) => straight_connector.end_switch_position(),
             Connector::Curved(curved_connector) => curved_connector.end_switch_position(),
+        }
+    }
+
+    /// Returns the attachment side of the end of the connector.
+    pub fn end_attachment_side(&self) -> AttachmentSide {
+        match self {
+            Connector::Straight(_) => AttachmentSide::Center,
+            Connector::Curved(curved_connector) => curved_connector.end_attachment_side(),
         }
     }
 
@@ -100,7 +126,7 @@ impl Connector {
         let position = self.start_position();
         let track_points = [
             position.point(),
-            position - point!(Length::from(PAD_SIZE.x / 2.0) - LOWER_COLUMN_PAD.x(), 0),
+            position + point!(-Length::from(PAD_SIZE.x / 2.0) + LOWER_COLUMN_PAD.x(), 0),
         ];
 
         pcb.add_track(&track_points, TOP_LAYER, column_net);
@@ -128,19 +154,6 @@ impl Connector {
         .at(self.end_switch_position());
 
         pcb.add_track(&track_path, TOP_LAYER, column_net);
-    }
-
-    /// Returns the attachment side of the start of the connector.
-    pub fn start_attachment_side(&self) -> AttachmentSide {
-        self.end_attachment_side().opposite()
-    }
-
-    /// Returns the attachment side of the end of the connector.
-    pub fn end_attachment_side(&self) -> AttachmentSide {
-        match self {
-            Connector::Straight(_) => AttachmentSide::Center,
-            Connector::Curved(curved_connector) => curved_connector.end_attachment_side(),
-        }
     }
 }
 

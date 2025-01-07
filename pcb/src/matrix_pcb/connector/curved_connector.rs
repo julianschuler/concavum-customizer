@@ -16,6 +16,7 @@ pub struct CurvedConnector {
     first_arc: Arc,
     second_arc: Arc,
     segment_length: Length,
+    start_switch_position: Position,
     end_switch_position: Position,
     attachment_side: AttachmentSide,
 }
@@ -24,7 +25,7 @@ impl CurvedConnector {
     /// Creates a connector from a normal column connector and a switch position.
     pub fn from_normal_column_connector(
         normal_column_connector: &NormalColumnConnector,
-        switch_position: Position,
+        start_switch_position: Position,
     ) -> Self {
         let length = normal_column_connector.bezier_curve.length();
         let direction = normal_column_connector.left_arc_side.direction();
@@ -38,7 +39,7 @@ impl CurvedConnector {
             None
         );
 
-        let first_arc = Arc::new(switch_position + offset, -radius, -angle);
+        let first_arc = Arc::new(start_switch_position + offset, -radius, -angle);
         let second_arc_start = first_arc.end_position() + position!(length, 0, None);
         let second_arc = Arc::new(second_arc_start, radius, angle);
 
@@ -55,13 +56,18 @@ impl CurvedConnector {
             first_arc,
             second_arc,
             segment_length,
+            start_switch_position,
             end_switch_position,
             attachment_side,
         }
     }
 
     /// Creates a connector from a cluster connector and a start position.
-    pub fn from_cluster_connector(cluster_connector: &ClusterConnector, start: Position) -> Self {
+    pub fn from_cluster_connector(
+        cluster_connector: &ClusterConnector,
+        start: Position,
+        start_switch_position: Position,
+    ) -> Self {
         let segment_length = MINIMUM_SEGMENT_LENGTH.into();
         let length = cluster_connector.bezier_curve.length();
 
@@ -90,6 +96,7 @@ impl CurvedConnector {
             first_arc,
             second_arc,
             segment_length,
+            start_switch_position,
             end_switch_position,
             attachment_side,
         }
@@ -98,6 +105,11 @@ impl CurvedConnector {
     /// Returns the start position of the connector
     pub fn start_position(&self) -> Position {
         self.first_arc.start - position!(self.segment_length, 0, None)
+    }
+
+    /// Returns the position of the switch at the start of the connector
+    pub fn start_switch_position(&self) -> Position {
+        self.start_switch_position
     }
 
     /// Returns the end position of the connector.
