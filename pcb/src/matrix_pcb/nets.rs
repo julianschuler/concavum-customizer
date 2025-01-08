@@ -68,7 +68,7 @@ impl Nets {
             .collect()
     }
 
-    /// Returns the row nets above the home row.
+    /// Returns the row nets below the home row.
     pub fn lower_finger_rows(&self) -> Vec<&Net> {
         self.rows[1..=self.home_row_index].iter().rev().collect()
     }
