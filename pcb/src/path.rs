@@ -133,7 +133,7 @@ impl Path {
     }
 
     /// Joins the path with the given other one, returning the resulting path.
-    pub fn join(mut self, other: &Path) -> Self {
+    pub fn join(mut self, other: &[Point]) -> Self {
         self.extend_from_slice(other);
         self
     }

@@ -10,10 +10,10 @@ use crate::{
         ABOVE_ROW_PAD, BELOW_ROW_PAD, LEFT_OF_ROW_PAD, LOWER_COLUMN_PAD, ROW_PAD, UPPER_COLUMN_PAD,
     },
     kicad_pcb::{KicadPcb, Net},
-    matrix_pcb::{centered_track_offset, AddPath, BOTTOM_LAYER, TOP_LAYER},
+    matrix_pcb::{centered_track_offset, x_offset, AddPath, BOTTOM_LAYER, TOP_LAYER},
     path::Path,
     point,
-    primitives::Position,
+    primitives::{Point, Position},
     unit::Length,
 };
 
@@ -203,10 +203,86 @@ impl Connector {
             pcb.add_track(&home_row_track_path, BOTTOM_LAYER, net);
         }
     }
+
+    /// Returns the track and its attachment point for the row directly above/below the home row.
+    pub fn row_track_and_attachment_point(
+        &self,
+        other: &Self,
+        left_connector_path: &Path,
+        right_connector_path: &Path,
+        track_offset: Length,
+        above: bool,
+    ) -> (Path, Point) {
+        let position = self.end_switch_position();
+
+        let left_attachment_point = *left_connector_path
+            .first()
+            .expect("connector track should always have points");
+        let right_attachment_point = *right_connector_path
+            .last()
+            .expect("connector track should always have points");
+
+        let (edge_side, sign, chamfer_depth) = if above {
+            (AttachmentSide::Top, 1, Length::new(1.4))
+        } else {
+            (AttachmentSide::Bottom, -1, Length::new(3.0))
+        };
+
+        let left_is_at_edge = self.end_attachment_side() == edge_side;
+        let right_is_at_edge = other.start_attachment_side() == edge_side;
+
+        let y_offset = if above {
+            (-6.6).into()
+        } else {
+            BELOW_ROW_PAD.y()
+        };
+        let x_offset = x_offset(0);
+
+        let center_point = position + point!(0, y_offset);
+        let left_chamfer_points = Path::new([
+            point!(-x_offset, y_offset + sign * chamfer_depth),
+            point!(-x_offset + chamfer_depth, y_offset),
+        ])
+        .at(position);
+        let right_chamfer_points = Path::new([
+            point!(x_offset - chamfer_depth, y_offset),
+            point!(x_offset, y_offset + sign * chamfer_depth),
+        ])
+        .at(position);
+
+        let path = if left_is_at_edge {
+            if right_is_at_edge {
+                Path::new([left_attachment_point, right_attachment_point])
+            } else {
+                Path::angled_start(left_attachment_point, center_point)
+                    .join(&right_chamfer_points)
+                    .join(right_connector_path)
+            }
+        } else if right_is_at_edge {
+            left_connector_path
+                .clone()
+                .join(&left_chamfer_points)
+                .join(&Path::angled_end(center_point, right_attachment_point))
+        } else {
+            left_connector_path
+                .clone()
+                .join(&left_chamfer_points)
+                .join(&right_chamfer_points)
+                .join(right_connector_path)
+        };
+
+        let attachment_point = if right_is_at_edge {
+            point!(x_offset, edge_side.y_offset() + track_offset)
+        } else {
+            point!(x_offset - chamfer_depth, y_offset)
+        };
+
+        (path, attachment_point)
+    }
 }
 
 /// The attachment side of the connector.
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 pub enum AttachmentSide {
     Top,
     Center,
