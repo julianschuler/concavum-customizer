@@ -291,6 +291,14 @@ impl Builder {
             column_connector.add_home_row_tracks(&mut self.pcb, nets.home_row(), home_row_offset);
         }
 
+        for (window, column) in features
+            .column_connectors
+            .windows(2)
+            .zip(features.columns.iter().skip(1))
+        {
+            column.add_inner_column_row_tracks(&mut self.pcb, nets, &window[0], &window[1]);
+        }
+
         if let Some(column_connector) = features.column_connectors.first() {
             features
                 .columns

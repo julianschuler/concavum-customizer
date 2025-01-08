@@ -10,8 +10,10 @@ use crate::{
     },
     kicad_pcb::{KicadPcb, Net},
     matrix_pcb::{
-        centered_track_offset, connector::AttachmentSide, nets::Nets, track_offset, x_offset,
-        AddPath, BOTTOM_LAYER, TOP_LAYER, TRACK_CLEARANCE, TRACK_WIDTH,
+        centered_track_offset,
+        connector::{AttachmentSide, Connector},
+        nets::Nets,
+        track_offset, x_offset, AddPath, BOTTOM_LAYER, TOP_LAYER, TRACK_CLEARANCE, TRACK_WIDTH,
     },
     path::Path,
     point,
@@ -197,6 +199,92 @@ impl Column {
 
         for (i, column_net) in column_nets.iter().enumerate() {
             pcb.add_track(&path.offset(-track_offset(i)), TOP_LAYER, column_net);
+        }
+    }
+
+    /// Adds the tracks connecting the rows in an inner column to the PCB.
+    pub fn add_inner_column_row_tracks(
+        &self,
+        pcb: &mut KicadPcb,
+        nets: &Nets,
+        left_column_connector: &Connector,
+        right_column_connector: &Connector,
+    ) {
+        const CONNECTOR_PATH_HEIGHT: f32 = 1.4;
+
+        let row_count = nets.finger_rows().len();
+        let connector_offset = Length::from(PAD_SIZE.x / 2.0) - x_offset(0);
+
+        for (switches, nets, above, sign) in [
+            (&self.switches_below, nets.lower_finger_rows(), false, -1f32),
+            (&self.switches_above, nets.upper_finger_rows(), true, 1f32),
+        ] {
+            let row_pad_attachment_point = if above { BELOW_ROW_PAD } else { ABOVE_ROW_PAD };
+
+            if let Some(&first) = switches.first() {
+                let connector_track_offset =
+                    sign * centered_track_offset(switches.len() - 1, row_count);
+
+                let left_column_connector_path = Path::chamfered(
+                    point!(0, connector_track_offset),
+                    point!(connector_offset, -sign * CONNECTOR_PATH_HEIGHT),
+                    0.8.into(),
+                    above,
+                )
+                .at(left_column_connector.end_position());
+                let right_column_connector_path = Path::chamfered(
+                    point!(-connector_offset, -sign * CONNECTOR_PATH_HEIGHT),
+                    point!(0, connector_track_offset),
+                    0.8.into(),
+                    above,
+                )
+                .at(right_column_connector.start_position());
+
+                for (i, (window, net)) in once([self.home_switch, first].as_slice())
+                    .chain(switches.windows(2))
+                    .zip(nets)
+                    .enumerate()
+                {
+                    let first_switch = window[0];
+                    let second_switch = window[1];
+
+                    let (column_connector_path, track_attachment_point) = if i > 0 {
+                        let offset = sign * track_offset(i);
+                        let double_chamfer = double_chamfer(i, above);
+
+                        let column_connector_path = left_column_connector_path
+                            .offset(offset)
+                            .join(&double_chamfer.at(first_switch))
+                            .join(&right_column_connector_path.offset(offset));
+
+                        (column_connector_path, double_chamfer[2])
+                    } else {
+                        left_column_connector.row_track_and_attachment_point(
+                            right_column_connector,
+                            &left_column_connector_path,
+                            &right_column_connector_path,
+                            connector_track_offset,
+                            above,
+                        )
+                    };
+                    pcb.add_track(&column_connector_path, BOTTOM_LAYER, net);
+
+                    let row_path = Path::angled_end(
+                        track_attachment_point,
+                        point!(x_offset(0), -f64::from(sign) * PAD_SIZE.y / 2.0),
+                    )
+                    .at(first_switch)
+                    .join(
+                        &Path::angled_start(
+                            point!(x_offset(0), f64::from(sign) * PAD_SIZE.y / 2.0),
+                            row_pad_attachment_point,
+                        )
+                        .append(ROW_PAD)
+                        .at(second_switch),
+                    );
+                    pcb.add_track(&row_path, BOTTOM_LAYER, net);
+                }
+            }
         }
     }
 
