@@ -279,6 +279,29 @@ impl Connector {
 
         (path, attachment_point)
     }
+
+    /// Returns the track of the column at the given side and direction with the given Y offset.
+    pub fn column_track(&self, right: bool, up: bool, y_offset: Length) -> Path {
+        const TRACK_HEIGHT: Length = Length::new(1.4);
+        const CHAMFER_DEPTH: Length = Length::new(0.8);
+
+        let sign_x = if right { 1 } else { -1 };
+        let sign_y = if up { -1 } else { 1 };
+
+        let x_offset = sign_x * (Length::new(PAD_SIZE.x / 2.0) - x_offset(0));
+
+        Path::chamfered(
+            point!(0, y_offset),
+            point!(x_offset, sign_y * TRACK_HEIGHT),
+            CHAMFER_DEPTH,
+            right == up,
+        )
+        .at(if right {
+            self.end_position()
+        } else {
+            self.start_position()
+        })
+    }
 }
 
 /// The attachment side of the connector.

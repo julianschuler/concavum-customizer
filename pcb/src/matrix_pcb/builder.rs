@@ -234,8 +234,8 @@ impl Builder {
             &mut self.pcb,
             nets,
             self.row_count,
-            left_column_connector.map(Connector::end_position),
-            right_column_connector.map(Connector::start_position),
+            left_column_connector,
+            right_column_connector,
         );
         features.ffc_connector.add_cluster_connector_tracks(
             &mut self.pcb,
@@ -260,12 +260,7 @@ impl Builder {
         {
             let nets = &nets.columns()[self.column_count - 1 - i..];
 
-            column.add_column_tracks(
-                &mut self.pcb,
-                nets,
-                window[0].end_position(),
-                window[1].start_position(),
-            );
+            column.add_column_tracks(&mut self.pcb, nets, &window[0], &window[1]);
         }
 
         let (left_column_connectors, right_column_connectors) = features
@@ -304,24 +299,14 @@ impl Builder {
                 .columns
                 .first()
                 .expect("there is always at least one column")
-                .add_outer_column_row_tracks(
-                    &mut self.pcb,
-                    nets,
-                    column_connector.start_attachment_side(),
-                    true,
-                );
+                .add_outer_column_row_tracks(&mut self.pcb, nets, column_connector, false);
         }
         if let Some(column_connector) = features.column_connectors.last() {
             features
                 .columns
                 .last()
                 .expect("there is always at least one column")
-                .add_outer_column_row_tracks(
-                    &mut self.pcb,
-                    nets,
-                    column_connector.end_attachment_side(),
-                    false,
-                );
+                .add_outer_column_row_tracks(&mut self.pcb, nets, column_connector, true);
         }
     }
 

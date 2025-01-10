@@ -173,29 +173,17 @@ impl Column {
         &self,
         pcb: &mut KicadPcb,
         column_nets: &[Net],
-        left_column_connector: Position,
-        right_column_connector: Position,
+        left_column_connector: &Connector,
+        right_column_connector: &Connector,
     ) {
-        let x_offset = x_offset(0);
-        let connector_offset = Length::from(PAD_SIZE.x / 2.0) - x_offset;
-
-        let path = Path::chamfered(
-            point!(0, centered_track_offset(1, column_nets.len() + 1)),
-            point!(connector_offset, PAD_SIZE.y / 2.0),
-            1.into(),
-            false,
-        )
-        .at(left_column_connector)
-        .join(&double_chamfer(0, false).at(self.first()))
-        .join(
-            &Path::chamfered(
-                point!(-connector_offset, PAD_SIZE.y / 2.0),
-                point!(0, centered_track_offset(0, column_nets.len())),
-                1.into(),
-                false,
-            )
-            .at(right_column_connector),
-        );
+        let path = left_column_connector
+            .column_track(true, false, centered_track_offset(1, column_nets.len() + 1))
+            .join(&double_chamfer(0, false).at(self.first()))
+            .join(
+                &right_column_connector
+                    .column_track(false, false, centered_track_offset(0, column_nets.len()))
+                    .reverse(),
+            );
 
         for (i, column_net) in column_nets.iter().enumerate() {
             pcb.add_track(&path.offset(-track_offset(i)), TOP_LAYER, column_net);
@@ -210,10 +198,7 @@ impl Column {
         left_column_connector: &Connector,
         right_column_connector: &Connector,
     ) {
-        const CONNECTOR_PATH_HEIGHT: f32 = 1.4;
-
         let row_count = nets.finger_rows().len();
-        let connector_offset = Length::from(PAD_SIZE.x / 2.0) - x_offset(0);
 
         for (switches, nets, above, sign) in [
             (&self.switches_below, nets.lower_finger_rows(), false, -1f32),
@@ -224,21 +209,11 @@ impl Column {
             if let Some(&first) = switches.first() {
                 let connector_track_offset =
                     sign * centered_track_offset(switches.len() - 1, row_count);
-
-                let left_column_connector_path = Path::chamfered(
-                    point!(0, connector_track_offset),
-                    point!(connector_offset, -sign * CONNECTOR_PATH_HEIGHT),
-                    0.8.into(),
-                    above,
-                )
-                .at(left_column_connector.end_position());
-                let right_column_connector_path = Path::chamfered(
-                    point!(-connector_offset, -sign * CONNECTOR_PATH_HEIGHT),
-                    point!(0, connector_track_offset),
-                    0.8.into(),
-                    above,
-                )
-                .at(right_column_connector.start_position());
+                let left_column_connector_path =
+                    left_column_connector.column_track(true, above, connector_track_offset);
+                let right_column_connector_path = right_column_connector
+                    .column_track(false, above, connector_track_offset)
+                    .reverse();
 
                 for (i, (window, net)) in once([self.home_switch, first].as_slice())
                     .chain(switches.windows(2))
@@ -293,10 +268,17 @@ impl Column {
         &self,
         pcb: &mut KicadPcb,
         nets: &Nets,
-        attachment_side: AttachmentSide,
-        left: bool,
+        column_connector: &Connector,
+        right: bool,
     ) {
-        let sign_x: f64 = if left { 1.0 } else { -1.0 };
+        const EDGE_DISTANCE: f64 = 2.0;
+
+        let (attachment_side, sign_x) = if right {
+            (column_connector.start_attachment_side(), -1f64)
+        } else {
+            (column_connector.end_attachment_side(), 1f64)
+        };
+
         let track_x_offset = sign_x * x_offset(0);
         let row_count = nets.finger_rows().len();
 
@@ -305,8 +287,8 @@ impl Column {
             (ROW_PAD.y(), UPPER_COLUMN_PAD.y())
         } else {
             (
-                (PAD_SIZE.y / 2.0 + 2.0).into(),
-                (-PAD_SIZE.y / 2.0 - 2.0).into(),
+                (PAD_SIZE.y / 2.0 + EDGE_DISTANCE).into(),
+                (-PAD_SIZE.y / 2.0 - EDGE_DISTANCE).into(),
             )
         };
         let (offsets_below, offsets_above) = self.offsets.split_at(self.switches_below.len());
@@ -331,17 +313,11 @@ impl Column {
             ),
         ] {
             if !switches.is_empty() {
-                let start_path = Path::chamfered(
-                    point!(
-                        sign_x * PAD_SIZE.x / 2.0,
-                        attachment_side.y_offset()
-                            + sign_y * centered_track_offset(switches.len() - 1, row_count)
-                    ),
-                    point!(track_x_offset, y_offset + sign_y.into()),
-                    0.8.into(),
-                    left != above,
-                )
-                .at(self.home_switch);
+                let start_path = column_connector.column_track(
+                    right,
+                    above,
+                    sign_y * centered_track_offset(switches.len() - 1, row_count),
+                );
 
                 for (i, net) in row_nets.iter().enumerate() {
                     let path = once(&self.home_switch)
@@ -361,7 +337,7 @@ impl Column {
                         })
                         .fold(start_path.clone(), |path, other| path.join(&other))
                         .offset(sign_x * sign_y * -track_offset(i))
-                        .join(&row_path(i, left, above).at(switches[i]));
+                        .join(&row_path(i, right, above).at(switches[i]));
 
                     pcb.add_track(&path, BOTTOM_LAYER, net);
                 }
@@ -496,17 +472,17 @@ fn double_chamfer(index: usize, above: bool) -> Path {
 }
 
 /// Returns the row path with the given index, going to the respective sides.
-fn row_path(index: usize, left: bool, above: bool) -> Path {
-    if left {
+fn row_path(index: usize, right: bool, above: bool) -> Path {
+    if right {
         if above {
-            Path::angled_start_center(point!(x_offset(index), PAD_SIZE.y / 2.0), BELOW_ROW_PAD)
+            Path::angled_center(point!(-x_offset(index), PAD_SIZE.y / 2.0), LEFT_OF_ROW_PAD)
         } else {
-            Path::angled_start(point!(x_offset(index), -PAD_SIZE.y / 2.0), ABOVE_ROW_PAD)
+            Path::angled_start(point!(-x_offset(index), -PAD_SIZE.y / 2.0), LEFT_OF_ROW_PAD)
         }
     } else if above {
-        Path::angled_center(point!(-x_offset(index), PAD_SIZE.y / 2.0), LEFT_OF_ROW_PAD)
+        Path::angled_start_center(point!(x_offset(index), PAD_SIZE.y / 2.0), BELOW_ROW_PAD)
     } else {
-        Path::angled_start(point!(-x_offset(index), -PAD_SIZE.y / 2.0), LEFT_OF_ROW_PAD)
+        Path::angled_start(point!(x_offset(index), -PAD_SIZE.y / 2.0), ABOVE_ROW_PAD)
     }
     .append(ROW_PAD)
 }

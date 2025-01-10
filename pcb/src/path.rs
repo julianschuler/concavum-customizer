@@ -146,6 +146,12 @@ impl Path {
         self
     }
 
+    /// Reverses the path.
+    pub fn reverse(mut self) -> Self {
+        (*self).reverse();
+        self
+    }
+
     /// Removes duplicate consecutive points.
     fn deduplicate(&self) -> Self {
         let Some(mut last) = self.first().copied() else {

@@ -133,6 +133,8 @@ impl ThumbSwitches {
     /// Adds the tracks connecting the columns of the thumb switches.
     fn add_column_tracks(&self, pcb: &mut KicadPcb, columns: &[Net]) {
         const TRACK_OFFSET: Length = Length::new(-6.38);
+        const CHAMFER_DEPTH: Length = Length::new(1.0);
+
         let thumb_switch_count = self.positions().len();
 
         let first_x_offset = Self::X_OFFSET + centered_track_offset(0, 2);
@@ -152,7 +154,7 @@ impl ThumbSwitches {
             let first_path_segment = Path::chamfered(
                 point!(x_offset, -PAD_SIZE.y / 2.0),
                 point!(PAD_SIZE.x / 2.0, y_offset),
-                1.into(),
+                CHAMFER_DEPTH,
                 true,
             )
             .at(first);
