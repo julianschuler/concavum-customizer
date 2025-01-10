@@ -93,16 +93,18 @@ impl Path {
 
     /// Offsets the path by the given value.
     pub fn offset(&self, offset: Length) -> Self {
+        let deduplicated = self.deduplicate();
+
         let offset = f32::from(offset);
         let mut offset_path = Vec::new();
 
-        if let Some(&[first_point, second_point]) = self.first_chunk() {
+        if let Some(&[first_point, second_point]) = deduplicated.first_chunk() {
             let offset_direction =
                 offset * rotate_90_degrees(second_point - first_point).normalize();
             offset_path.push(first_point + offset_direction);
         }
 
-        for window in self.windows(3) {
+        for window in deduplicated.windows(3) {
             let previous_point = window[0];
             let point = window[1];
             let next_point = window[2];
@@ -123,7 +125,7 @@ impl Path {
             }
         }
 
-        if let Some(&[second_to_last_point, last_point]) = self.last_chunk() {
+        if let Some(&[second_to_last_point, last_point]) = deduplicated.last_chunk() {
             let offset_direction =
                 offset * rotate_90_degrees(last_point - second_to_last_point).normalize();
             offset_path.push(last_point + offset_direction);
@@ -142,6 +144,23 @@ impl Path {
     pub fn append(mut self, point: Point) -> Self {
         self.push(point);
         self
+    }
+
+    /// Removes duplicate consecutive points.
+    fn deduplicate(&self) -> Self {
+        let Some(mut last) = self.first().copied() else {
+            return Path::new([]);
+        };
+        let mut path = vec![last];
+
+        for &point in self.iter().skip(1) {
+            if point != last {
+                path.push(point);
+                last = point;
+            }
+        }
+
+        Self(path)
     }
 }
 
