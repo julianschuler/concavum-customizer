@@ -17,7 +17,7 @@ use model::{MeshSettings, Model};
 use web_time::Instant;
 
 use crate::{
-    model::{Mesh, Meshes},
+    model::{make_settings, Mesh, Meshes},
     update::{Update, Updater},
 };
 
@@ -68,14 +68,15 @@ impl ModelReloader {
 
         if let Some(meshes) = self.cached_meshes(config) {
             self.updater
-                .send_update(Update::New((&model).into(), meshes));
+                .send_update(Update::New(make_settings(&model, config), meshes));
         } else {
             let cancellation_token = CancellationToken::new();
             self.cancellation_token = cancellation_token.clone();
 
             let start = Instant::now();
 
-            self.updater.send_update(Update::Settings((&model).into()));
+            self.updater
+                .send_update(Update::Settings(make_settings(&model, config)));
 
             let cancellation_token = self.cancellation_token.clone();
             let updater = self.updater.clone();

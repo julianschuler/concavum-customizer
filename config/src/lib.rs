@@ -4,13 +4,14 @@ mod columns;
 mod primitives;
 
 use std::{
+    fmt::{self, Display, Formatter},
     hash::{Hash, Hasher},
     ops::Deref,
 };
 
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize};
 use show::{
-    egui::{DragValue, Frame, Margin, ScrollArea, Ui},
+    egui::{ComboBox, DragValue, Frame, Margin, ScrollArea, Ui},
     Show,
 };
 use show_derive::Show;
@@ -189,11 +190,51 @@ impl Show for HomeRowIndex {
     }
 }
 
+#[derive(Copy, Clone, Serialize, Deserialize, PartialEq, Eq, Hash, Default)]
+/// Size of a key.
+pub enum KeySize {
+    /// A 1u key.
+    #[serde(rename = "1u")]
+    U1,
+    /// A 1.5u key.
+    #[default]
+    #[serde(rename = "1.5u")]
+    U1_5,
+}
+
+impl Display for KeySize {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match self {
+            KeySize::U1 => write!(f, "1u"),
+            KeySize::U1_5 => write!(f, "1.5u"),
+        }?;
+        Ok(())
+    }
+}
+
+impl Show for KeySize {
+    fn show(&mut self, ui: &mut Ui) -> bool {
+        let mut changed = false;
+        ComboBox::from_label("")
+            .selected_text(self.to_string())
+            .show_ui(ui, |ui| {
+                for value in [KeySize::U1, KeySize::U1_5] {
+                    changed |= ui
+                        .selectable_value(self, value, value.to_string())
+                        .changed();
+                }
+            });
+        changed
+    }
+}
+
 /// A configuration of a thumb cluster.
 #[derive(Clone, Serialize, Deserialize, Show, PartialEq, Eq, Hash)]
 pub struct ThumbCluster {
     /// The number of thumb keys.
     pub keys: Ranged<i8, 1, 6>,
+    /// The size of the thumb keys.
+    pub key_size: KeySize,
     /// The thumb well curvature as an angle between two neighboring keys.
     pub curvature_angle: CurvatureAngle,
     /// The rotation of the thumb cluster in relation to the finger cluster.
