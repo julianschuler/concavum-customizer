@@ -57,7 +57,7 @@ impl ThumbKeys {
                 .collect()
         };
 
-        let key_size = match (&config.key_size).into() {
+        let key_size = match &config.key_size {
             config::KeySize::U1 => 1.0,
             config::KeySize::U1_5 => 1.5,
         };

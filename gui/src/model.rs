@@ -1,5 +1,6 @@
 use std::iter::once;
 
+use config::KeySize;
 use glam::{DAffine3, DMat4};
 use model::{
     matrix_pcb::{
@@ -16,7 +17,7 @@ pub use model::DisplaySettings;
 pub struct Settings {
     /// The positions of the finger keys.
     pub finger_key_positions: Vec<Mat4>,
-    /// Settings for thumb keys (size, position)
+    /// The settings for the thumb keys.
     pub thumb_key_settings: ThumbKeySettings,
     /// The positions of the interface PCBs.
     pub interface_pcb_positions: Vec<Mat4>,
@@ -31,8 +32,10 @@ pub struct Settings {
 }
 
 #[derive(Clone, Default)]
+/// The settings for the thumb keys.
 pub struct ThumbKeySettings {
-    pub key_size: config::KeySize,
+    /// The size of the thumb keys.
+    pub key_size: KeySize,
     /// The positions of the thumb keys.
     pub thumb_key_positions: Vec<Mat4>,
 }
@@ -52,7 +55,7 @@ pub fn make_settings(model: &Model, config: &config::Config) -> Settings {
         .collect();
     let thumb_key_settings = ThumbKeySettings {
         thumb_key_positions,
-        key_size: (&config.thumb_cluster.key_size).into(),
+        key_size: config.thumb_cluster.key_size,
     };
     let interface_pcb_positions =
         mirrored_positions(&model.keyboard.interface_pcb_position).to_vec();
