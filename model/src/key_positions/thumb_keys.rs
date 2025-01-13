@@ -1,6 +1,6 @@
 use std::ops::{Deref, Mul};
 
-use config::ThumbCluster;
+use config::{KeySize, ThumbCluster};
 use glam::{dvec2, dvec3, DAffine3, DQuat, DVec2, DVec3, EulerRot, Vec3Swizzles};
 
 use crate::{
@@ -58,8 +58,8 @@ impl ThumbKeys {
         };
 
         let key_size = match &config.key_size {
-            config::KeySize::U1 => 1.0,
-            config::KeySize::U1_5 => 1.5,
+            KeySize::U1 => 1.0,
+            KeySize::U1_5 => 1.5,
         };
         let key_clearance =
             (dvec2(key_distance, key_size * key_distance) + DVec2::splat(KEY_CLEARANCE)) / 2.0;

@@ -4,6 +4,7 @@ mod columns;
 mod primitives;
 
 use std::{
+    fmt::{self, Display, Formatter},
     hash::{Hash, Hasher},
     ops::Deref,
 };
@@ -192,20 +193,20 @@ impl Show for HomeRowIndex {
 #[derive(Copy, Clone, Serialize, Deserialize, PartialEq, Eq, Hash, Default)]
 /// Size of a key.
 pub enum KeySize {
-    /// Regular square key
-    #[serde(rename = "1U")]
+    /// A 1u key.
+    #[serde(rename = "1u")]
     U1,
-    /// Larger key
+    /// A 1.5u key.
     #[default]
-    #[serde(rename = "1.5U")]
+    #[serde(rename = "1.5u")]
     U1_5,
 }
 
-impl std::fmt::Display for KeySize {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl Display for KeySize {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
-            KeySize::U1 => write!(f, "1U"),
-            KeySize::U1_5 => write!(f, "1.5U"),
+            KeySize::U1 => write!(f, "1u"),
+            KeySize::U1_5 => write!(f, "1.5u"),
         }?;
         Ok(())
     }
