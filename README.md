@@ -42,6 +42,46 @@ python -m http.server -b localhost -d web
 
 For the above example, the customizer should now be accessible under http://localhost:8000.
 
+## Using the customizer
+
+The customizer consists of two parts: The configuration panel at the left and the model viewer at the right.
+The model is automatically reloaded for any change in the configuration panel.
+
+If you are finished with configuring the keyboard, you can use the export button at the top right of the configuration panel to export all the model files.
+The model files are exported as a ZIP archive with the following files:
+
+```
+concavum.zip
+├── config.toml
+├── left_half.stl
+├── right_half.stl
+├── bottom_plate.stl
+├── bottom_plate.stl
+├── matrix_pcb.kicad_pcb
+└── kikit_parameters.json
+```
+
+The `config.toml` file contains all the parameters of the exported model and can be loaded back into the customizer using the load button.
+The `left_half.stl`, `right_half.stl` and `bottom_plate.stl` files contain the 3D models of the respective keyboard halves and bottom plate for 3D printing.
+Finally, the `matrix_pcb.kicad_pcb` file contains the generated matrix PCB for connecting the key switches.
+
+> **Note:** The bottom plate is the same for both halves, you thus have to print it twice, ideally mirrored.
+
+### Adding tabs to the generated matrix PCB
+
+For manufacturing, some break-away tabs should be added to the matrix PCB. You can generate these tabs using [KiKit](https://yaqwsx.github.io/KiKit/latest/).
+
+Start by [installing the KiKit backend](https://yaqwsx.github.io/KiKit/latest/installation/intro/) and execute the following command in the directory with the extracted exported files:
+
+```sh
+kikit panelize -p kikit_parameters.json matrix_pcb.kicad_pcb matrix_pcb_panelized.kicad_pcb
+```
+
+> **Tip**: You can also use KiKit to generate the gerber files from the KiCad file:
+> ```sh
+> kikit export gerber matrix_pcb_panelized.kicad_pcb matrix_pcb
+> ```
+
 ## License
 
 This project is licensed under the GNU GPLv3 license, see [`LICENSE.txt`](LICENSE.txt) for further information.
