@@ -173,6 +173,9 @@ async fn export_model(config: Config, meshes: Meshes) -> Update {
     zip.start_file("matrix_pcb.kicad_pcb", SimpleFileOptions::default())?;
     zip.write_all(matrix_pcb.to_kicad_board().as_bytes())?;
 
+    zip.start_file("kikit_parameters.json", SimpleFileOptions::default())?;
+    zip.write_all(include_bytes!("kikit_parameters.json"))?;
+
     let data = zip.finish()?;
 
     let file = AsyncFileDialog::new()
