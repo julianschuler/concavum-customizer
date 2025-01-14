@@ -6,8 +6,11 @@
 
 This repository contains the source code of the interactive customizer for the [Concavum](https://github.com/julianschuler/keyboards/tree/master/concavum), a fully parametric split keyboard featuring an ergonomic layout with ortholinear (non-staggered) columns and concave key wells.
 The customizer allows for changing all kinds of parameters like the number of columns, rows and thumb keys, the curvature, the distance between keys and many more.
+It generates 3D printing files for the case and a PCB for connecting the key switches.
 
 To get started, head over to the [latest release](https://github.com/julianschuler/concavum-customizer/releases/latest) and download the executable for your operating system. If your operating system is not supported or you want to run the latest development version instead, follow the instructions in the next section.
+
+> **Note:** For Linux, the file dialogs require a compatible XDG Desktop Portal backend to function correctly. If the load/save/export buttons do not seem to work, you might need to install a [different backend](https://docs.rs/rfd/latest/rfd/#xdg-desktop-portal-backend).
 
 ## Building the customizer from source
 
