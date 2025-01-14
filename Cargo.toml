@@ -21,7 +21,7 @@ license = "GPL-3.0-only"
 config = { path = "config" }
 console_error_panic_hook = "0.1"
 earcutr = "0.4"
-fidget = { git = "https://github.com/julianschuler/fidget.git", branch = "static-singular-value-truncation", default-features = false, features = ["jit", "mesh"] }
+fidget = { git = "https://github.com/julianschuler/fidget.git", branch = "static-singular-value-truncation", default-features = false, features = ["jit"] }
 glam = { version = "0.29", features = ["serde"] }
 gui = { path = "gui" }
 hex_color = { version = "3.0", features = ["serde"] }

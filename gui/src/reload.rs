@@ -91,8 +91,7 @@ impl ModelReloader {
                 for depth in 0..mesh_settings.depth {
                     let mesh_settings = MeshSettings {
                         depth,
-                        bounds: mesh_settings.bounds,
-                        #[cfg(not(target_arch = "wasm32"))]
+                        view: mesh_settings.view,
                         threads: mesh_settings.threads,
                     };
                     let mesh = model.mesh_preview(mesh_settings);

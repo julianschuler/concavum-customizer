@@ -18,7 +18,7 @@ in
     cargoLock.outputHashes = {
       # This hash needs to be updated manually for git dependencies in Cargo.toml unfortunately.
       # After updating the dependency, run `nix build`, let it fail and paste the hash it prints in here.
-      "fidget-0.3.2" = "sha256-IM7vePNUjJk7KB5VaTpCouHQ3hQJXum6FxClrEGSKEs";
+      "fidget-0.3.4" = "sha256-UhjT6uibly1j79kSFkOzQ6eX3RNPo2eO6gBnHwNHULk=";
     };
     src = pkgs.lib.cleanSource ./.;
     nativeBuildInputs = with pkgs; [

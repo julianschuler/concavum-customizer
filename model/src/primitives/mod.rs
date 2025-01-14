@@ -3,6 +3,8 @@ mod shapes2d;
 mod shapes3d;
 mod vector;
 
+use std::thread::available_parallelism;
+
 #[cfg(not(target_arch = "wasm32"))]
 use fidget::jit::JitShape as FidgetShape;
 #[cfg(target_arch = "wasm32")]
@@ -10,8 +12,8 @@ use fidget::vm::VmShape as FidgetShape;
 
 use fidget::{
     context::Tree,
-    mesh::{Mesh, Octree, Settings},
-    shape::Bounds as ShapeBounds,
+    mesh::{Mesh, Octree, Settings, ThreadCount},
+    render::View3,
     Context,
 };
 use glam::DVec3;
@@ -55,14 +57,19 @@ impl Shape {
         let size = (f64::from(2u32.pow(u32::from(depth.max(1) - 1))) * resolution) as f32;
 
         let center = self.bounds.center().as_vec3().to_array().into();
-        let bounds = ShapeBounds { center, size };
+        let view = View3::from_center_and_scale(center, size);
+
+        #[cfg(not(target_arch = "wasm32"))]
+        let threads = ThreadCount::Many(
+            available_parallelism().expect("available parallelism should be known"),
+        );
+        #[cfg(target_arch = "wasm32")]
+        let threads = ThreadCount::One;
 
         Settings {
             depth,
-            bounds,
-            #[cfg(not(target_arch = "wasm32"))]
-            threads: std::thread::available_parallelism()
-                .expect("available parallelism should be known"),
+            view,
+            threads,
         }
     }
 
