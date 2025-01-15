@@ -14,7 +14,7 @@ use std::{
 use config::Config;
 use file_menu::FileMenu;
 use show::{
-    egui::{Color32, RichText},
+    egui::{Color32, Rect, RichText, Window},
     Show,
 };
 use three_d::{
@@ -39,6 +39,8 @@ pub struct Gui {
 impl Gui {
     /// The width of the side panel.
     pub const SIDE_PANEL_WIDTH: f32 = 250.0;
+    /// The size of the export popup.
+    const POPUP_SIZE: [f32; 2] = [500.0, 400.0];
 
     /// Creates a new GUI using the given updater.
     #[must_use]
@@ -103,6 +105,24 @@ impl Gui {
                         .anchor(Align2::RIGHT_BOTTOM, [-MARGIN, -MARGIN])
                         .show(context, |ui| ui.add(Spinner::new().size(32.0)));
                 }
+
+                Window::new("Meshing resolution")
+                    .anchor(Align2::CENTER_CENTER, [0.0, 0.0])
+                    .collapsible(false)
+                    // .title_bar(false)
+                    .show(context, |ui| {
+                        ui.vertical_centered_justified(|ui| {
+                        
+                        let resolution: f64 = self.config.keyboard.resolution.into();
+                        
+                        ui.label("For the export, a resolution of 0.2 or lower is recommended. Do you want to change the resolution to 0.2?");
+
+                        ui.horizontal(|ui| {
+                            ui.button(format!("Export with current resolution ({resolution})"));
+                            ui.button("Change resolution to 0.2");
+                        })
+                        })
+                    });
             },
         );
     }

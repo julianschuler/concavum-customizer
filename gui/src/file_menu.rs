@@ -7,7 +7,7 @@ use std::{
 use config::Config;
 use pcb::MatrixPcb;
 use rfd::AsyncFileDialog;
-use show::egui::{Align, Button, Layout, RichText, Ui};
+use show::egui::{popup_below_widget, Align, Button, Id, Layout, RichText, Ui, Window};
 use three_d::{CpuMesh, Indices, Positions};
 use zip::{write::SimpleFileOptions, ZipWriter};
 
@@ -20,6 +20,7 @@ pub struct FileMenu {
     sender: Sender<Update>,
     receiver: Receiver<Update>,
     error: String,
+    show_popup: bool,
 }
 
 impl FileMenu {
@@ -32,6 +33,7 @@ impl FileMenu {
             sender,
             receiver,
             error: String::new(),
+            show_popup: false,
         }
     }
 
@@ -49,15 +51,24 @@ impl FileMenu {
 
             ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
                 // Reverse order since widgets are placed right to left
-                if ui
-                    .add_enabled(!is_reloading, Button::new("Export"))
+
+                let export_button = ui.button("Export");
+
+                let popup_id = Id::new("popup");
+
+                // let export_button = ui.add_enabled(!is_reloading, Button::new("Export"));
+
+                if export_button.clicked() {
+                    ui.memory_mut(|mem| mem.toggle_popup(popup_id));
+                }
+
+                popup_below_widget(ui, popup_id, &export_button, |ui| ui.label("Test"));
+
+                if export_button
                     .on_hover_text("Exports all the model files in a ZIP archive")
                     .clicked()
                 {
-                    match model_reloader.cached_meshes(config) {
-                        Some(meshes) => self.spawn_local(export_model(config.clone(), meshes)),
-                        None => self.error = "The model has not been fully meshed yet".to_string(),
-                    }
+                    self.export_model(ui, config, model_reloader);
                 }
                 if ui
                     .button("Save")
@@ -96,6 +107,18 @@ impl FileMenu {
     /// Returns the current error to display.
     pub fn error(&self) -> &str {
         &self.error
+    }
+
+    /// Exports the
+    fn export_model(&mut self, ui: &mut Ui, config: &Config, model_reloader: &ModelReloader) {
+        if f64::from(config.keyboard.resolution) > 0.2 {
+            self.show_popup = true;
+        } else {
+            match model_reloader.cached_meshes(config) {
+                Some(meshes) => self.spawn_local(export_model(config.clone(), meshes)),
+                None => self.error = "The model has not been fully meshed yet".to_string(),
+            }
+        }
     }
 
     #[cfg(target_arch = "wasm32")]

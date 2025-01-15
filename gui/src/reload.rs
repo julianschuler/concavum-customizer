@@ -77,49 +77,6 @@ impl ModelReloader {
 
             self.updater
                 .send_update(Update::Settings(make_settings(&model, config)));
-
-            let cancellation_token = self.cancellation_token.clone();
-            let updater = self.updater.clone();
-            let cache = self.cache.clone();
-            let config = config.clone();
-
-            spawn(move || {
-                let mesh_settings = model.mesh_settings_preview();
-
-                // Preview
-                let mut cancelled = false;
-                for depth in 0..mesh_settings.depth {
-                    let mesh_settings = MeshSettings {
-                        depth,
-                        view: mesh_settings.view,
-                        threads: mesh_settings.threads,
-                    };
-                    let mesh = model.mesh_preview(mesh_settings);
-
-                    cancelled = cancellation_token.cancelled();
-                    if cancelled {
-                        break;
-                    } else if mesh.triangle_count() > 0 {
-                        updater.send_update(Update::Preview(mesh));
-                    }
-                }
-
-                // Final Mesh
-                if !cancelled {
-                    let meshes = model.meshes();
-
-                    cache
-                        .lock()
-                        .expect("the lock should not be poisened")
-                        .insert(config, meshes.clone());
-
-                    if !cancellation_token.cancelled() {
-                        updater.send_update(Update::Meshes(meshes));
-
-                        info!("Reloaded model in {:?}", start.elapsed());
-                    }
-                }
-            });
         }
     }
 
