@@ -3,8 +3,6 @@ mod shapes2d;
 mod shapes3d;
 mod vector;
 
-use std::thread::available_parallelism;
-
 #[cfg(not(target_arch = "wasm32"))]
 use fidget::jit::JitShape as FidgetShape;
 #[cfg(target_arch = "wasm32")]
@@ -61,7 +59,7 @@ impl Shape {
 
         #[cfg(not(target_arch = "wasm32"))]
         let threads = ThreadCount::Many(
-            available_parallelism().expect("available parallelism should be known"),
+            std::thread::available_parallelism().expect("available parallelism should be known"),
         );
         #[cfg(target_arch = "wasm32")]
         let threads = ThreadCount::One;
