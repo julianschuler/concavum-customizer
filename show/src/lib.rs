@@ -53,14 +53,10 @@ pub trait Show {
 
 impl Show for Color {
     fn show(&mut self, ui: &mut Ui) -> bool {
-        let mut changed = false;
-
         let Color { r, g, b, a } = *self;
         let mut color = [r, g, b];
 
-        ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-            changed = ui.color_edit_button_srgb(&mut color).changed();
-        });
+        let changed = ui.color_edit_button_srgb(&mut color).changed();
 
         let [r, g, b] = color;
         *self = Color { r, g, b, a };
