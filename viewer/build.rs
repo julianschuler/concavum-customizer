@@ -15,7 +15,7 @@ fn main() {
     let out_path = Path::new(&out_dir).join("assets.rs");
     let assets_dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("assets");
 
-    let mut constants = String::new();
+    let mut statics = String::new();
     let mut struct_definition = String::new();
     let mut struct_implementation = String::new();
 
@@ -27,7 +27,7 @@ fn main() {
         if path.extension() == Some(OsStr::new("obj")) {
             if let Some(name) = path.file_stem().and_then(|stem| stem.to_str()) {
                 let uppercase_name = name.to_uppercase();
-                let (positions, indices) = constants_from_path(&path);
+                let (positions, indices) = statics_from_path(&path);
 
                 struct_definition.push_str(&format!("\n    pub {name}: CpuMesh,"));
                 struct_implementation.push_str(&format!(
@@ -38,13 +38,13 @@ fn main() {
                 ..Default::default()
             }},"
                 ));
-                constants.push_str(&format!(
+                statics.push_str(&format!(
                     "
 #[allow(clippy::approx_constant)]
 #[allow(clippy::unreadable_literal)]
-const {uppercase_name}_POSITIONS: [Vec3; {}] = [
+static {uppercase_name}_POSITIONS: [Vec3; {}] = [
 {}];
-const {uppercase_name}_INDICES: [u32; {}] = [
+static {uppercase_name}_INDICES: [u32; {}] = [
 {}];
 ",
                     { positions.length },
@@ -61,13 +61,13 @@ const {uppercase_name}_INDICES: [u32; {}] = [
         .write_all(
             format!(
                 "use three_d::{{CpuMesh, Indices, Positions, Vec3}};
-{constants}
+{statics}
 /// Fixed assets loaded from OBJ files.
 pub struct Assets {{{struct_definition}
 }}
 
 impl Assets {{
-    /// Creates the assets from the compile-time constants.
+    /// Creates the assets from the compile-time statics.
     pub fn new() -> Self {{
         Self {{{struct_implementation}
         }}
@@ -80,9 +80,9 @@ impl Assets {{
         .expect("writing to the output file should always succeed");
 }
 
-fn constants_from_path(path: &Path) -> (Constant, Constant) {
-    let mut positions = Constant::positions();
-    let mut indices = Constant::indicies();
+fn statics_from_path(path: &Path) -> (Static, Static) {
+    let mut positions = Static::positions();
+    let mut indices = Static::indicies();
 
     for line in read_to_string(path).expect("failed to read file").lines() {
         let mut iter = line.split_whitespace();
@@ -106,12 +106,12 @@ fn constants_from_path(path: &Path) -> (Constant, Constant) {
     (positions, indices)
 }
 
-struct Constant {
+struct Static {
     entries: String,
     length: usize,
 }
 
-impl Constant {
+impl Static {
     fn positions() -> Self {
         // OBJ files are 1-indexed, add an unused entry here to avoid parsing values
         let entries = "    Vec3::new(0f32, 0f32, 0f32),\n".to_owned();
