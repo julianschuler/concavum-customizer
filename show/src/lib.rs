@@ -30,10 +30,29 @@ pub trait Show {
         ui.horizontal(|ui| {
             ui.label(label).on_hover_text(description);
             ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                // ui.with_layout(Layout::left_to_right(Align::Center), |ui| {
                 changed = self.show(ui);
+                // });
             });
         });
 
+        // ui.horizontal(|ui| {
+        //     let spacing_id = ui.auto_id_with("name_input");
+
+        //     let total = ui.available_width();
+        //     let flexible = ui
+        //         .data(|data| data.get_temp(spacing_id))
+        //         .unwrap_or(total / 2.0);
+
+        //     ui.label(label).on_hover_text(description);
+
+        //     ui.add_space(flexible);
+
+        //     changed = self.show(ui);
+
+        //     let next = flexible + total - ui.min_rect().width();
+        //     ui.data_mut(|data| data.insert_temp(spacing_id, next));
+        // });
         changed
     }
 
