@@ -69,23 +69,21 @@ impl Gui {
             frame_input.viewport,
             frame_input.device_pixel_ratio,
             |context| {
+                let mut changed = false;
+
                 SidePanel::left("side_panel")
                     .exact_width(Self::SIDE_PANEL_WIDTH)
                     .show_separator_line(false)
                     .show(context, |ui| {
-                        let mut changed = false;
-
-                        changed |= self.file_menu.show(
-                            ui,
-                            &mut self.config,
-                            &self.model_reloader,
-                            is_reloading,
-                        );
-                        changed |= self.config.show(ui);
-
-                        if changed {
-                            self.model_reloader.reload(&self.config);
-                        }
+                        ui.add_enabled_ui(!self.file_menu.export_popup_open(), |ui| {
+                            changed |= self.file_menu.show(
+                                ui,
+                                &mut self.config,
+                                &self.model_reloader,
+                                is_reloading,
+                            );
+                            changed |= self.config.show(ui);
+                        });
                     });
 
                 Area::new("error")
@@ -97,6 +95,16 @@ impl Gui {
                                 .color(Color32::LIGHT_RED),
                         )
                     });
+
+                changed |= self.file_menu.show_export_popup(
+                    context,
+                    &mut self.config,
+                    &self.model_reloader,
+                );
+
+                if changed {
+                    self.model_reloader.reload(&self.config);
+                }
 
                 if is_reloading {
                     Area::new("spinner")

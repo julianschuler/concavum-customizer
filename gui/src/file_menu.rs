@@ -4,10 +4,10 @@ use std::{
     sync::mpsc::{channel, Receiver, Sender},
 };
 
-use config::Config;
+use config::{Config, PositiveFloat};
 use pcb::MatrixPcb;
 use rfd::AsyncFileDialog;
-use show::egui::{Align, Button, Layout, RichText, Ui};
+use show::egui::{Align, Align2, Button, Context, Layout, RichText, Ui, Window};
 use three_d::{CpuMesh, Indices, Positions};
 use zip::{write::SimpleFileOptions, ZipWriter};
 
@@ -15,11 +15,15 @@ use crate::{reload::ModelReloader, Error, Meshes};
 
 type Update = Result<Option<Config>, Error>;
 
+/// The recommended resolution for meshing.
+const RECOMMENDED_RESOLUTION: f64 = 0.2;
+
 /// A menu for loading/saving configuration and exporting model files.
 pub struct FileMenu {
     sender: Sender<Update>,
     receiver: Receiver<Update>,
     error: String,
+    export_popup_open: bool,
 }
 
 impl FileMenu {
@@ -32,6 +36,7 @@ impl FileMenu {
             sender,
             receiver,
             error: String::new(),
+            export_popup_open: false,
         }
     }
 
@@ -54,9 +59,10 @@ impl FileMenu {
                     .on_hover_text("Exports all the model files in a ZIP archive")
                     .clicked()
                 {
-                    match model_reloader.cached_meshes(config) {
-                        Some(meshes) => self.spawn_local(export_model(config.clone(), meshes)),
-                        None => self.error = "The model has not been fully meshed yet".to_string(),
+                    if f64::from(config.keyboard.resolution) > RECOMMENDED_RESOLUTION {
+                        self.export_popup_open = true;
+                    } else {
+                        self.export_model(config, model_reloader);
                     }
                 }
                 if ui
@@ -93,11 +99,71 @@ impl FileMenu {
         false
     }
 
+    /// Shows the export popup. Note that the popup might not be open.
+    pub fn show_export_popup(
+        &mut self,
+        context: &Context,
+        config: &mut Config,
+        model_reloader: &ModelReloader,
+    ) -> bool {
+        let mut changed = false;
+        let mut export_popup_open = self.export_popup_open;
+
+        Window::new("Export resolution")
+            .open(&mut export_popup_open)
+            .anchor(Align2::CENTER_CENTER, [0.0, 0.0])
+            .collapsible(false)
+            .show(context, |ui| {
+                ui.style_mut().spacing.item_spacing = [10.0, 20.0].into();
+
+                ui.label(format!("For the export, a resolution of {RECOMMENDED_RESOLUTION} or lower is recommended."));
+                ui.label(format!("Do you want to change the resolution to {RECOMMENDED_RESOLUTION}?"));
+
+                ui.with_layout(Layout::left_to_right(Align::Min), |ui| {
+                    if ui.button("Export with current resolution").clicked() {
+                        self.export_model(config, model_reloader);
+                        self.export_popup_open = false;
+                    }
+                    if ui
+                        .button(format!("Change resolution to {RECOMMENDED_RESOLUTION}"))
+                        .clicked()
+                    {
+                        config.keyboard.resolution = PositiveFloat::try_from(
+                            RECOMMENDED_RESOLUTION,
+                        )
+                        .unwrap_or_else(|_| {
+                            panic!("{RECOMMENDED_RESOLUTION} should be a positive float")
+                        });
+                        self.export_popup_open = false;
+
+                        changed = true;
+                    }
+                });
+            });
+        self.export_popup_open &= export_popup_open;
+
+        changed
+    }
+
+    /// Returns whether the export popup is currently open.
+    pub fn export_popup_open(&self) -> bool {
+        self.export_popup_open
+    }
+
     /// Returns the current error to display.
     pub fn error(&self) -> &str {
         &self.error
     }
 
+    /// Exports the model from the given config.
+    fn export_model(&mut self, config: &Config, model_reloader: &ModelReloader) {
+        match model_reloader.cached_meshes(config) {
+            Some(meshes) => self.spawn_local(export_model(config.clone(), meshes)),
+            None => self.error = "The model has not been fully meshed yet".to_string(),
+        }
+    }
+
+    /// Spawns a future locally and sends the result to the internal receiver.
     #[cfg(target_arch = "wasm32")]
     fn spawn_local(&self, future: impl Future<Output = Update> + 'static) {
         let sender = self.sender.clone();
@@ -109,6 +175,7 @@ impl FileMenu {
         wasm_bindgen_futures::spawn_local(future);
     }
 
+    /// Spawns a future locally and sends the result to the internal receiver.
     #[cfg(not(target_arch = "wasm32"))]
     fn spawn_local(&self, future: impl Future<Output = Update> + 'static + Send) {
         let sender = self.sender.clone();
