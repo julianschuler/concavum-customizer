@@ -37,9 +37,8 @@ impl Render for KeyboardPreview {
     }
 
     fn update_display_settings(&mut self, display_settings: &DisplaySettings) {
-        self.inner
-            .update_color(display_settings.colors.interface_pcb);
+        self.inner.update_color(display_settings.colors.keyboard);
 
-        self.show = display_settings.preview.show_interface_pcb;
+        self.show = display_settings.preview.show_keyboard;
     }
 }
