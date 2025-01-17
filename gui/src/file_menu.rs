@@ -111,10 +111,11 @@ impl FileMenu {
 
         Window::new("Export resolution")
             .open(&mut export_popup_open)
+            .auto_sized()
             .anchor(Align2::CENTER_CENTER, [0.0, 0.0])
             .collapsible(false)
             .show(context, |ui| {
-                ui.style_mut().spacing.item_spacing = [10.0, 20.0].into();
+                ui.style_mut().spacing.item_spacing.y = 20.0;
 
                 ui.label(format!("For the export, a resolution of {RECOMMENDED_RESOLUTION} or lower is recommended."));
                 ui.label(format!("Do you want to change the resolution to {RECOMMENDED_RESOLUTION}?"));
