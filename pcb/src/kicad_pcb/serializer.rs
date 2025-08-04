@@ -1,4 +1,7 @@
-use std::{fmt::Display, result};
+use std::{
+    fmt::{Display, Error as FormatError, Write},
+    result,
+};
 
 use itoa::{Buffer, Integer};
 use serde::{
@@ -13,7 +16,7 @@ use crate::unit::VALUE_TO_UNIT;
 
 type Result<T> = result::Result<T, Error>;
 
-#[derive(Clone, Debug, thiserror::Error)]
+#[derive(Debug, thiserror::Error)]
 pub enum Error {
     /// A custom error message.
     #[error("{0}")]
@@ -22,6 +25,10 @@ pub enum Error {
     /// The top-level element can not be a sequence.
     #[error("the top-level element can not be a sequence")]
     TopLevelSequence,
+
+    /// A format error occurred.
+    #[error("Format error: {0}")]
+    Format(#[from] FormatError),
 }
 
 impl SerdeError for Error {
@@ -210,7 +217,7 @@ impl SerdeSerializer for &mut Serializer {
         let lower = value as u32;
 
         self.space_if_needed();
-        self.output += &format!("{upper:#09x}_{lower:08x}");
+        write!(self.output, "{upper:#09x}_{lower:08x}")?;
 
         Ok(())
     }
@@ -221,7 +228,7 @@ impl SerdeSerializer for &mut Serializer {
 
     fn serialize_f64(self, value: f64) -> Result<()> {
         self.space_if_needed();
-        self.output += &format!("{value:.6}");
+        write!(self.output, "{value:.6}")?;
         Ok(())
     }
 

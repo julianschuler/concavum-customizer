@@ -86,7 +86,7 @@ impl Gui {
                         });
                     });
 
-                Area::new("error")
+                Area::new("error".into())
                     .anchor(Align2::LEFT_TOP, [MARGIN, MARGIN])
                     .show(context, |ui| {
                         ui.label(
@@ -107,7 +107,7 @@ impl Gui {
                 }
 
                 if is_reloading {
-                    Area::new("spinner")
+                    Area::new("spinner".into())
                         .anchor(Align2::RIGHT_BOTTOM, [-MARGIN, -MARGIN])
                         .show(context, |ui| ui.add(Spinner::new().size(32.0)));
                 }

@@ -87,7 +87,7 @@ impl InterfacePcb {
             .translate(vec_z(bounds_diameter / 2.0));
         let bottom_cutout = BoxShape::new(bottom_cutout_size)
             .into_tree()
-            .translate(vec_y((WIDTH + Self::TOLERANCE) / 2.0));
+            .translate(vec_y(f64::midpoint(WIDTH, Self::TOLERANCE)));
         let translation = dvec3(Self::SIZE.x / 2.0, -Self::SIZE.y / 2.0, 0.0);
 
         holder

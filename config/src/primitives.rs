@@ -153,7 +153,7 @@ impl Show for FiniteFloat {
         let changed = ui
             .add(
                 DragValue::new(&mut value)
-                    .clamp_range(f64::MIN..=f64::MAX)
+                    .range(f64::MIN..=f64::MAX)
                     .speed(DRAG_SPEED),
             )
             .changed();
@@ -196,7 +196,7 @@ impl Show for PositiveFloat {
         let changed = ui
             .add(
                 DragValue::new(&mut value)
-                    .clamp_range(DRAG_SPEED..=f64::MAX)
+                    .range(DRAG_SPEED..=f64::MAX)
                     .speed(DRAG_SPEED),
             )
             .changed();
@@ -282,7 +282,7 @@ impl<const LOWER: i8, const UPPER: i8> Show for Ranged<FiniteFloat, LOWER, UPPER
         let changed = ui
             .add(
                 DragValue::new(&mut value)
-                    .clamp_range(LOWER..=UPPER)
+                    .range(LOWER..=UPPER)
                     .speed(DRAG_SPEED),
             )
             .changed();
@@ -295,7 +295,7 @@ impl<const LOWER: i8, const UPPER: i8> Show for Ranged<FiniteFloat, LOWER, UPPER
 
 impl<const LOWER: i8, const UPPER: i8> Show for Ranged<i8, LOWER, UPPER> {
     fn show(&mut self, ui: &mut Ui) -> bool {
-        ui.add(DragValue::new(&mut self.0).clamp_range(LOWER..=UPPER))
+        ui.add(DragValue::new(&mut self.0).range(LOWER..=UPPER))
             .changed()
     }
 }

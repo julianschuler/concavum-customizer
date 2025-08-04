@@ -111,7 +111,7 @@ impl Application {
                     let translation = -delta.0 * right + delta.1 * up;
                     let speed = 0.001 * self.camera.position().magnitude();
 
-                    self.camera.translate(&(speed * translation));
+                    self.camera.translate(speed * translation);
                 }
             }
         }

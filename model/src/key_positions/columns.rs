@@ -28,7 +28,7 @@ pub enum ColumnType {
 impl From<ConfigColumnType> for ColumnType {
     fn from(column_type: ConfigColumnType) -> Self {
         match column_type {
-            ConfigColumnType::Normal { .. } => ColumnType::Normal,
+            ConfigColumnType::Normal => ColumnType::Normal,
             ConfigColumnType::LeftSide | ConfigColumnType::RightSide => ColumnType::Side,
         }
     }

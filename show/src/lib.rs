@@ -82,7 +82,7 @@ impl Show for NonZeroU8 {
         let mut value = u8::from(*self);
 
         let changed = ui
-            .add(DragValue::new(&mut value).clamp_range(1.0..=f64::MAX))
+            .add(DragValue::new(&mut value).range(1.0..=f64::MAX))
             .changed();
 
         *self = value.try_into().expect("value should be non-zero");

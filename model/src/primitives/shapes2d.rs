@@ -107,7 +107,7 @@ impl ConvexPolygon {
                             _ => None,
                         }
                     })
-                    .map_or(true, |(index, point)| {
+                    .is_none_or(|(index, point)| {
                         // If the resulting polygon is convex, insert point and remove triangle
                         let convex = is_convex_after_insert(&polygon, index, point, vertices);
                         if convex {

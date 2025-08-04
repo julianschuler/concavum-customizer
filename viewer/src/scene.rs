@@ -61,7 +61,7 @@ impl Scene {
         let lights = settings
             .light_positions
             .iter()
-            .map(|position| {
+            .map(|&position| {
                 PointLight::new(context, 0.8, Srgba::WHITE, position, Attenuation::default())
             })
             .collect();

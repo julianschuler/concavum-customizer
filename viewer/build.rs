@@ -3,6 +3,7 @@
 use std::{
     env,
     ffi::OsStr,
+    fmt::Write as _,
     fs::{read_dir, read_to_string, File},
     io::Write,
     path::Path,
@@ -29,16 +30,20 @@ fn main() {
                 let uppercase_name = name.to_uppercase();
                 let (positions, indices) = statics_from_path(&path);
 
-                struct_definition.push_str(&format!("\n    pub {name}: CpuMesh,"));
-                struct_implementation.push_str(&format!(
+                write!(struct_definition, "\n    pub {name}: CpuMesh,")
+                    .expect("format should never fail");
+                write!(
+                    struct_implementation,
                     "
             {name}: CpuMesh {{
                 positions: Positions::F32({uppercase_name}_POSITIONS.to_vec()),
                 indices: Indices::U32({uppercase_name}_INDICES.to_vec()),
                 ..Default::default()
             }},"
-                ));
-                statics.push_str(&format!(
+                )
+                .expect("format should never fail");
+                write!(
+                    statics,
                     "
 #[allow(clippy::approx_constant)]
 #[allow(clippy::unreadable_literal)]
@@ -51,7 +56,8 @@ static {uppercase_name}_INDICES: [u32; {}] = [
                     { positions.entries },
                     { indices.length * 3 },
                     { indices.entries },
-                ));
+                )
+                .expect("format should never fail");
             }
         }
     }

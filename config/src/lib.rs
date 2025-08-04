@@ -188,7 +188,7 @@ impl From<HomeRowIndex> for i8 {
 
 impl Show for HomeRowIndex {
     fn show(&mut self, ui: &mut Ui) -> bool {
-        ui.add(DragValue::new(&mut self.inner).clamp_range(1..=self.maximum))
+        ui.add(DragValue::new(&mut self.inner).range(1..=self.maximum))
             .changed()
     }
 }

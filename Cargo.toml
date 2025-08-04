@@ -20,32 +20,32 @@ license = "GPL-3.0-only"
 [workspace.dependencies]
 config = { path = "config" }
 console_error_panic_hook = "0.1"
-earcutr = "0.4"
+earcutr = "0.5"
 fidget = { version = "0.3.8", default-features = false, features = ["jit"] }
-glam = { version = "0.29", features = ["serde"] }
+glam = { version = "0.30", features = ["serde"] }
 gui = { path = "gui" }
 hex_color = { version = "3.0", features = ["serde"] }
 itoa = "1.0"
 model = { path = "model" }
-nalgebra = { version = "0.33", default-features = false, features = ["std"] }
+nalgebra = { version = "0.34", default-features = false, features = ["std"] }
 pcb = { path = "pcb" }
-pollster = "0.3"
+pollster = "0.4"
 quote = "1.0"
 rfd = { version = "0.15" }
 serde = { version = "1.0", features = ["derive"] }
 show = { path = "show" }
 show_derive = { path = "show_derive" }
 syn = "2.0"
-thiserror = "1.0"
-three-d = { version = "0.17", features = ["egui-gui"] }
-toml = "0.8"
-uuid = { version = "1.10.0", features = ["fast-rng", "v4"] }
+thiserror = "2.0"
+three-d = { version = "0.18", features = ["egui-gui"] }
+toml = "0.9"
+uuid = { version = "1.17.0", features = ["fast-rng", "v4"] }
 viewer = { path = "viewer" }
 wasm-bindgen = "0.2"
 wasm-bindgen-futures = "0.4"
 web-sys = { version = "0.3", features = ["Worker"] }
 web-time = "1.1"
-zip = { version = "2.2", default-features = false }
+zip = { version = "4.3", default-features = false }
 
 [workspace.lints.clippy]
 doc_markdown = { level = "allow", priority = 1 }

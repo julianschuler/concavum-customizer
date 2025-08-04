@@ -122,7 +122,7 @@ impl FfcConnector {
             if let Some(right_column_connector) = right_column_connector {
                 self.add_right_column_tracks(pcb, right_column_connector, column_nets, true);
             }
-        };
+        }
     }
 
     /// Adds the tracks between the cluster and FFC connector.

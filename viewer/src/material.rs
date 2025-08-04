@@ -1,7 +1,7 @@
 use config::Color;
 use three_d::{
-    lights_shader_source, Camera, ColorMapping, FragmentAttributes, LightingModel, Material,
-    MaterialType, Program, RenderStates, Srgba, ToneMapping,
+    lights_shader_source, ColorMapping, EffectMaterialId, Material, MaterialType, Program,
+    RenderStates, Srgba, ToneMapping, Viewer,
 };
 
 /// A simple physical material with an albedo.
@@ -22,33 +22,23 @@ impl Physical {
 }
 
 impl Material for Physical {
-    fn id(&self) -> u16 {
-        0
+    fn id(&self) -> EffectMaterialId {
+        EffectMaterialId(0)
     }
 
     fn fragment_shader_source(&self, lights: &[&dyn three_d::Light]) -> String {
-        let mut output = lights_shader_source(lights, LightingModel::Blinn);
+        let mut output = lights_shader_source(lights);
         output.push_str(ToneMapping::fragment_shader_source());
         output.push_str(ColorMapping::fragment_shader_source());
         output.push_str(include_str!("material.frag"));
         output
     }
 
-    fn fragment_attributes(&self) -> FragmentAttributes {
-        FragmentAttributes {
-            position: true,
-            normal: false,
-            color: false,
-            uv: false,
-            tangents: false,
-        }
-    }
-
-    fn use_uniforms(&self, program: &Program, camera: &Camera, lights: &[&dyn three_d::Light]) {
-        camera.tone_mapping.use_uniforms(program);
-        camera.color_mapping.use_uniforms(program);
+    fn use_uniforms(&self, program: &Program, viewer: &dyn Viewer, lights: &[&dyn three_d::Light]) {
+        viewer.tone_mapping().use_uniforms(program);
+        viewer.color_mapping().use_uniforms(program);
         if !lights.is_empty() {
-            program.use_uniform_if_required("cameraPosition", camera.position());
+            program.use_uniform_if_required("cameraPosition", viewer.position());
             for (i, light) in lights.iter().enumerate() {
                 #[allow(clippy::cast_possible_truncation)]
                 light.use_uniforms(program, i as u32);
