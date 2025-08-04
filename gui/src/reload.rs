@@ -88,7 +88,7 @@ impl ModelReloader {
 
                 // Preview
                 let mut cancelled = false;
-                for depth in 0..mesh_settings.depth {
+                for depth in 1..mesh_settings.depth {
                     let mesh_settings = MeshSettings {
                         depth,
                         view: mesh_settings.view,

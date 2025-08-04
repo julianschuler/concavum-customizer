@@ -10,8 +10,8 @@ use fidget::vm::VmShape as FidgetShape;
 
 use fidget::{
     context::Tree,
-    mesh::{Mesh, Octree, Settings, ThreadCount},
-    render::View3,
+    mesh::{Mesh, Octree, Settings},
+    render::{ThreadPool, View3},
     Context,
 };
 use glam::DVec3;
@@ -57,17 +57,10 @@ impl Shape {
         let center = self.bounds.center().as_vec3().to_array().into();
         let view = View3::from_center_and_scale(center, size);
 
-        #[cfg(not(target_arch = "wasm32"))]
-        let threads = ThreadCount::Many(
-            std::thread::available_parallelism().expect("available parallelism should be known"),
-        );
-        #[cfg(target_arch = "wasm32")]
-        let threads = ThreadCount::One;
-
         Settings {
             depth,
             view,
-            threads,
+            threads: Some(&ThreadPool::Global),
         }
     }
 
