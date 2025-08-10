@@ -50,25 +50,36 @@ impl Keyboard {
         const CENTER_PADDING: usize = 3;
 
         #[allow(clippy::cast_precision_loss)]
-        let (row_offset, thumb_key_offset) = if self.columns >= self.thumb_keys {
-            (0.0, (self.columns - self.thumb_keys) as f32 + 0.5)
-        } else {
-            ((self.thumb_keys - self.columns) as f32 - 0.5, 0.0)
-        };
+        let (row_offset, thumb_key_offset, matrix_row_offset, matrix_thumb_key_offset) =
+            if self.columns >= self.thumb_keys {
+                (
+                    0.0,
+                    (self.columns - self.thumb_keys) as f32 + 0.5,
+                    0,
+                    self.columns - self.thumb_keys,
+                )
+            } else {
+                (
+                    (self.thumb_keys - self.columns) as f32 - 0.5,
+                    0.0,
+                    self.thumb_keys - self.columns,
+                    0,
+                )
+            };
 
         #[allow(clippy::cast_precision_loss)]
         (0..self.rows)
             .flat_map(|row| {
                 (0..self.columns)
                     .map(move |column| {
-                        let matrix_position = (self.rows - row, column);
+                        let matrix_position = (self.rows - row, matrix_row_offset + column);
                         let x = row_offset + column as f32;
                         let y = row as f32;
 
                         Key::finger(matrix_position, x, y)
                     })
                     .chain((0..self.columns).map(move |column| {
-                        let matrix_position = (2 * self.rows + 1 - row, self.columns - 1 - column);
+                        let matrix_position = (2 * self.rows + 1 - row, matrix_row_offset + column);
                         let x = row_offset + (CENTER_PADDING + 1 + self.columns + column) as f32;
                         let y = row as f32;
 
@@ -76,14 +87,14 @@ impl Keyboard {
                     }))
             })
             .chain((0..self.thumb_keys).map(move |key| {
-                let matrix_position = (0, key);
+                let matrix_position = (0, matrix_thumb_key_offset + key);
                 let x = thumb_key_offset + key as f32;
                 let y = self.rows as f32;
 
                 Key::thumb(matrix_position, x, y)
             }))
             .chain((0..self.thumb_keys).map(move |key| {
-                let matrix_position = (self.rows + 1, self.thumb_keys - 1 - key);
+                let matrix_position = (self.rows + 1, matrix_row_offset + key);
                 let x = thumb_key_offset + (CENTER_PADDING + self.thumb_keys + key) as f32;
                 let y = self.rows as f32;
 
