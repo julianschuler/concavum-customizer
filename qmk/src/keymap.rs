@@ -53,7 +53,7 @@ impl Keymap {
         }
     }
 
-    /// Returns the content of the `keymap.c` file.
+    /// Generates the content of the `keymap.c` file.
     pub fn to_file(&self) -> String {
         let comment = self.to_comment();
         let layout_array = self.to_layout_array();

@@ -47,7 +47,7 @@ impl Show for Columns {
 
         ui.horizontal(|ui| {
             ui.label(label).on_hover_text(description);
-            if self.normal_columns.0.len() < MAXIMUM_NORMAL_COLUMNS {
+            if self.normal_columns.len() < MAXIMUM_NORMAL_COLUMNS {
                 ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
                     if ui.button("Add column").clicked() {
                         self.normal_columns
@@ -79,6 +79,11 @@ impl NormalColumns {
     pub fn last(&self) -> &NormalColumn {
         self.0.last().expect("there has to be at least one row")
     }
+
+    /// Returns the number of normal columns.
+    pub fn len(&self) -> usize {
+        self.0.len()
+    }
 }
 
 impl<'de> Deserialize<'de> for NormalColumns {
@@ -107,7 +112,7 @@ impl Show for NormalColumns {
     fn show(&mut self, ui: &mut Ui) -> bool {
         let mut changed = false;
 
-        let multiple_columns = self.0.len() > 1;
+        let multiple_columns = self.len() > 1;
         let mut column_to_delete = None;
 
         for (index, column) in self.0.iter_mut().enumerate() {

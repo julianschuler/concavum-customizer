@@ -1,67 +1,44 @@
 //! The `qmk` crate implements the generation of QMK configuration files.
 
+mod keyboard;
 mod keymap;
-mod layout;
 mod replace_indented;
 
-use keymap::Keymap;
-use layout::layout;
-use replace_indented::ReplaceIndented;
+use config::Config;
 
-/// A QMK configuration.
-pub struct Config {
-    columns: usize,
-    rows: usize,
-    thumb_keys: usize,
+use crate::{keyboard::Keyboard, keymap::Keymap};
+
+/// A set of QMK configuration files.
+pub struct Files {
+    /// The content of the `config.h` file.
+    pub config_h: &'static str,
+    /// The content of the `keyboard.json` file.
+    pub keyboard_json: String,
+    /// The content of the `keymap.c` file.
+    pub keymap_c: String,
 }
 
-impl Config {
-    /// Creates a new QMK configuration from the given matrix parameters.
+impl Files {
+    /// Creates a set of QMK files from the given configuration.
     #[must_use]
-    pub fn new(columns: usize, rows: usize, thumb_keys: usize) -> Self {
+    pub fn from_config(config: &Config) -> Self {
+        let columns = &config.finger_cluster.columns;
+        let columns = usize::from(columns.left_side_column.active)
+            + columns.normal_columns.len()
+            + usize::from(config.finger_cluster.columns.right_side_column.active);
+        #[allow(clippy::cast_sign_loss)]
+        let rows = i8::from(config.finger_cluster.rows) as usize;
+        #[allow(clippy::cast_sign_loss)]
+        let thumb_keys = i8::from(config.thumb_cluster.keys) as usize;
+
+        let config_h = include_str!("config.h");
+        let keyboard_json = Keyboard::new(columns, rows, thumb_keys).to_file();
+        let keymap_c = Keymap::new(columns, rows, thumb_keys).to_file();
+
         Self {
-            columns,
-            rows,
-            thumb_keys,
+            config_h,
+            keyboard_json,
+            keymap_c,
         }
-    }
-
-    /// Returns the content of the `config.h` file.
-    #[must_use]
-    pub fn config_h(&self) -> &'static str {
-        include_str!("config.h")
-    }
-
-    /// Returns the content of the `keyboard.json` file.
-    #[must_use]
-    pub fn keyboard_json(&self) -> String {
-        let column_count = self.columns.max(self.thumb_keys);
-        let row_count = self.rows + 1;
-
-        let first_pins = [
-            "\"GP8\"", "\"GP7\"", "\"GP6\"", "\"GP5\"", "\"GP4\"", "\"GP27\"",
-        ];
-        let second_pins = [
-            "\"GP9\"", "\"GP10\"", "\"GP19\"", "\"GP20\"", "\"GP18\"", "\"GP26\"",
-        ];
-
-        let left_columns = first_pins.iter().take(column_count);
-        let left_rows = second_pins.iter().take(row_count);
-        let right_columns = second_pins.iter().take(column_count);
-        let right_rows = first_pins.iter().rev().take(row_count);
-        let layout = layout(self.columns, self.rows, self.thumb_keys);
-
-        include_str!("keyboard.json")
-            .replace_indented("$left_columns", left_columns)
-            .replace_indented("$left_rows", left_rows)
-            .replace_indented("$right_columns", right_columns)
-            .replace_indented("$right_rows", right_rows)
-            .replace_indented("$layout", layout)
-    }
-
-    /// Returns the `keymap.c` file.
-    #[must_use]
-    pub fn keymap_c(&self) -> String {
-        Keymap::new(self.columns, self.rows, self.thumb_keys).to_file()
     }
 }
