@@ -100,10 +100,17 @@ impl InterfacePcb {
     pub fn cutouts(&self, side: SideX, bounds_diameter: f64) -> Tree {
         const USB_SIZE: DVec2 = dvec2(9.0, 3.2);
         const USB_RADIUS: f64 = 1.1;
-        const USB_OFFSET: DVec3 = dvec3(24.9, 0.0, 3.2);
+        const LEFT_USB_OFFSET: DVec3 = dvec3(24.9, 0.0, 3.2);
+        const RIGHT_USB_OFFSET: DVec3 = dvec3(11.1, 0.0, 3.2);
         const JACK_RADIUS: f64 = 3.0;
-        const JACK_OFFSET_LEFT: DVec3 = dvec3(5.4, 0.0, 2.45);
-        const JACK_OFFSET_RIGHT: DVec3 = dvec3(10.7, 0.0, 2.45);
+        const LEFT_JACK_OFFSET: DVec3 = dvec3(5.4, 0.0, 2.45);
+        const RIGHT_JACK_OFFSET: DVec3 = dvec3(30.6, 0.0, 2.45);
+
+        let (usb_offset, jack_offset) = if matches!(side, SideX::Left) {
+            (LEFT_USB_OFFSET, LEFT_JACK_OFFSET)
+        } else {
+            (RIGHT_USB_OFFSET, RIGHT_JACK_OFFSET)
+        };
 
         let jack_cutout = Circle::new(JACK_RADIUS + Self::TOLERANCE)
             .into_tree()
@@ -112,23 +119,17 @@ impl InterfacePcb {
         let rotation_x = DAffine3::from_rotation_x(-PI / 2.0);
         let height_offset = vec_z(Self::SIZE.z);
 
-        if matches!(side, SideX::Left) {
-            let usb_cutout = Rectangle::new(USB_SIZE - DVec2::splat(2.0 * USB_RADIUS))
-                .into_tree()
-                .offset(USB_RADIUS + Self::TOLERANCE)
-                .extrude(-Self::SIZE.y / 2.0, bounds_diameter);
+        let usb_cutout = Rectangle::new(USB_SIZE - DVec2::splat(2.0 * USB_RADIUS))
+            .into_tree()
+            .offset(USB_RADIUS + Self::TOLERANCE)
+            .extrude(-Self::SIZE.y / 2.0, bounds_diameter);
 
-            let usb_translation = DAffine3::from_translation(USB_OFFSET + height_offset);
-            let jack_translation = DAffine3::from_translation(JACK_OFFSET_LEFT + height_offset);
+        let usb_translation = DAffine3::from_translation(usb_offset + height_offset);
+        let jack_translation = DAffine3::from_translation(jack_offset + height_offset);
 
-            usb_cutout
-                .affine(self.position * usb_translation * rotation_x)
-                .union(jack_cutout.affine(self.position * jack_translation * rotation_x))
-        } else {
-            let jack_translation = DAffine3::from_translation(JACK_OFFSET_RIGHT + height_offset);
-
-            jack_cutout.affine(self.position * jack_translation * rotation_x)
-        }
+        usb_cutout
+            .affine(self.position * usb_translation * rotation_x)
+            .union(jack_cutout.affine(self.position * jack_translation * rotation_x))
     }
 
     /// Calculates the offset of the interface PCB along the tangent direction to the tangent point.
