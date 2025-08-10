@@ -135,7 +135,7 @@ impl Display for Key {
         if let Some(height) = height {
             write!(
                 f,
-                "{{\"matrix\": [{matrix_x}, {matrix_y}], \"x\": {x}, \"y\": {y}, \"height\": {height}}}"
+                "{{\"matrix\": [{matrix_x}, {matrix_y}], \"x\": {x}, \"y\": {y}, \"h\": {height}}}"
             )
         } else {
             write!(
