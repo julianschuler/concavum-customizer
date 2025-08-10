@@ -1,0 +1,72 @@
+{
+  "keyboard_name": "Concavum",
+  "url": "https://github.com/julianschuler/keyboards/tree/master/concavum-v2",
+  "maintainer": "julianschuler",
+  "manufacturer": "QMK",
+
+  "processor": "RP2040",
+  "bootloader": "rp2040",
+
+  "usb": {
+    "vid": "0xFEED",
+    "pid": "0xD6AF",
+    "device_version": "2.0.0",
+    "polling_interval": 1
+  },
+  "host": {
+    "default": {
+      "nkro": true
+    }
+  },
+
+  "diode_direction": "COL2ROW",
+  "matrix_pins": {
+    "cols": [
+      $left_columns
+    ],
+    "rows": [
+      $left_rows
+    ]
+  },
+  "split": {
+    "enabled": true,
+    "handedness": {
+      "pin": "GP29"
+    },
+    "serial": {
+      "driver": "vendor"
+    },
+    "matrix_pins": {
+      "right": {
+        "cols": [
+          $right_columns
+        ],
+        "rows": [
+          $right_rows
+        ]
+      }
+    }
+  },
+
+  "debounce": 15,
+  "build": {
+      "debounce_type": "sym_eager_pk"
+  },
+
+  "features": {
+    "extrakey": true,
+    "nkro": true
+  },
+
+  "tapping": {
+    "permissive_hold": true
+  },
+
+  "layouts": {
+    "LAYOUT": {
+      "layout": [
+        $layout
+      ]
+    }
+  }
+}
