@@ -32,6 +32,7 @@ model = { path = "model" }
 nalgebra = { version = "0.34", default-features = false, features = ["std"] }
 pcb = { path = "pcb" }
 pollster = "0.4"
+qmk = { path = "qmk" }
 quote = "1.0"
 rfd = { version = "0.15" }
 serde = { version = "1.0", features = ["derive"] }

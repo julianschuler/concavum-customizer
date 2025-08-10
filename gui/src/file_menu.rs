@@ -6,6 +6,7 @@ use std::{
 
 use config::{Config, PositiveFloat};
 use pcb::MatrixPcb;
+use qmk::Files;
 use rfd::AsyncFileDialog;
 use show::egui::{Align, Align2, Button, Context, Layout, RichText, Ui, Window};
 use three_d::{CpuMesh, Indices, Positions};
@@ -224,25 +225,30 @@ async fn save_config(config: Config) -> Update {
 async fn export_model(config: Config, meshes: Meshes) -> Update {
     let toml = toml::to_string(&config)?;
     let matrix_pcb = MatrixPcb::from_config(&config);
+    let qmk_files = Files::from_config(&config);
     let mut zip = ZipWriter::new(Cursor::new(Vec::new()));
 
     zip.start_file("config.toml", SimpleFileOptions::default())?;
     zip.write_all(toml.as_bytes())?;
 
-    zip.start_file("left_half.stl", SimpleFileOptions::default())?;
+    zip.start_file("case/left_half.stl", SimpleFileOptions::default())?;
     zip.write_stl(meshes.left_half)?;
-
-    zip.start_file("right_half.stl", SimpleFileOptions::default())?;
+    zip.start_file("case/right_half.stl", SimpleFileOptions::default())?;
     zip.write_stl(meshes.right_half)?;
-
-    zip.start_file("bottom_plate.stl", SimpleFileOptions::default())?;
+    zip.start_file("case/bottom_plate.stl", SimpleFileOptions::default())?;
     zip.write_stl(meshes.bottom_plate)?;
 
-    zip.start_file("matrix_pcb.kicad_pcb", SimpleFileOptions::default())?;
+    zip.start_file("pcb/matrix_pcb.kicad_pcb", SimpleFileOptions::default())?;
     zip.write_all(matrix_pcb.to_kicad_board().as_bytes())?;
-
-    zip.start_file("kikit_parameters.json", SimpleFileOptions::default())?;
+    zip.start_file("pcb/kikit_parameters.json", SimpleFileOptions::default())?;
     zip.write_all(include_bytes!("kikit_parameters.json"))?;
+
+    zip.start_file("qmk/config.h", SimpleFileOptions::default())?;
+    zip.write_all(qmk_files.config_h.as_bytes())?;
+    zip.start_file("qmk/keyboard.json", SimpleFileOptions::default())?;
+    zip.write_all(qmk_files.keyboard_json.as_bytes())?;
+    zip.start_file("qmk/keymaps/default/keymap.c", SimpleFileOptions::default())?;
+    zip.write_all(qmk_files.keymap_c.as_bytes())?;
 
     let data = zip.finish()?;
 

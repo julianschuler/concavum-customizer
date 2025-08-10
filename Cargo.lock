@@ -1260,6 +1260,7 @@ dependencies = [
  "model",
  "pcb",
  "pollster",
+ "qmk",
  "rfd",
  "show",
  "thiserror 2.0.12",
