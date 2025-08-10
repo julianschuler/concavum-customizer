@@ -26,6 +26,12 @@ impl Config {
         }
     }
 
+    /// Returns the content of the `config.h` file.
+    #[must_use]
+    pub fn config_h(&self) -> &'static str {
+        include_str!("config.h")
+    }
+
     /// Returns the content of the `keyboard.json` file.
     #[must_use]
     pub fn keyboard_json(&self) -> String {
