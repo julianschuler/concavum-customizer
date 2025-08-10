@@ -47,7 +47,7 @@ impl From<Tab> for Footprint {
                     Line::new(point!(0, 1), point!(0, -1), "Dwgs.User"),
                 ],
                 fp_texts: vec![Text::new(
-                    concat!("KIKIT: width: 10mm"),
+                    "KIKIT: width: 10mm",
                     position!(-5.5, 0, Some(90.deg() + angle.unwrap_or_default())),
                 )],
                 pads: Vec::new(),

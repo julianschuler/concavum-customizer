@@ -96,9 +96,9 @@ pub struct Meshes {
 }
 
 /// A trait for meshing a model.
-pub trait Mesh {
+pub trait Mesh<'a> {
     /// Returns the mesh settings for meshing the preview at the set resolution.
-    fn mesh_settings_preview(&self) -> MeshSettings;
+    fn mesh_settings_preview(&self) -> MeshSettings<'_>;
 
     /// Meshes the preview using the given mesh settings.
     fn mesh_preview(&self, settings: MeshSettings) -> CpuMesh;
@@ -107,8 +107,8 @@ pub trait Mesh {
     fn meshes(&self) -> Meshes;
 }
 
-impl Mesh for Model {
-    fn mesh_settings_preview(&self) -> MeshSettings {
+impl Mesh<'_> for Model {
+    fn mesh_settings_preview(&self) -> MeshSettings<'_> {
         self.keyboard.preview.mesh_settings(self.resolution)
     }
 

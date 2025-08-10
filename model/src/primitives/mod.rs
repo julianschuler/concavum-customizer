@@ -46,7 +46,7 @@ impl Shape {
     }
 
     /// Returns the settings to use for meshing the shape with the given resolution.
-    pub fn mesh_settings(&self, resolution: f64) -> Settings {
+    pub fn mesh_settings(&self, resolution: f64) -> Settings<'_> {
         #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
         let depth = (self.bounds.size().max_element() / resolution)
             .log2()
