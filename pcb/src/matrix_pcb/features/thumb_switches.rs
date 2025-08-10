@@ -39,7 +39,7 @@ impl ThumbSwitches {
         &self.0
     }
 
-    /// Returs the position of the first thumb switch.
+    /// Returns the position of the first thumb switch.
     pub fn first(&self) -> Position {
         self.0
             .first()

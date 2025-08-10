@@ -62,7 +62,7 @@ static {uppercase_name}_INDICES: [u32; {}] = [
         }
     }
 
-    let mut out_file = File::create(out_path).expect("output file should be createable in OUT_DIR");
+    let mut out_file = File::create(out_path).expect("output file should be creatable in OUT_DIR");
     out_file
         .write_all(
             format!(
@@ -88,7 +88,7 @@ impl Assets {{
 
 fn statics_from_path(path: &Path) -> (Static, Static) {
     let mut positions = Static::positions();
-    let mut indices = Static::indicies();
+    let mut indices = Static::indices();
 
     for line in read_to_string(path).expect("failed to read file").lines() {
         let mut iter = line.split_whitespace();
@@ -125,7 +125,7 @@ impl Static {
         Self { entries, length: 1 }
     }
 
-    fn indicies() -> Self {
+    fn indices() -> Self {
         Self {
             entries: String::new(),
             length: 0,

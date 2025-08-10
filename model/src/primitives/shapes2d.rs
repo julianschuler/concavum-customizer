@@ -5,7 +5,7 @@ use fidget::context::Tree;
 use glam::DVec2;
 
 use crate::{
-    geometry::{counterclockwise_or_colinear, rotate_90_degrees},
+    geometry::{counterclockwise_or_collinear, rotate_90_degrees},
     primitives::{
         vector::{Vec2, Vector},
         EPSILON,
@@ -368,5 +368,5 @@ fn is_convex_after_insert(
     let d = vertices[polygon[(index + 1) % n]];
     let e = vertices[polygon[(index + 2) % n]];
 
-    counterclockwise_or_colinear(a, b, c) && counterclockwise_or_colinear(c, d, e)
+    counterclockwise_or_collinear(a, b, c) && counterclockwise_or_collinear(c, d, e)
 }

@@ -177,7 +177,7 @@ fn spawn(f: impl FnOnce() + Send + 'static) {
         .expect("should be able to send message to worker");
 }
 
-/// This fucntion is the entry point called in `worker.js`.
+/// This function is the entry point called in `worker.js`.
 #[cfg(target_arch = "wasm32")]
 #[wasm_bindgen]
 pub fn worker_entry_point(addr: u32) {

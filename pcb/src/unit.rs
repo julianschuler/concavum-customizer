@@ -4,7 +4,7 @@ use serde::Serialize;
 
 /// The conversion factor between an i32 value and the units of length or rotation.
 pub const VALUE_TO_UNIT: i32 = 1_000_000;
-/// The maxium angle value.
+/// The maximum angle value.
 const MAXIMUM_ANGLE: i32 = 360 * VALUE_TO_UNIT;
 
 /// A unit of length.

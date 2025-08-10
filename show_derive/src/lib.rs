@@ -31,7 +31,7 @@ pub fn derive_show(input: TokenStream) -> TokenStream {
         let ident = field
             .ident
             .as_ref()
-            .expect("named field should have an identifer");
+            .expect("named field should have an identifier");
 
         let docstring = field
             .attrs

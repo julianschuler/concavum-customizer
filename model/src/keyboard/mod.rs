@@ -63,7 +63,7 @@ impl Keyboard {
             .rounded_difference(finger_key_clearance, rounding_radius);
         let combined_cluster = finger_cluster.union(thumb_cluster);
 
-        // Hollow out the combined cluster and cut off everthing below a Z value of 0
+        // Hollow out the combined cluster and cut off everything below a Z value of 0
         let half_space = HalfSpace::new(Plane::new(DVec3::ZERO, DVec3::NEG_Z)).into_tree();
         let hollowed_cluster = combined_cluster.shell(shell_thickness);
         let cluster = hollowed_cluster.intersection(half_space.clone());

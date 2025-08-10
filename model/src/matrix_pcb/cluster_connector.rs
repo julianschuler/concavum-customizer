@@ -49,7 +49,7 @@ impl ClusterConnector {
         let thumb_ellipse =
             calculate_circle_projection(world_to_plane * thumb_key.z_axis, thumb_arc_center);
 
-        // Calculate the tangets between the ellipses and calculate the direction from it
+        // Calculate the tangents between the ellipses and calculate the direction from it
         let tangents = finger_ellipse.tangents_to(&thumb_ellipse);
         let tangent = select_tangent(tangents, finger_arc_center, thumb_arc_center);
         let direction = plane_to_world * dvec3(tangent.y, -tangent.x, 0.0);

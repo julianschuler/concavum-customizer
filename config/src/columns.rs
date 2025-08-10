@@ -231,7 +231,7 @@ impl From<&Columns> for Vec<ColumnConfig> {
     }
 }
 
-/// Adds a collapsable section for configuring a single column with the given content.
+/// Adds a collapsible section for configuring a single column with the given content.
 fn column_section(title: &str, ui: &mut Ui, add_content: impl FnOnce(&mut Ui)) {
     CollapsingHeader::new(title)
         .default_open(true)

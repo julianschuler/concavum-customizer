@@ -37,7 +37,7 @@ pub trait Show {
         changed
     }
 
-    /// Shows a widget as a collapsable section. Returns true if `self` was changed.
+    /// Shows a widget as a collapsible section. Returns true if `self` was changed.
     fn show_section(&mut self, ui: &mut Ui) -> bool {
         let mut changed = false;
 

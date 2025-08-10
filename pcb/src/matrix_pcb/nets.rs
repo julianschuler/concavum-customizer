@@ -56,7 +56,7 @@ impl Nets {
         &self.columns[..self.thumb_switch_count]
     }
 
-    /// Returs the nets of the finger rows.
+    /// Returns the nets of the finger rows.
     pub fn finger_rows(&self) -> &[Net] {
         &self.rows[1..=self.row_count]
     }
