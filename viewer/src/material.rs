@@ -35,14 +35,13 @@ impl Material for Physical {
     }
 
     fn use_uniforms(&self, program: &Program, viewer: &dyn Viewer, lights: &[&dyn three_d::Light]) {
+        program.use_uniform_if_required("lightingModel", 2u32);
         viewer.tone_mapping().use_uniforms(program);
         viewer.color_mapping().use_uniforms(program);
-        if !lights.is_empty() {
-            program.use_uniform_if_required("cameraPosition", viewer.position());
-            for (i, light) in lights.iter().enumerate() {
-                #[allow(clippy::cast_possible_truncation)]
-                light.use_uniforms(program, i as u32);
-            }
+        program.use_uniform_if_required("cameraPosition", viewer.position());
+        for (i, light) in lights.iter().enumerate() {
+            #[allow(clippy::cast_possible_truncation)]
+            light.use_uniforms(program, i as u32);
         }
         let Color { r, g, b, a } = self.albedo;
         program.use_uniform("albedo", Srgba::new(r, g, b, a).to_linear_srgb());
