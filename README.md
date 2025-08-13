@@ -6,7 +6,7 @@
 
 This repository contains the source code of the interactive customizer for the [Concavum v2](https://github.com/julianschuler/keyboards/tree/master/concavum-v2), a fully parametric split keyboard featuring an ergonomic layout with ortholinear (non-staggered) columns and concave key wells.
 The customizer allows for changing all kinds of parameters like the number of columns, rows and thumb keys, the curvature, the distance between keys and many more.
-It generates 3D printing files for the case, a PCB for connecting the key switches and QMK configuration files.
+It generates 3D printing files for the case, a PCB for connecting the key switches and configuration files for the keyboard firmware.
 
 To get started, head over to the [latest release](https://github.com/julianschuler/concavum-customizer/releases/latest) and download the executable for your operating system. If your operating system is not supported or you want to run the latest development version instead, follow the instructions in the next section.
 
@@ -47,14 +47,15 @@ For the above example, the customizer should now be accessible under http://loca
 The customizer consists of two parts: The configuration panel at the left and the model viewer at the right.
 The model is automatically reloaded for any change in the configuration panel.
 
-If you are finished with configuring the keyboard, you can use the export button at the top right of the configuration panel to export all the model files.
-The model files are exported as a ZIP archive containing the following files:
+If you are finished with configuring the keyboard, you can use the export button at the top right of the configuration panel to export all model files.
+The export is a ZIP archive containing the following files:
 
 ```
 concavum.zip
 ├── config.toml
 ├── case
 │   ├── bottom_plate.stl
+│   ├── bottom_plate_to_dxf.scad
 │   ├── left_half.stl
 │   └── right_half.stl
 ├── pcb

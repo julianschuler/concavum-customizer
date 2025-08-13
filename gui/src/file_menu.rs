@@ -237,6 +237,11 @@ async fn export_model(config: Config, meshes: Meshes) -> Update {
     zip.write_stl(meshes.right_half)?;
     zip.start_file("case/bottom_plate.stl", SimpleFileOptions::default())?;
     zip.write_stl(meshes.bottom_plate)?;
+    zip.start_file(
+        "case/bottom_plate_to_dxf.scad",
+        SimpleFileOptions::default(),
+    )?;
+    zip.write_all(b"projection(cut = false) import(\"bottom_plate.stl\");\n")?;
 
     zip.start_file("pcb/matrix_pcb.kicad_pcb", SimpleFileOptions::default())?;
     zip.write_all(matrix_pcb.to_kicad_board().as_bytes())?;
