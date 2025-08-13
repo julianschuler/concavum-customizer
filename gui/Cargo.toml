@@ -5,6 +5,7 @@ edition.workspace = true
 license.workspace = true
 
 [dependencies]
+bom.workspace = true
 config.workspace = true
 glam.workspace = true
 model.workspace = true

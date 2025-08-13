@@ -4,6 +4,7 @@ use std::{
     sync::mpsc::{channel, Receiver, Sender},
 };
 
+use bom::Bom;
 use config::{Config, PositiveFloat};
 use pcb::MatrixPcb;
 use qmk::Files;
@@ -224,12 +225,15 @@ async fn save_config(config: Config) -> Update {
 /// Exports all the model files in a ZIP archive.
 async fn export_model(config: Config, meshes: Meshes) -> Update {
     let toml = toml::to_string(&config)?;
+    let bom = Bom::from_config(&config);
     let matrix_pcb = MatrixPcb::from_config(&config);
     let qmk_files = Files::from_config(&config);
     let mut zip = ZipWriter::new(Cursor::new(Vec::new()));
 
     zip.start_file("config.toml", SimpleFileOptions::default())?;
     zip.write_all(toml.as_bytes())?;
+    zip.start_file("bom.csv", SimpleFileOptions::default())?;
+    zip.write_all(bom.to_csv_file().as_bytes())?;
 
     zip.start_file("case/left_half.stl", SimpleFileOptions::default())?;
     zip.write_stl(meshes.left_half)?;

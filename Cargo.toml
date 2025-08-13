@@ -1,5 +1,6 @@
 [workspace]
 members = [
+  "bom",
   "config",
   "customizer",
   "customizer_wasm",
@@ -19,6 +20,7 @@ edition = "2021"
 license = "GPL-3.0-only"
 
 [workspace.dependencies]
+bom = { path = "bom" }
 config = { path = "config" }
 console_error_panic_hook = "0.1"
 earcutr = "0.5"

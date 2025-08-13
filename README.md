@@ -53,6 +53,7 @@ The export is a ZIP archive containing the following files:
 ```
 concavum.zip
 ├── config.toml
+├── bom.csv
 ├── case
 │   ├── bottom_plate.stl
 │   ├── bottom_plate_to_dxf.scad
@@ -70,6 +71,7 @@ concavum.zip
 ```
 
 The `config.toml` file contains all the parameters of the exported model and can be loaded back into the customizer using the load button.
+The `bom.csv` file lists all parts required for building the keyboard.
 The `case`, `pcb` and `qmk` subfolders contain the 3D printing, PCB and QMK configuration files respectively.
 Please refer to the [Concavum documentation](https://github.com/julianschuler/keyboards/tree/master/concavum-v2) on how to use them.
 

@@ -22,10 +22,7 @@ impl Files {
     /// Creates a set of QMK files from the given configuration.
     #[must_use]
     pub fn from_config(config: &Config) -> Self {
-        let columns = &config.finger_cluster.columns;
-        let columns = usize::from(columns.left_side_column.active)
-            + columns.normal_columns.len()
-            + usize::from(config.finger_cluster.columns.right_side_column.active);
+        let columns = config.finger_cluster.columns.len();
         #[allow(clippy::cast_sign_loss)]
         let rows = i8::from(config.finger_cluster.rows) as usize;
         #[allow(clippy::cast_sign_loss)]

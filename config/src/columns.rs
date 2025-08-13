@@ -22,6 +22,17 @@ pub struct Columns {
     pub right_side_column: SideColumn,
 }
 
+impl Columns {
+    /// Returns the total number of columns.
+    #[allow(clippy::len_without_is_empty)]
+    #[must_use]
+    pub fn len(&self) -> usize {
+        usize::from(self.left_side_column.active)
+            + self.normal_columns.len()
+            + usize::from(self.right_side_column.active)
+    }
+}
+
 impl Show for Columns {
     fn show(&mut self, ui: &mut Ui) -> bool {
         let mut changed = false;

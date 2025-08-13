@@ -1,0 +1,11 @@
+[package]
+name = "bom"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+config.workspace = true
+
+[lints]
+workspace = true
