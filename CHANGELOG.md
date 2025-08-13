@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.4.0] - 2025-08-13
+
+### Added
+
+- Add generating QMK configuration files
+- Add generating a bill of materials
+- Add OpenSCAD script to convert bottom plate to DXF to export
+
+### Changed
+
+- Use a second microcontroller for the right half
+
 ## [1.3.0] - 2025-01-17
 
 ### Added
@@ -41,6 +53,7 @@
 
 :seedling: Initial release.
 
+[1.4.0]: https://github.com/julianschuler/concavum-customizer/releases/tag/v1.4.0
 [1.3.0]: https://github.com/julianschuler/concavum-customizer/releases/tag/v1.3.0
 [1.2.0]: https://github.com/julianschuler/concavum-customizer/releases/tag/v1.2.0
 [1.1.0]: https://github.com/julianschuler/concavum-customizer/releases/tag/v1.1.0
