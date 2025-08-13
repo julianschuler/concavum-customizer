@@ -5,6 +5,7 @@
 ## Overview
 
 This repository contains the source code of the interactive customizer for the [Concavum v2](https://github.com/julianschuler/keyboards/tree/master/concavum-v2), a fully parametric split keyboard featuring an ergonomic layout with ortholinear (non-staggered) columns and concave key wells.
+
 The customizer allows for changing all kinds of parameters like the number of columns, rows and thumb keys, the curvature, the distance between keys and many more.
 It generates 3D printing files for the case, a PCB for connecting the key switches and configuration files for the keyboard firmware.
 
