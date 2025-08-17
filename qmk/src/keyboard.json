@@ -28,6 +28,9 @@
       $left_rows
     ]
   },
+  "bootmagic": {
+    "matrix": $left_bootmagic_matrix
+  },
   "split": {
     "enabled": true,
     "handedness": {
@@ -45,6 +48,9 @@
           $right_rows
         ]
       }
+    },
+    "bootmagic": {
+      "matrix": $right_bootmagic_matrix
     }
   },
 
@@ -54,6 +60,7 @@
   },
 
   "features": {
+    "bootmagic": true,
     "extrakey": true,
     "nkro": true
   },

@@ -41,6 +41,12 @@ impl Keyboard {
         let left_rows = left_row_pins.iter().take(row_count);
         let right_columns = right_row_pins.iter().take(column_count);
         let right_rows = right_column_pins.iter().take(row_count);
+        let left_bootmagic_matrix = format!("[{row}, 0]", row = row_count - 1);
+        let right_bootmagic_matrix = format!(
+            "[{row}, {column}]",
+            row = 2 * row_count - 1,
+            column = self.columns - 1
+        );
 
         include_str!("keyboard.json")
             .replace_indented("$left_columns", left_columns)
@@ -48,6 +54,8 @@ impl Keyboard {
             .replace_indented("$right_columns", right_columns)
             .replace_indented("$right_rows", right_rows)
             .replace_indented("$layout", self.layout())
+            .replace("$left_bootmagic_matrix", &left_bootmagic_matrix)
+            .replace("$right_bootmagic_matrix", &right_bootmagic_matrix)
     }
 
     /// Returns the layout given the matrix parameters.
