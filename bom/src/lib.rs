@@ -6,7 +6,7 @@ use config::{Config, KeySize};
 
 /// A bill of materials.
 pub struct Bom {
-    items: [Item; 12],
+    items: [Item; 14],
 }
 
 impl Bom {
@@ -32,22 +32,32 @@ impl Bom {
             Item::new(total_keys, "Key switch Cherry MX compatible", ""),
             Item::new(keycaps_1u, "Keycap DSA 1U", ""),
             Item::new(keycaps_1_5u, "Keycap DSA 1.5U", ""),
-            Item::new(1, "TRRS cable 3.5mm 4 pin 50cm", ""),
+            Item::new(1, "3.5mm to 3.5mm audio cable 50cm TRRS 4 pin", ""),
             Item::new(
                 2,
-                "TRRS connector 3.5mm 4 pin",
+                "3.5mm phone connector TRRS 4 pin",
                 "https://mouser.com/ProductDetail/490-SJ2-35894CSMT-TR",
             ),
             Item::new(2, "KB2040", "https://mouser.com/ProductDetail/485-5302"),
             Item::new(
                 4,
-                "FFC connector 1mm pitch 12 pin ",
+                "FFC connector 12 pin 1mm pitch",
                 "https://mouser.com/ProductDetail/640-FFC3B07-12-T",
             ),
             Item::new(
                 2,
-                "FFC cable 1mm pitch 12 pin 10cm",
+                "FFC cable 12 pin 1mm pitch 10cm",
                 "https://mouser.com/ProductDetail/640-1012A0101C4084T",
+            ),
+            Item::new(
+                2,
+                "10kOhm resistor 1206",
+                "https://mouser.com/ProductDetail/71-CRCW120610K0FKEBC",
+            ),
+            Item::new(
+                2,
+                "Zener diode 2.5V SOD-80",
+                "https://mouser.com/ProductDetail/78-TZM5222B",
             ),
             Item::new(
                 total_keys,
