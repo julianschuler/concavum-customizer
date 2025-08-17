@@ -7,7 +7,6 @@ use crate::{
     geometry::{rotate_90_degrees, vec_y, vec_z, Tangent},
     keyboard::InsertHolder,
     primitives::{BoxShape, Circle, Csg, IntoTree, Rectangle, Transforms},
-    util::SideX,
 };
 
 /// A PCB containing the interfaces to the outside (USB and TRRS) and inside (FFC).
@@ -97,20 +96,12 @@ impl InterfacePcb {
     }
 
     /// Returns the cutouts required for the USB and TRRS ports for the given side.
-    pub fn cutouts(&self, side: SideX, bounds_diameter: f64) -> Tree {
+    pub fn cutouts(&self, bounds_diameter: f64) -> Tree {
         const USB_SIZE: DVec2 = dvec2(9.0, 3.2);
         const USB_RADIUS: f64 = 1.1;
-        const LEFT_USB_OFFSET: DVec3 = dvec3(24.9, 0.0, 3.2);
-        const RIGHT_USB_OFFSET: DVec3 = dvec3(11.1, 0.0, 3.2);
+        const USB_OFFSET: DVec3 = dvec3(24.9, 0.0, 3.2);
         const JACK_RADIUS: f64 = 3.0;
-        const LEFT_JACK_OFFSET: DVec3 = dvec3(5.4, 0.0, 2.45);
-        const RIGHT_JACK_OFFSET: DVec3 = dvec3(30.6, 0.0, 2.45);
-
-        let (usb_offset, jack_offset) = if matches!(side, SideX::Left) {
-            (LEFT_USB_OFFSET, LEFT_JACK_OFFSET)
-        } else {
-            (RIGHT_USB_OFFSET, RIGHT_JACK_OFFSET)
-        };
+        const JACK_OFFSET: DVec3 = dvec3(5.4, 0.0, 2.45);
 
         let jack_cutout = Circle::new(JACK_RADIUS + Self::TOLERANCE)
             .into_tree()
@@ -124,8 +115,8 @@ impl InterfacePcb {
             .offset(USB_RADIUS + Self::TOLERANCE)
             .extrude(-Self::SIZE.y / 2.0, bounds_diameter);
 
-        let usb_translation = DAffine3::from_translation(usb_offset + height_offset);
-        let jack_translation = DAffine3::from_translation(jack_offset + height_offset);
+        let usb_translation = DAffine3::from_translation(USB_OFFSET + height_offset);
+        let jack_translation = DAffine3::from_translation(JACK_OFFSET + height_offset);
 
         usb_cutout
             .affine(self.position * usb_translation * rotation_x)

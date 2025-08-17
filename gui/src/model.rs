@@ -71,7 +71,7 @@ pub fn make_settings(model: &Model, config: &config::Config) -> Settings {
         .chain(once((&model.matrix_pcb.cluster_connector).into()))
         .collect();
     let ffc_pad_positions = mirrored_positions(&model.matrix_pcb.ffc_pad_position).to_vec();
-    let light_positions = light_positions_from_bounds(model.keyboard.right_half.bounds());
+    let light_positions = light_positions_from_bounds(model.keyboard.case.bounds());
 
     Settings {
         finger_key_positions,
@@ -87,10 +87,8 @@ pub fn make_settings(model: &Model, config: &config::Config) -> Settings {
 /// The meshes of the keyboard and bottom plate.
 #[derive(Clone)]
 pub struct Meshes {
-    /// The mesh of the left half.
-    pub left_half: CpuMesh,
-    /// The mesh of the right half.
-    pub right_half: CpuMesh,
+    /// The mesh of the case.
+    pub case: CpuMesh,
     /// The mesh of the bottom plate.
     pub bottom_plate: CpuMesh,
 }
@@ -117,20 +115,13 @@ impl Mesh<'_> for Model {
     }
 
     fn meshes(&self) -> Meshes {
-        let settings = self.keyboard.left_half.mesh_settings(self.resolution);
-        let left_half = self.keyboard.left_half.mesh(settings).to_cpu_mesh();
-
-        let settings = self.keyboard.right_half.mesh_settings(self.resolution);
-        let right_half = self.keyboard.right_half.mesh(settings).to_cpu_mesh();
+        let settings = self.keyboard.case.mesh_settings(self.resolution);
+        let case = self.keyboard.case.mesh(settings).to_cpu_mesh();
 
         let settings = self.keyboard.bottom_plate.mesh_settings(self.resolution);
         let bottom_plate = self.keyboard.bottom_plate.mesh(settings).to_cpu_mesh();
 
-        Meshes {
-            left_half,
-            right_half,
-            bottom_plate,
-        }
+        Meshes { case, bottom_plate }
     }
 }
 

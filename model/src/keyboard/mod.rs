@@ -15,7 +15,6 @@ use crate::{
     geometry::{vec_z, Plane},
     key_positions::KeyPositions,
     primitives::{BoxShape, Csg, HalfSpace, IntoTree, RoundedCsg, Shape, Transforms, EPSILON},
-    util::SideX,
 };
 
 use bottom_plate::BottomPlate;
@@ -24,10 +23,8 @@ use thumb_cluster::ThumbCluster;
 
 /// A keyboard.
 pub struct Keyboard {
-    /// The left half of the keyboard.
-    pub left_half: Shape,
-    /// The right half of the keyboard.
-    pub right_half: Shape,
+    /// The case of the keyboard.
+    pub case: Shape,
     /// The bottom plate of the keyboard.
     pub bottom_plate: Shape,
     /// A simplified preview shape of the keyboard.
@@ -89,19 +86,11 @@ impl Keyboard {
             .union(holders)
             .difference(Self::switch_cutouts(key_positions, shell_thickness));
 
-        // Create the left and right halves by subtracting the interface PCB cutouts
-        // and mirroring the left half along the YZ-plane
-        let left_half = cluster
-            .difference(interface_pcb.cutouts(SideX::Left, bounds.diameter()))
-            .remap_xyz(Tree::x().neg(), Tree::y(), Tree::z());
-        let right_half = cluster.difference(interface_pcb.cutouts(SideX::Right, bounds.diameter()));
-
-        let left_half = Shape::new(&left_half, bounds.mirror_yz());
-        let right_half = Shape::new(&right_half, bounds);
+        let case = cluster.difference(interface_pcb.cutouts(bounds.diameter()));
+        let case = Shape::new(&case, bounds);
 
         Self {
-            left_half,
-            right_half,
+            case,
             bottom_plate,
             preview,
             interface_pcb_position: interface_pcb.position,

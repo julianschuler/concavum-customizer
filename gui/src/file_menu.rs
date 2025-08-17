@@ -235,10 +235,8 @@ async fn export_model(config: Config, meshes: Meshes) -> Update {
     zip.start_file("bom.csv", SimpleFileOptions::default())?;
     zip.write_all(bom.to_csv_file().as_bytes())?;
 
-    zip.start_file("case/left_half.stl", SimpleFileOptions::default())?;
-    zip.write_stl(meshes.left_half)?;
-    zip.start_file("case/right_half.stl", SimpleFileOptions::default())?;
-    zip.write_stl(meshes.right_half)?;
+    zip.start_file("case/case.stl", SimpleFileOptions::default())?;
+    zip.write_stl(meshes.case)?;
     zip.start_file("case/bottom_plate.stl", SimpleFileOptions::default())?;
     zip.write_stl(meshes.bottom_plate)?;
     zip.start_file(

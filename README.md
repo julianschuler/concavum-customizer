@@ -56,10 +56,9 @@ concavum.zip
 ├── config.toml
 ├── bom.csv
 ├── case
+│   ├── case.stl
 │   ├── bottom_plate.stl
-│   ├── bottom_plate_to_dxf.scad
-│   ├── left_half.stl
-│   └── right_half.stl
+│   └── bottom_plate_to_dxf.scad
 ├── pcb
 │   ├── kikit_parameters.json
 │   └── matrix_pcb.kicad_pcb

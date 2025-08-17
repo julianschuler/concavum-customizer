@@ -6,9 +6,7 @@ mod matrix_pcbs;
 
 use config::Color;
 use gui::DisplaySettings;
-use three_d::{
-    Camera, Context, CpuMesh, Gm, InstancedMesh, Instances, Light, Mat4, Mesh, RenderTarget,
-};
+use three_d::{Camera, Context, CpuMesh, Gm, InstancedMesh, Instances, Light, Mat4, RenderTarget};
 
 use crate::material::Physical;
 
@@ -25,36 +23,6 @@ pub trait Render {
 
     /// Updates the display settings of `self`.
     fn update_display_settings(&mut self, display_settings: &DisplaySettings);
-}
-
-/// An object which can be rendered in a scene.
-struct Object {
-    inner: Gm<Mesh, Physical>,
-}
-
-impl Object {
-    /// Creates a new object from a mesh and color.
-    fn new(context: &Context, mesh: &CpuMesh, color: Color) -> Self {
-        let mesh = Mesh::new(context, mesh);
-        let material = Physical::new(color);
-
-        Self {
-            inner: Gm::new(mesh, material),
-        }
-    }
-
-    /// Updates the color of the object.
-    fn update_color(&mut self, color: Color) {
-        self.inner.material.update(color);
-    }
-}
-
-impl Render for Object {
-    fn render(&self, render_target: &RenderTarget, camera: &Camera, lights: &[&dyn Light]) {
-        render_target.render(camera, &self.inner, lights);
-    }
-
-    fn update_display_settings(&mut self, _display_settings: &DisplaySettings) {}
 }
 
 /// An instanced object which can be rendered in a scene.
