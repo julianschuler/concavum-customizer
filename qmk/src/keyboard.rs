@@ -24,17 +24,23 @@ impl Keyboard {
         let column_count = self.columns.max(self.thumb_keys);
         let row_count = self.rows + 1;
 
-        let first_pins = [
+        let left_column_pins = [
             "\"GP8\"", "\"GP7\"", "\"GP6\"", "\"GP5\"", "\"GP4\"", "\"GP27\"",
         ];
-        let second_pins = [
+        let left_row_pins = [
             "\"GP9\"", "\"GP10\"", "\"GP19\"", "\"GP20\"", "\"GP18\"", "\"GP26\"",
         ];
+        let right_column_pins = [
+            "\"GP4\"", "\"GP27\"", "\"GP26\"", "\"GP18\"", "\"GP20\"", "\"GP19\"",
+        ];
+        let right_row_pins = [
+            "\"GP10\"", "\"GP9\"", "\"GP8\"", "\"GP7\"", "\"GP6\"", "\"GP5\"",
+        ];
 
-        let left_columns = first_pins.iter().take(column_count);
-        let left_rows = second_pins.iter().take(row_count);
-        let right_columns = second_pins.iter().take(column_count);
-        let right_rows = first_pins.iter().rev().take(row_count);
+        let left_columns = left_column_pins.iter().rev().take(column_count).rev();
+        let left_rows = left_row_pins.iter().take(row_count);
+        let right_columns = right_row_pins.iter().take(column_count);
+        let right_rows = right_column_pins.iter().take(row_count);
 
         include_str!("keyboard.json")
             .replace_indented("$left_columns", left_columns)
