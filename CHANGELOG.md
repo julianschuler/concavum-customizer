@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.5.0] - 2025-08-18
+
+### Added
+
+- QMK: Configure bootmagic for switching to DFU mode
+
+### Changed
+
+- Make case symmetric
+
 ## [1.4.0] - 2025-08-13
 
 ### Added
