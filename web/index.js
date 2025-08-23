@@ -1,9 +1,3 @@
-const { start } = wasm_bindgen;
+import init from "./pkg/customizer_wasm.js"
 
-async function run() {
-    await wasm_bindgen();
-
-    start();
-}
-
-run();
+await init();
