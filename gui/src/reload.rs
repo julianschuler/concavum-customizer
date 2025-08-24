@@ -1,19 +1,17 @@
 use std::{
     collections::HashMap,
-    sync::{
-        atomic::{AtomicBool, Ordering},
-        Arc, Mutex,
-    },
+    sync::{Arc, Mutex},
 };
 
 #[cfg(not(target_arch = "wasm32"))]
 use std::thread::spawn;
 
+use fidget::render::CancelToken;
 #[cfg(target_arch = "wasm32")]
 use wasm_bindgen::prelude::*;
 
 use config::Config;
-use model::{MeshSettings, Model};
+use model::Model;
 use web_time::Instant;
 
 use crate::{
@@ -34,7 +32,7 @@ macro_rules! info {
 pub struct ModelReloader {
     updater: Updater,
     previous_config: Option<Config>,
-    cancellation_token: CancellationToken,
+    cancellation_token: CancelToken,
     cache: Arc<Mutex<HashMap<Config, Meshes>>>,
 }
 
@@ -44,7 +42,7 @@ impl ModelReloader {
         Self {
             updater,
             previous_config: None,
-            cancellation_token: CancellationToken::new(),
+            cancellation_token: CancelToken::new(),
             cache: Arc::default(),
         }
     }
@@ -70,7 +68,7 @@ impl ModelReloader {
             self.updater
                 .send_update(Update::New(make_settings(&model, config), meshes));
         } else {
-            let cancellation_token = CancellationToken::new();
+            let cancellation_token = CancelToken::new();
             self.cancellation_token = cancellation_token.clone();
 
             let start = Instant::now();
@@ -78,47 +76,39 @@ impl ModelReloader {
             self.updater
                 .send_update(Update::Settings(make_settings(&model, config)));
 
-            let cancellation_token = self.cancellation_token.clone();
+            let cancel_token = self.cancellation_token.clone();
             let updater = self.updater.clone();
             let cache = self.cache.clone();
             let config = config.clone();
 
             spawn(move || {
-                let mesh_settings = model.mesh_settings_preview();
+                let mut mesh_settings = model.mesh_settings_preview(cancel_token.clone());
 
                 // Preview
-                let mut cancelled = false;
                 for depth in 1..mesh_settings.depth {
-                    let mesh_settings = MeshSettings {
-                        depth,
-                        view: mesh_settings.view,
-                        threads: mesh_settings.threads,
+                    mesh_settings.depth = depth;
+                    let Some(mesh) = model.mesh_preview(&mesh_settings) else {
+                        return;
                     };
-                    let mesh = model.mesh_preview(mesh_settings);
 
-                    cancelled = cancellation_token.cancelled();
-                    if cancelled {
-                        break;
-                    } else if mesh.triangle_count() > 0 {
+                    if mesh.triangle_count() > 0 {
                         updater.send_update(Update::Preview(mesh));
                     }
                 }
 
-                // Final Mesh
-                if !cancelled {
-                    let meshes = model.meshes();
+                // Final Meshes
+                let Some(meshes) = model.meshes(cancel_token) else {
+                    return;
+                };
 
-                    cache
-                        .lock()
-                        .expect("the lock should not be poisened")
-                        .insert(config, meshes.clone());
+                cache
+                    .lock()
+                    .expect("the lock should not be poisened")
+                    .insert(config, meshes.clone());
 
-                    if !cancellation_token.cancelled() {
-                        updater.send_update(Update::Meshes(meshes));
+                updater.send_update(Update::Meshes(meshes));
 
-                        info!("Reloaded model in {:?}", start.elapsed());
-                    }
-                }
+                info!("Reloaded model in {:?}", start.elapsed());
             });
         }
     }
@@ -130,31 +120,6 @@ impl ModelReloader {
             .expect("the lock should not be poisened")
             .get(config)
             .cloned()
-    }
-}
-
-/// A cancellation token to indicate cancellation between threads.
-#[derive(Clone)]
-struct CancellationToken {
-    cancelled: Arc<AtomicBool>,
-}
-
-impl CancellationToken {
-    /// Creates a new cancellation token.
-    fn new() -> Self {
-        Self {
-            cancelled: Arc::new(AtomicBool::new(false)),
-        }
-    }
-
-    /// Cancels the cancellation token.
-    fn cancel(&self) {
-        self.cancelled.store(true, Ordering::Release);
-    }
-
-    /// Returns true if the token was cancelled.
-    fn cancelled(&self) -> bool {
-        self.cancelled.load(Ordering::Acquire)
     }
 }
 

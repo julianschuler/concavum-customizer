@@ -24,7 +24,7 @@ bom = { path = "bom" }
 config = { path = "config" }
 console_error_panic_hook = "0.1"
 earcutr = "0.5"
-fidget = { version = "0.3.8", default-features = false, features = ["jit"] }
+fidget = { git = "https://github.com/mkeeter/fidget", rev = "4fc0c7d7a972206ae4ac1dbbe4708e4a3c9162da", default-features = false, features = ["jit"] }
 glam = { version = "0.30", features = ["serde"] }
 gui = { path = "gui" }
 hex_color = { version = "3.0", features = ["serde"] }
