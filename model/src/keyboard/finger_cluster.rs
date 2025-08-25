@@ -327,8 +327,8 @@ impl SupportPlanes {
             })
             .collect();
 
-        let lower_plane = Self::calculate_median_plane(normal, &mut lower_points);
-        let upper_plane = Self::calculate_median_plane(normal, &mut upper_points);
+        let lower_plane = Self::calculate_highest_plane(normal, &mut lower_points);
+        let upper_plane = Self::calculate_highest_plane(normal, &mut upper_points);
 
         Self {
             lower_plane,
@@ -336,12 +336,13 @@ impl SupportPlanes {
         }
     }
 
-    fn calculate_median_plane(normal: DVec3, points: &mut [DVec3]) -> Plane {
-        let n = points.len() / 2;
-        let (_, &mut median_point, _) = points
-            .select_nth_unstable_by(n, |&position1, &position2| {
+    fn calculate_highest_plane(normal: DVec3, points: &mut [DVec3]) -> Plane {
+        let &median_point = points
+            .iter()
+            .max_by(|&&position1, &&position2| {
                 normal.dot(position1).total_cmp(&normal.dot(position2))
-            });
+            })
+            .expect("there should be at least one point");
 
         Plane::new(median_point, normal)
     }
