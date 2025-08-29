@@ -9,8 +9,8 @@ use crate::{
     keyboard::InsertHolder,
     primitives::{Bounds, Csg, IntoTree, RoundedCsg, SimplePolygon, EPSILON},
     util::{
-        bounds_from_outline_points_and_height, corner_point, prism_from_projected_points,
-        projected_unit_vectors, side_point, Side, SideX, SideY,
+        bounds_from_outline_points_and_height, prism_from_projected_points, projected_unit_vectors,
+        side_point, Side, SideX, SideY,
     },
 };
 
@@ -202,58 +202,29 @@ impl<'a> ClearanceBuilder<'a> {
     }
 
     fn side_clearance(&self, side_x: SideX) -> Tree {
-        let column = match side_x {
-            SideX::Left => self.columns.first(),
-            SideX::Right => self.columns.last(),
-        };
-
         let plane = Plane::new(self.bounds.min, DVec3::X);
         let bounds = projected_unit_vectors(plane.normal(), self.bounds);
 
-        let first = column.first();
-        let last = column.last();
+        let mut points = self.columns.side_outline_points(side_x);
+        let lower_corner = points
+            .first()
+            .expect("there should be at least two circumference points");
+        let upper_corner = points
+            .last()
+            .expect("there should be at least two circumference points");
 
-        let lower_corner = corner_point(first, side_x, SideY::Bottom, self.columns.key_clearance);
-        let upper_corner = corner_point(last, side_x, SideY::Top, self.columns.key_clearance);
         let outwards_bottom_point = lower_corner - bounds.y_axis;
         let outwards_top_point = upper_corner + bounds.y_axis;
         let upwards_bottom_point = outwards_bottom_point + bounds.z_axis;
         let upwards_top_point = outwards_top_point + bounds.z_axis;
 
-        let points: Vec<_> = column
-            .windows(2)
-            .filter_map(|window| self.side_point(window[0], window[1], side_x))
-            .chain([
-                upper_corner,
-                outwards_top_point,
-                upwards_top_point,
-                upwards_bottom_point,
-                outwards_bottom_point,
-                lower_corner,
-            ])
-            .collect();
-
+        points.extend([
+            outwards_top_point,
+            upwards_top_point,
+            upwards_bottom_point,
+            outwards_bottom_point,
+        ]);
         prism_from_projected_points(points, &plane, self.bounds.size().x)
-    }
-
-    fn side_point(&self, bottom: DAffine3, top: DAffine3, side_x: SideX) -> Option<DVec3> {
-        let outwards_direction = bottom.x_axis;
-
-        // Get point which is more outward
-        let offset = (top.translation - bottom.translation).dot(outwards_direction);
-        #[allow(clippy::float_cmp)]
-        let offset = if offset.signum() == side_x.direction() {
-            offset
-        } else {
-            0.0
-        };
-        let point = side_point(bottom, side_x.into(), self.columns.key_clearance)
-            + offset * outwards_direction;
-
-        let line = Line::new(point, bottom.y_axis);
-        let plane = Plane::new(top.translation, top.z_axis);
-
-        plane.intersection(&line)
     }
 
     fn clearance_points(&self, column: &Column) -> Vec<DVec3> {

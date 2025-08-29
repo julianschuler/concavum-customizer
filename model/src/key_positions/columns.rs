@@ -6,7 +6,7 @@ use glam::{dvec3, DAffine3, DVec2, DVec3, Vec3Swizzles};
 use crate::{
     geometry::{vec_y, Line, Plane},
     key_positions::{CURVATURE_HEIGHT, KEY_CLEARANCE},
-    util::{corner_point, SideX, SideY},
+    util::{corner_point, side_point, SideX, SideY},
 };
 
 /// The positions of a column of finger keys.
@@ -184,23 +184,22 @@ impl Columns {
             .expect("there has to be at least one column")
     }
 
-    /// Returns the points for an outline containing all thumb keys.
+    /// Returns the points of the finger cluster outline.
     pub fn outline_points(&self) -> Vec<DVec2> {
-        let key_clearance = self.key_clearance;
         let bottom_points = self.windows(2).map(|window| {
             let first_left = window[0].first();
             let first_right = window[1].first();
 
-            Self::circumference_point(first_left, first_right, SideY::Bottom, key_clearance)
+            Self::outline_point(first_left, first_right, SideY::Bottom, self.key_clearance)
         });
         let top_points = self.windows(2).map(|window| {
             let last_left = window[0].last();
             let last_right = window[1].last();
 
-            Self::circumference_point(last_left, last_right, SideY::Top, key_clearance)
+            Self::outline_point(last_left, last_right, SideY::Top, self.key_clearance)
         });
-        let left_points = self.side_circumference_points(SideX::Left, key_clearance);
-        let right_points = self.side_circumference_points(SideX::Right, key_clearance);
+        let left_points = self.side_outline_points(SideX::Left);
+        let right_points = self.side_outline_points(SideX::Right);
 
         bottom_points
             .chain(right_points)
@@ -226,8 +225,8 @@ impl Columns {
             .unwrap_or_default()
     }
 
-    /// Returns a point along the top or bottom circumference between two keys.
-    fn circumference_point(
+    /// Returns a point along the top or bottom of the finger cluster outline between two keys.
+    fn outline_point(
         left: DAffine3,
         right: DAffine3,
         side_y: SideY,
@@ -245,8 +244,8 @@ impl Columns {
         }
     }
 
-    /// Returns the points along the left or right side.
-    fn side_circumference_points(&self, side_x: SideX, key_clearance: DVec2) -> Vec<DVec3> {
+    /// Returns the points along the left or right side of the finger cluster outline.
+    pub fn side_outline_points(&self, side_x: SideX) -> Vec<DVec3> {
         let column = match side_x {
             SideX::Left => self.first(),
             SideX::Right => self.last(),
@@ -254,13 +253,13 @@ impl Columns {
         let first = column.first();
         let last = column.last();
 
-        let lower_corner = corner_point(first, side_x, SideY::Bottom, key_clearance);
-        let upper_corner = corner_point(last, side_x, SideY::Top, key_clearance);
+        let lower_corner = corner_point(first, side_x, SideY::Bottom, self.key_clearance);
+        let upper_corner = corner_point(last, side_x, SideY::Top, self.key_clearance);
 
         let mut points = vec![lower_corner];
 
         points.extend(column.windows(2).filter_map(|window| {
-            Self::side_circumference_point(window[0], window[1], side_x, key_clearance)
+            Self::side_outline_point(window[0], window[1], side_x, self.key_clearance)
         }));
 
         points.push(upper_corner);
@@ -268,8 +267,8 @@ impl Columns {
         points
     }
 
-    /// Returns a point along the left or right side between two keys.
-    fn side_circumference_point(
+    /// Returns the point between two keys along the left or right side of the cluster outline.
+    fn side_outline_point(
         bottom: DAffine3,
         top: DAffine3,
         side_x: SideX,
@@ -277,19 +276,24 @@ impl Columns {
     ) -> Option<DVec3> {
         let outwards_direction = bottom.x_axis;
 
+        let plane = Plane::new(bottom.translation, bottom.x_axis);
+
         // Get point which is more outward
-        let offset = (top.translation - bottom.translation).dot(outwards_direction);
+        let offset = plane.signed_distance_to(top.translation);
         #[allow(clippy::float_cmp)]
         let offset = if offset.signum() == side_x.direction() {
             offset
         } else {
             0.0
         };
-        let point = bottom.translation
-            + (offset + side_x.direction() * key_clearance.x) * outwards_direction;
+
+        let point = side_point(bottom, side_x.into(), key_clearance) + offset * outwards_direction;
 
         let line = Line::new(point, bottom.y_axis);
-        let plane = Plane::new(top.translation, top.z_axis);
+        let plane = Plane::new(
+            (bottom.translation + top.translation) / 2.0,
+            (bottom.y_axis + top.y_axis) / 2.0,
+        );
 
         plane.intersection(&line)
     }
