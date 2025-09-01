@@ -1,6 +1,6 @@
 use config::Keyboard;
 use fidget::context::Tree;
-use glam::DVec3;
+use glam::{DAffine3, DVec3};
 
 use crate::{
     geometry::{Line, Plane},
@@ -61,6 +61,7 @@ impl ThumbCluster {
         }
     }
 
+    /// Returns the clearance shape of the thumb cluster.
     fn clearance(thumb_keys: &ThumbKeys, bounds: Bounds) -> Tree {
         let key_clearance = thumb_keys.key_clearance;
 
@@ -79,14 +80,7 @@ impl ThumbCluster {
         // All points in the center, if any
         let points: Vec<_> = thumb_keys
             .windows(2)
-            .filter_map(|window| {
-                let position = window[0];
-                let next_position = window[1];
-                let line = Line::new(position.translation, position.x_axis);
-                let plane = Plane::new(next_position.translation, next_position.z_axis);
-
-                plane.intersection(&line)
-            })
+            .map(|window| Self::key_well_corner_point(window[0], window[1]))
             .chain([
                 last_point,
                 last_outwards_point,
@@ -119,6 +113,7 @@ impl ThumbCluster {
         union.union(upper)
     }
 
+    /// Returns the clearance shape for the keys of the cluster.
     fn key_clearance(thumb_keys: &ThumbKeys, bounds: Bounds) -> Tree {
         let key_clearance = thumb_keys.key_clearance;
         let first = thumb_keys.first();
@@ -130,14 +125,7 @@ impl ThumbCluster {
 
         let points = thumb_keys
             .windows(2)
-            .filter_map(|window| {
-                let position = window[0];
-                let next_position = window[1];
-                let line = Line::new(position.translation, position.x_axis);
-                let plane = Plane::new(next_position.translation, next_position.z_axis);
-
-                plane.intersection(&line)
-            })
+            .map(|window| Self::key_well_corner_point(window[0], window[1]))
             .chain([
                 last_point,
                 last_point + bounds.z_axis,
@@ -147,5 +135,18 @@ impl ThumbCluster {
 
         let plane = Plane::new(side_point(first, Side::Bottom, key_clearance), first.y_axis);
         prism_from_projected_points(points, &plane, 2.0 * key_clearance.y)
+    }
+
+    /// Returns the point in the key well corner between the given keys.
+    fn key_well_corner_point(left: DAffine3, right: DAffine3) -> DVec3 {
+        let line = Line::new(left.translation, left.x_axis);
+        let plane = Plane::new(
+            (left.translation + right.translation) / 2.0,
+            left.x_axis + right.x_axis,
+        );
+
+        plane
+            .intersection(&line)
+            .expect("there should be an intersection")
     }
 }

@@ -1,4 +1,7 @@
-use std::ops::{Deref, Mul};
+use std::{
+    iter::once,
+    ops::{Deref, Mul},
+};
 
 use config::{ColumnConfig, ColumnType as ConfigColumnType, FingerCluster};
 use glam::{dvec3, DAffine3, DVec2, DVec3, Vec3Swizzles};
@@ -256,26 +259,18 @@ impl Columns {
         let lower_corner = corner_point(first, side_x, SideY::Bottom, self.key_clearance);
         let upper_corner = corner_point(last, side_x, SideY::Top, self.key_clearance);
 
-        let mut points = vec![lower_corner];
-
-        points.extend(column.windows(2).filter_map(|window| {
-            Self::side_outline_point(window[0], window[1], side_x, self.key_clearance)
-        }));
-
-        points.push(upper_corner);
-
-        points
+        once(lower_corner)
+            .chain(
+                column
+                    .windows(2)
+                    .map(|window| self.side_outline_point(window[0], window[1], side_x)),
+            )
+            .chain(once(upper_corner))
+            .collect()
     }
 
     /// Returns the point between two keys along the left or right side of the cluster outline.
-    fn side_outline_point(
-        bottom: DAffine3,
-        top: DAffine3,
-        side_x: SideX,
-        key_clearance: DVec2,
-    ) -> Option<DVec3> {
-        let outwards_direction = bottom.x_axis;
-
+    fn side_outline_point(&self, bottom: DAffine3, top: DAffine3, side_x: SideX) -> DVec3 {
         let plane = Plane::new(bottom.translation, bottom.x_axis);
 
         // Get point which is more outward
@@ -287,15 +282,17 @@ impl Columns {
             0.0
         };
 
-        let point = side_point(bottom, side_x.into(), key_clearance) + offset * outwards_direction;
+        let point = side_point(bottom, side_x.into(), self.key_clearance) + offset * bottom.x_axis;
 
         let line = Line::new(point, bottom.y_axis);
         let plane = Plane::new(
             (bottom.translation + top.translation) / 2.0,
-            (bottom.y_axis + top.y_axis) / 2.0,
+            bottom.y_axis + top.y_axis,
         );
 
-        plane.intersection(&line)
+        plane
+            .intersection(&line)
+            .expect("there should always be an intersection")
     }
 }
 

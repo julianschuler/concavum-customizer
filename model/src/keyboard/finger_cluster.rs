@@ -235,14 +235,7 @@ impl<'a> ClearanceBuilder<'a> {
         // All points in the center, if any
         let mut points: Vec<_> = column
             .windows(2)
-            .filter_map(|window| {
-                let position = window[0];
-                let next_position = window[1];
-                let line = Line::new(position.translation, position.y_axis);
-                let plane = Plane::new(next_position.translation, next_position.z_axis);
-
-                plane.intersection(&line)
-            })
+            .map(|window| Self::key_well_corner_point(window[0], window[1]))
             .collect();
 
         // Upper and lower support points derived from the first and last entries
@@ -267,6 +260,19 @@ impl<'a> ClearanceBuilder<'a> {
         points.extend(lower_support_points);
 
         points
+    }
+
+    /// Returns the point in the key well corner between the given keys.
+    fn key_well_corner_point(bottom: DAffine3, top: DAffine3) -> DVec3 {
+        let line = Line::new(bottom.translation, bottom.y_axis);
+        let plane = Plane::new(
+            (bottom.translation + top.translation) / 2.0,
+            bottom.y_axis + top.y_axis,
+        );
+
+        plane
+            .intersection(&line)
+            .expect("there should always be an intersection")
     }
 }
 
@@ -332,22 +338,18 @@ impl SupportPlanes {
             SideY::Bottom => &self.lower_plane,
             SideY::Top => &self.upper_plane,
         };
-        let point_direction = side.direction() * position.y_axis;
         let point = side_point(position, side.into(), key_clearance);
-
-        let point_is_above = plane.signed_distance_to(point) > 0.0;
-        let point_direction_is_upwards = point_direction.dot(plane.normal()) > 0.0;
+        let projected_point = point.project_to(plane);
 
         let projected_point = match column_type {
             ColumnType::Normal => {
-                let default = if point_is_above == point_direction_is_upwards {
+                #[allow(clippy::float_cmp)]
+                let default = if position.y_axis.dot(plane.normal()).signum() == side.direction() {
+                    projected_point
+                } else {
                     let line = Line::new(point, position.z_axis);
 
-                    plane
-                        .intersection(&line)
-                        .expect("there should always be an intersection")
-                } else {
-                    point.project_to(plane)
+                    plane.intersection(&line).unwrap_or(projected_point)
                 };
 
                 let line = Line::new(point, position.y_axis);
