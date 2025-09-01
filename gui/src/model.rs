@@ -1,6 +1,7 @@
 use std::iter::once;
 
 use config::KeySize;
+use fidget::render::CancelToken;
 use glam::{DAffine3, DMat4};
 use model::{
     matrix_pcb::{
@@ -96,32 +97,43 @@ pub struct Meshes {
 /// A trait for meshing a model.
 pub trait Mesh<'a> {
     /// Returns the mesh settings for meshing the preview at the set resolution.
-    fn mesh_settings_preview(&self) -> MeshSettings<'_>;
+    fn mesh_settings_preview(&self, cancel_token: CancelToken) -> MeshSettings<'_>;
 
     /// Meshes the preview using the given mesh settings.
-    fn mesh_preview(&self, settings: MeshSettings) -> CpuMesh;
+    fn mesh_preview(&self, settings: &MeshSettings) -> Option<CpuMesh>;
 
     /// Meshes `self`.
-    fn meshes(&self) -> Meshes;
+    fn meshes(&self, cancel_token: CancelToken) -> Option<Meshes>;
 }
 
 impl Mesh<'_> for Model {
-    fn mesh_settings_preview(&self) -> MeshSettings<'_> {
-        self.keyboard.preview.mesh_settings(self.resolution)
+    fn mesh_settings_preview(&self, cancel_token: CancelToken) -> MeshSettings<'_> {
+        self.keyboard
+            .preview
+            .mesh_settings(self.resolution, cancel_token)
     }
 
-    fn mesh_preview(&self, settings: MeshSettings) -> CpuMesh {
-        self.keyboard.preview.mesh(settings).to_cpu_mesh()
+    fn mesh_preview(&self, settings: &MeshSettings) -> Option<CpuMesh> {
+        self.keyboard
+            .preview
+            .mesh(settings)
+            .map(|mesh| mesh.to_cpu_mesh())
     }
 
-    fn meshes(&self) -> Meshes {
-        let settings = self.keyboard.case.mesh_settings(self.resolution);
-        let case = self.keyboard.case.mesh(settings).to_cpu_mesh();
+    fn meshes(&self, cancel_token: CancelToken) -> Option<Meshes> {
+        let settings = self
+            .keyboard
+            .case
+            .mesh_settings(self.resolution, cancel_token.clone());
+        let case = self.keyboard.case.mesh(&settings)?.to_cpu_mesh();
 
-        let settings = self.keyboard.bottom_plate.mesh_settings(self.resolution);
-        let bottom_plate = self.keyboard.bottom_plate.mesh(settings).to_cpu_mesh();
+        let settings = self
+            .keyboard
+            .bottom_plate
+            .mesh_settings(self.resolution, cancel_token);
+        let bottom_plate = self.keyboard.bottom_plate.mesh(&settings)?.to_cpu_mesh();
 
-        Meshes { case, bottom_plate }
+        Some(Meshes { case, bottom_plate })
     }
 }
 

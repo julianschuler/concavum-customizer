@@ -11,7 +11,7 @@ use fidget::vm::VmShape as FidgetShape;
 use fidget::{
     context::Tree,
     mesh::{Mesh, Octree, Settings},
-    render::{ThreadPool, View3},
+    render::{CancelToken, ThreadPool, View3},
     Context,
 };
 use glam::DVec3;
@@ -41,12 +41,12 @@ impl Shape {
     }
 
     /// Meshes the shape.
-    pub fn mesh(&self, settings: Settings) -> Mesh {
-        Octree::build(&self.inner, settings).walk_dual(settings)
+    pub fn mesh(&self, settings: &Settings) -> Option<Mesh> {
+        Octree::build(&self.inner, settings).map(|octree| octree.walk_dual())
     }
 
     /// Returns the settings to use for meshing the shape with the given resolution.
-    pub fn mesh_settings(&self, resolution: f64) -> Settings<'_> {
+    pub fn mesh_settings(&self, resolution: f64, cancel_token: CancelToken) -> Settings<'_> {
         #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
         let depth = (self.bounds.size().max_element() / resolution)
             .log2()
@@ -59,8 +59,9 @@ impl Shape {
 
         Settings {
             depth,
-            view,
             threads: Some(&ThreadPool::Global),
+            world_to_model: view.world_to_model(),
+            cancel: cancel_token,
         }
     }
 

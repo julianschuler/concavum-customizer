@@ -24,7 +24,7 @@ bom = { path = "bom" }
 config = { path = "config" }
 console_error_panic_hook = "0.1"
 earcutr = "0.5"
-fidget = { version = "0.3.8", default-features = false, features = ["jit"] }
+fidget = { version = "0.3.9", default-features = false, features = ["jit"] }
 glam = { version = "0.30", features = ["serde"] }
 gui = { path = "gui" }
 hex_color = { version = "3.0", features = ["serde"] }
@@ -44,13 +44,13 @@ syn = "2.0"
 thiserror = "2.0"
 three-d = { version = "0.18", features = ["egui-gui"] }
 toml = "0.9"
-uuid = { version = "1.17.0", features = ["fast-rng", "js", "v4"] }
+uuid = { version = "1.18.0", features = ["fast-rng", "js", "v4"] }
 viewer = { path = "viewer" }
 wasm-bindgen = "0.2"
 wasm-bindgen-futures = "0.4"
 web-sys = { version = "0.3", features = ["Worker"] }
 web-time = "1.1"
-zip = { version = "4.3", default-features = false }
+zip = { version = "4.6", default-features = false }
 
 [workspace.lints.clippy]
 doc_markdown = { level = "allow", priority = 1 }
