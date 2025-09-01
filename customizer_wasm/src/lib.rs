@@ -1,5 +1,7 @@
 //! This file provides the entry point and setup for compiling the customizer to WASM.
 
+pub use wasm_bindgen_rayon::init_thread_pool;
+
 use viewer::Window;
 use wasm_bindgen::prelude::*;
 

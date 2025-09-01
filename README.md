@@ -27,12 +27,10 @@ cargo run --release
 There is experimental support for running the customizer in the browser.
 You can find the latest version of the customizer deployed at https://julianschuler.github.io/concavum-customizer.
 
-> **Note:** Due to the current lack of multithreading support in WebAssembly, reloading the model can be easily more than 10x slower when running in the browser compared to running natively.
-
 To run the web version locally, start by building the code using [`wasm-pack`](https://rustwasm.github.io/wasm-pack/installer/):
 
 ```sh
-wasm-pack build customizer_wasm --target no-modules --out-dir ../web/pkg --no-typescript --no-pack
+wasm-pack build customizer_wasm --target web --out-dir ../web/pkg --no-typescript --no-pack
 ```
 
 The files in the `web` subfolder can now be served using any HTTP server, e.g. if you have Python installed:

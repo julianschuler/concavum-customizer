@@ -125,7 +125,9 @@ impl ModelReloader {
 
 #[cfg(target_arch = "wasm32")]
 fn spawn(f: impl FnOnce() + Send + 'static) {
-    let worker = web_sys::Worker::new("./worker.js")
+    let options = web_sys::WorkerOptions::new();
+    options.set_type(web_sys::WorkerType::Module);
+    let worker = web_sys::Worker::new_with_options("./worker.js", &options)
         .expect("should be able to create worker using `worker.js`");
 
     // Double-boxing because `dyn FnOnce` is unsized and so `Box<dyn FnOnce()>` is a fat pointer.
