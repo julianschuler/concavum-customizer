@@ -89,6 +89,29 @@ impl Application {
     fn handle_events(&mut self, mut frame_input: FrameInput) {
         self.gui.update(&mut frame_input, self.is_reloading);
 
+        // Allow translating the camera sideways when holding right mouse button
+        for event in &mut frame_input.events {
+            match event {
+                three_d::Event::MouseMotion { button, delta, .. } => {
+                    if *button == Some(MouseButton::Right) {
+                        let right = self.camera.right_direction().normalize();
+                        let up = right.cross(self.camera.view_direction());
+                        let translation = -delta.0 * right + delta.1 * up;
+                        let speed = 0.001 * self.camera.position().magnitude();
+
+                        self.camera.translate(speed * translation);
+                    }
+                }
+                three_d::Event::MouseWheel { delta: (_, y), .. } => {
+                    // See https://github.com/asny/three-d/issues/403
+                    const CLAMP_VALUE: f32 = 24.0;
+
+                    *y = y.clamp(-CLAMP_VALUE, CLAMP_VALUE);
+                }
+                _ => (),
+            }
+        }
+
         #[allow(clippy::cast_possible_truncation)]
         let viewport = Viewport {
             x: (Gui::SIDE_PANEL_WIDTH * frame_input.device_pixel_ratio) as i32,
@@ -101,20 +124,6 @@ impl Application {
         self.camera.set_viewport(viewport);
         self.control
             .handle_events(&mut self.camera, &mut frame_input.events);
-
-        // Allow translating the camera sideways when holding right mouse button
-        for event in &mut frame_input.events {
-            if let three_d::Event::MouseMotion { button, delta, .. } = event {
-                if *button == Some(MouseButton::Right) {
-                    let right = self.camera.right_direction().normalize();
-                    let up = right.cross(self.camera.view_direction());
-                    let translation = -delta.0 * right + delta.1 * up;
-                    let speed = 0.001 * self.camera.position().magnitude();
-
-                    self.camera.translate(speed * translation);
-                }
-            }
-        }
 
         if let Ok(scene_update) = self.receiver.try_recv() {
             self.handle_scene_update(&frame_input.context, scene_update);
