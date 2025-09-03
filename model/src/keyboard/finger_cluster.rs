@@ -314,14 +314,14 @@ impl SupportPlanes {
     }
 
     fn calculate_highest_plane(normal: DVec3, points: &mut [DVec3]) -> Plane {
-        let &median_point = points
+        let &highest_point = points
             .iter()
             .max_by(|&&position1, &&position2| {
                 normal.dot(position1).total_cmp(&normal.dot(position2))
             })
             .expect("there should be at least one point");
 
-        Plane::new(median_point, normal)
+        Plane::new(highest_point, normal)
     }
 
     fn calculate_support_points(
