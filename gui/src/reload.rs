@@ -1,6 +1,9 @@
 use std::{
     collections::HashMap,
-    sync::{Arc, Mutex},
+    sync::{
+        mpsc::{channel, Receiver, Sender},
+        Arc, Mutex,
+    },
 };
 
 #[cfg(not(target_arch = "wasm32"))]
@@ -31,19 +34,36 @@ macro_rules! info {
 /// A reloader for reloading a model from a given configuration.
 pub struct ModelReloader {
     updater: Updater,
+    sender: Sender<ReloadTask>,
     previous_config: Option<Config>,
-    cancellation_token: CancelToken,
-    cache: Arc<Mutex<HashMap<Config, Meshes>>>,
+    cancel_token: CancelToken,
+    cache: Cache,
 }
+
+/// A reload task to be performed in a separate thread.
+struct ReloadTask {
+    model: Model,
+    config: Config,
+    cancel_token: CancelToken,
+}
+
+/// A cache for already meshed configurations.
+type Cache = Arc<Mutex<HashMap<Config, Meshes>>>;
 
 impl ModelReloader {
     /// Creates a new model reloader using the given updater.
     pub fn new(updater: Updater) -> Self {
+        let (sender, receiver) = channel();
+        let cache: Cache = Arc::default();
+
+        Self::spawn_reload_thread(receiver, updater.clone(), cache.clone());
+
         Self {
             updater,
+            sender,
             previous_config: None,
-            cancellation_token: CancelToken::new(),
-            cache: Arc::default(),
+            cancel_token: CancelToken::new(),
+            cache,
         }
     }
 
@@ -59,7 +79,7 @@ impl ModelReloader {
             return;
         }
 
-        self.cancellation_token.cancel();
+        self.cancel_token.cancel();
         self.previous_config = Some(config.clone());
 
         let model = Model::from_config(config);
@@ -68,47 +88,16 @@ impl ModelReloader {
             self.updater
                 .send_update(Update::New(make_settings(&model, config), meshes));
         } else {
-            let cancellation_token = CancelToken::new();
-            self.cancellation_token = cancellation_token.clone();
-
-            let start = Instant::now();
+            let cancel_token = CancelToken::new();
+            self.cancel_token = cancel_token.clone();
 
             self.updater
                 .send_update(Update::Settings(make_settings(&model, config)));
 
-            let cancel_token = self.cancellation_token.clone();
-            let updater = self.updater.clone();
-            let cache = self.cache.clone();
-            let config = config.clone();
-
-            spawn(move || {
-                let mut mesh_settings = model.mesh_settings_preview(cancel_token.clone());
-
-                // Preview
-                for depth in 1..mesh_settings.depth {
-                    mesh_settings.depth = depth;
-                    let Some(mesh) = model.mesh_preview(&mesh_settings) else {
-                        return;
-                    };
-
-                    if mesh.triangle_count() > 0 {
-                        updater.send_update(Update::Preview(mesh));
-                    }
-                }
-
-                // Final Meshes
-                let Some(meshes) = model.meshes(cancel_token) else {
-                    return;
-                };
-
-                cache
-                    .lock()
-                    .expect("the lock should not be poisened")
-                    .insert(config, meshes.clone());
-
-                updater.send_update(Update::Meshes(meshes));
-
-                info!("Reloaded model in {:?}", start.elapsed());
+            let _ = self.sender.send(ReloadTask {
+                model,
+                config: config.clone(),
+                cancel_token,
             });
         }
     }
@@ -120,6 +109,50 @@ impl ModelReloader {
             .expect("the lock should not be poisened")
             .get(config)
             .cloned()
+    }
+
+    /// Spawns a thread for handling the actual reloading.
+    fn spawn_reload_thread(receiver: Receiver<ReloadTask>, updater: Updater, cache: Cache) {
+        spawn(move || 'outer: loop {
+            let Ok(ReloadTask {
+                model,
+                config,
+                cancel_token,
+            }) = receiver.recv()
+            else {
+                break;
+            };
+
+            let start = Instant::now();
+
+            let mut mesh_settings = model.mesh_settings_preview(cancel_token.clone());
+
+            // Preview
+            for depth in 1..mesh_settings.depth {
+                mesh_settings.depth = depth;
+                let Some(mesh) = model.mesh_preview(&mesh_settings) else {
+                    continue 'outer;
+                };
+
+                if mesh.triangle_count() > 0 {
+                    updater.send_update(Update::Preview(mesh));
+                }
+            }
+
+            // Final Meshes
+            let Some(meshes) = model.meshes(cancel_token) else {
+                continue;
+            };
+
+            cache
+                .lock()
+                .expect("the lock should not be poisened")
+                .insert(config, meshes.clone());
+
+            updater.send_update(Update::Meshes(meshes));
+
+            info!("Reloaded model in {:?}", start.elapsed());
+        });
     }
 }
 
