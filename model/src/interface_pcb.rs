@@ -100,7 +100,7 @@ impl InterfacePcb {
         const USB_SIZE: DVec2 = dvec2(9.0, 3.2);
         const USB_RADIUS: f64 = 1.1;
         const USB_OFFSET: DVec3 = dvec3(24.9, 0.0, 3.2);
-        const JACK_RADIUS: f64 = 3.0;
+        const JACK_RADIUS: f64 = 2.5;
         const JACK_OFFSET: DVec3 = dvec3(5.4, 0.0, 2.45);
 
         let jack_cutout = Circle::new(JACK_RADIUS + Self::TOLERANCE)
