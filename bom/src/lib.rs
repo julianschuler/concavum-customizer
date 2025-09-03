@@ -56,8 +56,8 @@ impl Bom {
             ),
             Item::new(
                 2,
-                "Zener diode 2.5V SOD-80",
-                "https://mouser.com/ProductDetail/78-TZM5222B",
+                "Zener diode 3.6V SOD-80",
+                "https://mouser.com/ProductDetail/637-ZMM3.6",
             ),
             Item::new(
                 total_keys,
