@@ -15,7 +15,7 @@ use wasm_bindgen::prelude::*;
 pub fn start() -> Result<(), JsValue> {
     console_error_panic_hook::set_once();
 
-    let window = Window::try_new().expect("creating the window should never fail");
+    let window = Window::try_new().map_err(|error| JsValue::from_str(&error.to_string()))?;
     window.run_render_loop();
 
     Ok(())

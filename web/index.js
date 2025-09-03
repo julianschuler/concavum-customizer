@@ -1,3 +1,7 @@
 import init from "./pkg/customizer_wasm.js"
 
-await init();
+try {
+  await init();
+} catch (errorMessage) {
+  document.getElementById("error").textContent = "Error: " + errorMessage;
+}
