@@ -26,6 +26,7 @@ pub struct FileMenu {
     receiver: Receiver<Update>,
     error: String,
     export_popup_open: bool,
+    export_pending: bool,
 }
 
 impl FileMenu {
@@ -39,6 +40,7 @@ impl FileMenu {
             receiver,
             error: String::new(),
             export_popup_open: false,
+            export_pending: false,
         }
     }
 
@@ -83,6 +85,11 @@ impl FileMenu {
                 }
             });
         });
+
+        if !is_reloading && self.export_pending {
+            self.export_pending = false;
+            self.export_model(config, model_reloader);
+        }
 
         if let Ok(update) = self.receiver.try_recv() {
             match update {
@@ -138,6 +145,7 @@ impl FileMenu {
                             panic!("{RECOMMENDED_RESOLUTION} should be a positive float")
                         });
                         self.export_popup_open = false;
+                        self.export_pending = true;
 
                         changed = true;
                     }
