@@ -39,8 +39,8 @@ impl Keyboard {
 
         let left_columns = left_column_pins.iter().rev().take(column_count).rev();
         let left_rows = left_row_pins.iter().take(row_count);
-        let right_columns = right_row_pins.iter().take(column_count);
-        let right_rows = right_column_pins.iter().take(row_count);
+        let right_columns = right_column_pins.iter().take(column_count);
+        let right_rows = right_row_pins.iter().take(row_count);
         let left_bootmagic_matrix = format!("[{row}, 0]", row = row_count - 1);
         let right_bootmagic_matrix = format!(
             "[{row}, {column}]",
