@@ -1,5 +1,24 @@
 # Changelog
 
+## [1.6.0] - 2025-09-04
+
+### Added
+
+- Use multithreading for meshing in WASM
+- Open file dialog after popup changes resolution
+- Add proper error handling for WASM build
+
+### Changed
+
+- Use highest point for support planes
+- BOM: Replace 2.5V zener diode with 3.6V one
+- Change TRRS jack diameter from 6mm to 5mm
+
+### Fixed
+
+- Fix incorrect outline for straight columns
+- QMK: Fix flipped right half row and column pins
+
 ## [1.5.0] - 2025-08-18
 
 ### Added
@@ -63,6 +82,8 @@
 
 :seedling: Initial release.
 
+[1.6.0]: https://github.com/julianschuler/concavum-customizer/releases/tag/v1.6.0
+[1.5.0]: https://github.com/julianschuler/concavum-customizer/releases/tag/v1.5.0
 [1.4.0]: https://github.com/julianschuler/concavum-customizer/releases/tag/v1.4.0
 [1.3.0]: https://github.com/julianschuler/concavum-customizer/releases/tag/v1.3.0
 [1.2.0]: https://github.com/julianschuler/concavum-customizer/releases/tag/v1.2.0

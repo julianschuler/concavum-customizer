@@ -347,7 +347,7 @@ dependencies = [
 
 [[package]]
 name = "bom"
-version = "1.5.0"
+version = "1.6.0"
 dependencies = [
  "config",
 ]
@@ -458,7 +458,7 @@ dependencies = [
 
 [[package]]
 name = "config"
-version = "1.5.0"
+version = "1.6.0"
 dependencies = [
  "glam 0.30.5",
  "serde",
@@ -569,14 +569,14 @@ checksum = "460fbee9c2c2f33933d720630a6a0bac33ba7053db5344fac858d4b8952d77d5"
 
 [[package]]
 name = "customizer"
-version = "1.5.0"
+version = "1.6.0"
 dependencies = [
  "viewer",
 ]
 
 [[package]]
 name = "customizer_wasm"
-version = "1.5.0"
+version = "1.6.0"
 dependencies = [
  "console_error_panic_hook",
  "viewer",
@@ -1277,7 +1277,7 @@ dependencies = [
 
 [[package]]
 name = "gui"
-version = "1.5.0"
+version = "1.6.0"
 dependencies = [
  "bom",
  "config",
@@ -1687,7 +1687,7 @@ dependencies = [
 
 [[package]]
 name = "model"
-version = "1.5.0"
+version = "1.6.0"
 dependencies = [
  "config",
  "earcutr",
@@ -2092,7 +2092,7 @@ checksum = "57c0d7b74b563b49d38dae00a0c37d4d6de9b432382b2892f0574ddcae73fd0a"
 
 [[package]]
 name = "pcb"
-version = "1.5.0"
+version = "1.6.0"
 dependencies = [
  "config",
  "glam 0.30.5",
@@ -2241,7 +2241,7 @@ dependencies = [
 
 [[package]]
 name = "qmk"
-version = "1.5.0"
+version = "1.6.0"
 dependencies = [
  "config",
  "itertools",
@@ -2530,7 +2530,7 @@ checksum = "0fda2ff0d084019ba4d7c6f371c95d8fd75ce3524c3cb8fb653a3023f6323e64"
 
 [[package]]
 name = "show"
-version = "1.5.0"
+version = "1.6.0"
 dependencies = [
  "hex_color",
  "three-d",
@@ -2538,7 +2538,7 @@ dependencies = [
 
 [[package]]
 name = "show_derive"
-version = "1.5.0"
+version = "1.6.0"
 dependencies = [
  "quote",
  "syn 2.0.106",
@@ -2997,7 +2997,7 @@ checksum = "0b928f33d975fc6ad9f86c8f283853ad26bdd5b10b7f1542aa2fa15e2289105a"
 
 [[package]]
 name = "viewer"
-version = "1.5.0"
+version = "1.6.0"
 dependencies = [
  "config",
  "gui",
