@@ -11,7 +11,8 @@ It generates 3D printing files for the case, a PCB for connecting the key switch
 
 To get started, head over to the [latest release](https://github.com/julianschuler/concavum-customizer/releases/latest) and download the executable for your operating system. If your operating system is not supported or you want to run the latest development version instead, follow the instructions in the next section.
 
-> **Note:** For Linux, the file dialogs require a compatible XDG Desktop Portal backend to function correctly. If the load/save/export buttons do not seem to work, you might need to install a [different backend](https://docs.rs/rfd/latest/rfd/#xdg-desktop-portal-backend).
+> [!NOTE]
+> For Linux, the file dialogs require a compatible XDG Desktop Portal backend to function correctly. If the load/save/export buttons do not seem to work, you might need to install a [different backend](https://docs.rs/rfd/latest/rfd/#xdg-desktop-portal-backend).
 
 ## Building the customizer from source
 
